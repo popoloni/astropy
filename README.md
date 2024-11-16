@@ -94,7 +94,8 @@ The main configuration parameters can be found at the top of `astropy.py`. Key s
 
 4. Run the planner:
 ```bash
-python astropy.py
+python astropy.py  # Basic version
+python "astropy 2.py"  # Enhanced version with moon influence tracking
 ```
 
 The program will output:
@@ -123,8 +124,48 @@ The program will output:
 - `export_api_key.py` - Helper script for managing API keys for external services
 
 ### Development Files
-- `astropy 2.py` - Development version with experimental features
+- `astropy 2.py` - Enhanced version with moon influence tracking and extended features:
+  - Moon position calculation and interference detection
+  - Extended trajectory visualization (±5° outside visibility area)
+  - Time-accurate moon influence display
+  - Enhanced visibility charts with moon interference periods
 - `Untitled.py` - Testing and development scratch file
+
+## Moon Influence Features (astropy 2.py)
+
+The enhanced version includes sophisticated moon interference tracking and visualization:
+
+### Moon Configuration
+- `MOON_PROXIMITY_RADIUS` - Radius in degrees to check for moon interference (default: 30°)
+- `MOON_TRAJECTORY_COLOR` - Color for moon's trajectory (default: 'yellow')
+- `MOON_INTERFERENCE_COLOR` - Color for object trajectories near moon (default: 'lightblue')
+- `MOON_MARKER_SIZE` - Size of moon's hour markers (default: 6)
+
+### Visualization Features
+- Trajectory Plot:
+  - Object paths shown ±5° outside visibility area
+  - Moon interference highlighted in real-time
+  - Clear distinction between normal and moon-affected periods
+  - Proper z-ordering of visual elements
+
+- Visibility Chart:
+  - Moon-affected periods shown in yellow tones:
+    - Goldenrod (#DAA520) for selected objects
+    - Khaki (#F0E68C) for non-selected objects
+  - Time-accurate display of interference periods
+  - Split visibility bars showing exact affected times
+
+### Moon Influence Detection
+- Minute-by-minute moon position calculation
+- Real-time interference checking for each object
+- Influence periods tracked with precise timing
+- Minimum 15-minute threshold for significant interference
+
+### Reports and Analysis
+- Moon influence summary in visibility reports
+- Per-object moon interference status
+- Detailed timing of affected periods
+- Impact assessment on observation scheduling
 
 ## Contributing
 

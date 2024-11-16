@@ -1215,7 +1215,9 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         alt, az = calculate_altaz(obj, current_time)
         moon_alt, moon_az = calculate_moon_position(current_time)
         
-        if is_visible(alt, az):
+        # Extended visibility check for trajectory plotting (±5 degrees)
+        if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and 
+            MIN_AZ - 5 <= az <= MAX_AZ + 5):
             times.append(current_time)
             alts.append(alt)
             azs.append(az)
