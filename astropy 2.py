@@ -1183,7 +1183,14 @@ def find_label_position(azimuths, altitudes, existing_positions, margin=3):
     return None
 
 def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positions=None):
-    """Plot trajectory with moon proximity checking and legend"""
+    """Plot trajectory with moon proximity checking and legend.
+    Elements are plotted in specific z-order:
+    1. Base trajectory (z=1)
+    2. Moon interference segments (z=2)
+    3. Hour markers (z=3)
+    4. Hour labels (z=4)
+    5. Object name (z=5)
+    """
     # Ensure there's a legend (even if empty) to avoid NoneType errors
     if ax.get_legend() is None:
         ax.legend()
@@ -1338,13 +1345,13 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
         
         # Determine color based on status and moon proximity
         if near_moon:
-            # Dark pink for selected objects near moon, light pink for others
+            # Dark yellow for selected objects near moon, pale yellow for others
             if is_recommended:
-                color = '#FF1493'  # Deep pink
+                color = '#DAA520'  # Goldenrod
                 alpha = 0.8
             else:
-                color = '#FFB6C1'  # Light pink
-                alpha = 0.4
+                color = '#F0E68C'  # Khaki
+                alpha = 0.6
         else:
             if not has_sufficient_time:
                 color = 'darkmagenta' if is_recommended else 'pink'
@@ -1588,11 +1595,24 @@ def print_combined_report(objects, start_time, end_time, bortle_index):
                 exposure_time, frames, panels = calculate_required_exposure(
                     obj.magnitude, bortle_index, obj.fov)
                 
+                # Check moon influence
+                moon_influenced = False
+                for period_start, period_end in periods:
+                    current_time = period_start
+                    while current_time <= period_end:
+                        obj_alt, obj_az = calculate_altaz(obj, current_time)
+                        moon_alt, moon_az = calculate_moon_position(current_time)
+                        if is_near_moon(obj_alt, obj_az, moon_alt, moon_az):
+                            moon_influenced = True
+                            break
+                        current_time += timedelta(minutes=15)  # Check every 15 minutes
+                
                 object_data.append({
                     'name': obj.name,
                     'start': periods[0][0],
                     'end': periods[-1][1],
                     'duration': duration,
+                    'moon_influenced': moon_influenced,
                     'magnitude': obj.magnitude,
                     'exposure': exposure_time,
                     'frames': frames,
@@ -1603,9 +1623,26 @@ def print_combined_report(objects, start_time, end_time, bortle_index):
     # Sort by visibility start time
     object_data.sort(key=lambda x: x['start'])
     
-    # Print sorted report
+    # Print moon influence summary
+    moon_affected = [data for data in object_data if data.get('moon_influenced', False)]
+    print("\nMoon Influence Summary:")
+    print("-" * 20)
+    print(f"Objects affected by moon: {len(moon_affected)}/{len(object_data)}")
+    if moon_affected:
+        print("\nAffected objects:")
+        for data in moon_affected:
+            print(f"- {data['name']}")
+    else:
+        print("\nNo objects are significantly affected by moon proximity.")
+    
+    print("\nDetailed Object Report:")
+    print("=" * 30)
+    
+    # Print detailed report
     for data in object_data:
         print(f"\n{data['name']}")
+        moon_status = "🌙 Moon interference" if data.get('moon_influenced', False) else "✨ Clear from moon"
+        print(f"Moon Status: {moon_status}")
         print(f"Visibility: {format_time(data['start'])} - {format_time(data['end'])} "
               f"({data['duration']:.1f} hours)")
         print(f"Magnitude: {data['magnitude']}")
