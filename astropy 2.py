@@ -1850,7 +1850,12 @@ def main():
     
     # Create plots
     fig, ax = setup_altaz_plot()
-    colors = plt.colormaps[COLOR_MAP](np.linspace(0, 1, len(visible_objects)))
+
+    #colors = plt.colormaps[COLOR_MAP](np.linspace(0, 1, len(visible_objects)))
+    # Correct way to get colormap 
+    colormap = plt.get_cmap(COLOR_MAP) 
+    # Generate colors 
+    colors = colormap(np.linspace(0, 1, len(visible_objects)))
     
     # Initialize empty legend to avoid NoneType errors
     ax.legend()
