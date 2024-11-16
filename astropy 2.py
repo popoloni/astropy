@@ -23,7 +23,7 @@ class SchedulingStrategy(Enum):
     #DIFFICULTY_BALANCED = "difficulty_balanced"  # Mix of easy and challenging
 
 # ============= GLOBAL CONFIGURATION =============
-CATALOGNAME="objects.csv" #catalog_fixed.csv
+
 # Location Configuration
 LATITUDE = 45.516667  # Milan latitude
 LONGITUDE = 9.216667  # Milan longitude
@@ -37,6 +37,7 @@ MAX_AZ = 160  # Maximum azimuth in degrees
 
 # Catalog selection
 USE_CSV_CATALOG = True  # Use custom CSV catalog
+CATALOGNAME="objects.csv" #catalog_fixed.csv
 
 # Time & Visibility Configuration
 MIN_VISIBILITY_HOURS = 2   # Minimum visibility window in hours
@@ -935,7 +936,7 @@ def find_best_objects(visibility_periods, max_overlapping=MAX_OBJECTS_OPTIMAL):
 # ============= PLOTTING FUNCTIONS =============
 
 def plot_moon_trajectory(ax, start_time, end_time):
-    """Plot moon trajectory"""
+    """Plot moon trajectory and add it to the legend"""
     times = []
     alts = []
     azs = []
@@ -1016,26 +1017,27 @@ def setup_altaz_plot():
     
     # Use gridspec to create better layout
     gs = fig.add_gridspec(1, 1)
-    gs.update(left=0.1, right=0.85)  # Leave more space for legend
+    gs.update(left=0.1, right=0.8)  # Leave more space for legend
     
     ax = fig.add_subplot(gs[0, 0])
     
+    # Set axis limits and labels
     ax.set_xlim(MIN_AZ-10, MAX_AZ+10)
     ax.set_ylim(MIN_ALT-10, MAX_ALT+10)
     ax.set_xlabel('Azimuth (degrees)')
     ax.set_ylabel('Altitude (degrees)')
-    
-    # Add visible region
-    visible_area = Rectangle((MIN_AZ, MIN_ALT), 
-                           MAX_AZ-MIN_AZ, 
-                           MAX_ALT-MIN_ALT, 
-                           fill=False, 
-                           edgecolor='green', 
-                           linestyle='--')
-    ax.add_patch(visible_area)
-    
-    # Configure grid
     ax.grid(True, alpha=GRID_ALPHA)
+    
+    # Add visible region rectangle
+    visible_region = Rectangle((MIN_AZ, MIN_ALT), 
+                             MAX_AZ - MIN_AZ, 
+                             MAX_ALT - MIN_ALT,
+                             facecolor='green', 
+                             alpha=VISIBLE_REGION_ALPHA,
+                             label='Visible Region')
+    ax.add_patch(visible_region)
+    
+    # Configure grid with major and minor ticks
     ax.xaxis.set_major_locator(MultipleLocator(10))
     ax.xaxis.set_minor_locator(MultipleLocator(5))
     ax.yaxis.set_major_locator(MultipleLocator(10))
@@ -1100,11 +1102,12 @@ def find_label_position(azimuths, altitudes, existing_positions, margin=3):
     return None
 
 def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positions=None):
-    """Plot trajectory with moon proximity checking"""
+    """Plot trajectory with moon proximity checking and legend"""
     times = []
     alts = []
     azs = []
     near_moon = []  # Track moon proximity
+    obj.near_moon = False  # Initialize moon proximity flag
     hour_times = []
     hour_alts = []
     hour_azs = []
@@ -1124,7 +1127,10 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
             times.append(current_time)
             alts.append(alt)
             azs.append(az)
-            near_moon.append(is_near_moon(alt, az, moon_alt, moon_az))
+            is_near = is_near_moon(alt, az, moon_alt, moon_az)
+            near_moon.append(is_near)
+            if is_near:
+                obj.near_moon = True  # Set flag if object is ever near moon
             
             # Convert to local time for display
             local_time = utc_to_local(current_time)
@@ -1140,7 +1146,10 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         for i in range(len(azs)-1):
             segment_color = MOON_INTERFERENCE_COLOR if near_moon[i] or near_moon[i+1] else color
             line_style = '--' if not getattr(obj, 'sufficient_time', True) else '-'
-            ax.plot(azs[i:i+2], alts[i:i+2], line_style, color=segment_color, linewidth=2)
+            # Only add label for the first segment to avoid duplicates in legend
+            if i == 0:
+                ax.plot(azs[i:i+2], alts[i:i+2], line_style, color=segment_color, 
+                       linewidth=2, label=obj.name.split('/')[0])
         
         # Add hour markers
         for t, az, alt in zip(hour_times, hour_azs, hour_alts):
@@ -1620,7 +1629,25 @@ def main():
                                  'pink', existing_positions)
     
     plt.title(f"Object Trajectories for {current_date.date()}")
-    plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left')
+    # Create custom legend
+    handles, labels = ax.get_legend_handles_labels()
+    
+    # Add a legend entry for moon interference if any object was near moon
+    if any(obj for obj in visible_objects + insufficient_objects if hasattr(obj, 'near_moon')):
+        moon_line = plt.Line2D([0], [0], color=MOON_INTERFERENCE_COLOR, linestyle='-', label='Moon Interference')
+        handles.append(moon_line)
+    
+    # Add legend entry for insufficient time objects if any
+    if insufficient_objects:
+        insuf_line = plt.Line2D([0], [0], color='gray', linestyle='--', label='Insufficient Time')
+        handles.append(insuf_line)
+    
+    # Create the legend with all handles
+    ax.legend(handles=handles, 
+             bbox_to_anchor=(1.02, 1),
+             loc='upper left',
+             borderaxespad=0,
+             title='Objects and Conditions')
     plt.show()
     plt.close(fig)  # Explicitly close the figure
     
