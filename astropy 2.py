@@ -1012,12 +1012,13 @@ def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=E
 
 def setup_altaz_plot():
     """Setup basic altitude-azimuth plot"""
-    # Increase figure size to accommodate legend
+    # Create figure with appropriate size
     fig = plt.figure(figsize=(15, 10))  # Wider figure
     
-    # Use gridspec to create better layout
+    # Use GridSpec for better control over spacing
     gs = fig.add_gridspec(1, 1)
-    gs.update(left=0.1, right=0.8)  # Leave more space for legend
+    # Adjust margins to accommodate axis labels and legend
+    gs.update(left=0.1, right=0.85, top=0.95, bottom=0.1)
     
     ax = fig.add_subplot(gs[0, 0])
     
@@ -1103,6 +1104,9 @@ def find_label_position(azimuths, altitudes, existing_positions, margin=3):
 
 def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positions=None):
     """Plot trajectory with moon proximity checking and legend"""
+    # Ensure there's a legend (even if empty) to avoid NoneType errors
+    if ax.get_legend() is None:
+        ax.legend()
     times = []
     alts = []
     azs = []
@@ -1118,6 +1122,7 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
     if end_time.tzinfo != pytz.UTC:
         end_time = end_time.astimezone(pytz.UTC)
     
+    # Use smaller interval for smoother trajectory
     current_time = start_time
     while current_time <= end_time:
         alt, az = calculate_altaz(obj, current_time)
@@ -1139,17 +1144,32 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
                 hour_alts.append(alt)
                 hour_azs.append(az)
                 
-        current_time += timedelta(minutes=1)
+        current_time += timedelta(minutes=1)  # Use 1-minute intervals for accuracy
     
     if azs:
-        # Plot trajectory segments based on moon proximity
+        # Determine line style based on sufficient time
+        line_style = '-' if getattr(obj, 'sufficient_time', True) else '--'
+        
+        # Plot full trajectory first
+        ax.plot(azs, alts, line_style, color=color, linewidth=1, alpha=0.3)
+        
+        # Plot moon-affected segments with different color
         for i in range(len(azs)-1):
-            segment_color = MOON_INTERFERENCE_COLOR if near_moon[i] or near_moon[i+1] else color
-            line_style = '--' if not getattr(obj, 'sufficient_time', True) else '-'
-            # Only add label for the first segment to avoid duplicates in legend
-            if i == 0:
-                ax.plot(azs[i:i+2], alts[i:i+2], line_style, color=segment_color, 
-                       linewidth=2, label=obj.name.split('/')[0])
+            if near_moon[i] or (i < len(near_moon)-1 and near_moon[i+1]):
+                ax.plot(azs[i:i+2], alts[i:i+2], line_style, 
+                       color=MOON_INTERFERENCE_COLOR, 
+                       linewidth=2,
+                       zorder=3)
+        
+        # Add label only once
+        legend = ax.get_legend()
+        obj_name = obj.name.split('/')[0]
+        existing_labels = [t.get_text() for t in legend.get_texts()] if legend else []
+        
+        if obj_name not in existing_labels:
+            # Add a dummy line for the legend
+            ax.plot([], [], line_style, color=color, 
+                   linewidth=2, label=obj_name)
         
         # Add hour markers
         for t, az, alt in zip(hour_times, hour_azs, hour_alts):
@@ -1179,7 +1199,11 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
             existing_positions.append(label_pos)
 
 def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="Object Visibility"):
-    """Create visibility chart for multiple objects, sorted by start time and highlighting recommended objects"""
+    """Create visibility chart for multiple objects, sorted by start time and highlighting recommended objects.
+    Also shows moon interference with different colors:
+    - Dark pink: Selected objects near moon
+    - Light pink: Non-selected objects near moon
+    """
     
     # Ensure times are in local timezone
     milan_tz = get_milan_timezone()
@@ -1188,12 +1212,13 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     if end_time.tzinfo != milan_tz:
         end_time = end_time.astimezone(milan_tz)
     
-    # Increase figure size
+    # Create figure with dynamic height based on number of objects
     fig = plt.figure(figsize=(15, max(10, len(objects)*0.3 + 4)))
     
-    # Use gridspec for better layout
+    # Use GridSpec for better control over spacing
     gs = fig.add_gridspec(1, 1)
-    gs.update(left=0.15, right=0.95, top=0.95, bottom=0.1)
+    # Adjust margins to accommodate labels and legend
+    gs.update(left=0.25, right=0.95, top=0.95, bottom=0.1)
     
     ax = fig.add_subplot(gs[0, 0])
 
@@ -1229,19 +1254,30 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
         periods = find_visibility_window(obj, start_time, end_time)
         is_recommended = obj in recommended_objects
         has_sufficient_time = getattr(obj, 'sufficient_time', True)
+        near_moon = getattr(obj, 'near_moon', False)
         
-        # Determine color based on status
-        if not has_sufficient_time:
-            color = 'darkmagenta' if is_recommended else 'pink'
+        # Determine color based on status and moon proximity
+        if near_moon:
+            # Dark pink for selected objects near moon, light pink for others
+            if is_recommended:
+                color = '#FF1493'  # Deep pink
+                alpha = 0.8
+            else:
+                color = '#FFB6C1'  # Light pink
+                alpha = 0.4
         else:
-            color = 'green' if is_recommended else 'gray'
+            if not has_sufficient_time:
+                color = 'darkmagenta' if is_recommended else 'pink'
+            else:
+                color = 'green' if is_recommended else 'gray'
+            alpha = 0.8 if is_recommended else 0.4
         
         for period_start, period_end in periods:
             local_start = period_start.astimezone(milan_tz)
             local_end = period_end.astimezone(milan_tz)
             
             ax.barh(i, local_end - local_start, left=local_start, height=0.3,
-                   alpha=0.8 if is_recommended else 0.4,
+                   alpha=alpha,
                    color=color,
                    label=obj.name if period_start == periods[0][0] else "")
                                
@@ -1258,7 +1294,14 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     ax.set_yticklabels([obj.name for obj in sorted_objects])
     ax.grid(True, alpha=GRID_ALPHA)
     
-    plt.tight_layout()
+    # Add legend entries for moon interference if needed
+    if any(getattr(obj, 'near_moon', False) for obj in objects):
+        # Add dummy patches for legend
+        ax.barh([-1], [0], height=0.3, color='#FF1493', alpha=0.8, 
+                label='Selected Object (Moon Interference)')
+        ax.barh([-1], [0], height=0.3, color='#FFB6C1', alpha=0.4,
+                label='Non-selected Object (Moon Interference)')
+    
     return fig, ax
 
 # ============= SCHEDULE GENERATION =============
@@ -1611,7 +1654,10 @@ def main():
     
     # Create plots
     fig, ax = setup_altaz_plot()
-    colors = plt.cm.get_cmap(COLOR_MAP)(np.linspace(0, 1, len(visible_objects)))
+    colors = plt.colormaps[COLOR_MAP](np.linspace(0, 1, len(visible_objects)))
+    
+    # Initialize empty legend to avoid NoneType errors
+    ax.legend()
     
     # Plot moon trajectory first
     plot_moon_trajectory(ax, twilight_evening, twilight_morning)
