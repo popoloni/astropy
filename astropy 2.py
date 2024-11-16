@@ -74,7 +74,7 @@ GRID_ALPHA = 0.3         # Grid transparency
 VISIBLE_REGION_ALPHA = 0.1  # Visibility region transparency
 
 # Moon Configuration
-MOON_PROXIMITY_RADIUS = 10  # Radius in degrees to check for moon proximity
+MOON_PROXIMITY_RADIUS = 30  # Radius in degrees to check for moon proximity (increased for light pollution)
 MOON_TRAJECTORY_COLOR = 'yellow'  # Color for moon's trajectory
 MOON_MARKER_COLOR = 'yellow'  # Color for moon's hour markers
 MOON_LINE_WIDTH = 2  # Width of moon's trajectory line
@@ -628,7 +628,7 @@ def calculate_altaz(obj, dt):
     return math.degrees(alt), math.degrees(az)
 
 def calculate_moon_position(dt):
-    """Calculate moon's position using simplified model"""
+    """Calculate moon's position using a more accurate model based on Jean Meeus' algorithms"""
     # Ensure we're working with UTC
     if dt.tzinfo is None:
         dt = pytz.UTC.localize(dt)
@@ -637,51 +637,131 @@ def calculate_moon_position(dt):
     
     jd = calculate_julian_date(dt)
     
-    # Calculate number of days since J2000.0
-    d = jd - 2451545.0
+    # Time in Julian centuries since J2000.0
+    T = (jd - 2451545.0) / 36525.0
     
-    # Lunar orbital elements (simplified)
-    L = 218.316 + 13.176396 * d  # mean longitude
-    M = 134.963 + 13.064993 * d  # mean anomaly
-    F = 93.272 + 13.229350 * d   # argument of latitude
-    
+    # Meeus' Astronomical Algorithms - Chapter 47 (more accurate version)
+    # Lunar mean elements
+    Lp = 218.3164477 + 481267.88123421 * T - 0.0015786 * T**2 + T**3 / 538841.0 - T**4 / 65194000.0  # Mean longitude
+    D = 297.8501921 + 445267.1114034 * T - 0.0018819 * T**2 + T**3 / 545868.0 - T**4 / 113065000.0   # Mean elongation
+    M = 357.5291092 + 35999.0502909 * T - 0.0001536 * T**2 + T**3 / 24490000.0                        # Sun's mean anomaly
+    Mp = 134.9633964 + 477198.8675055 * T + 0.0087414 * T**2 + T**3 / 69699.0 - T**4 / 14712000.0     # Moon's mean anomaly
+    F = 93.2720950 + 483202.0175233 * T - 0.0036539 * T**2 - T**3 / 3526000.0 + T**4 / 863310000.0    # Argument of latitude
+
+    # Reduce angles to range 0-360 degrees
+    Lp = Lp % 360
+    D = D % 360
+    M = M % 360
+    Mp = Mp % 360
+    F = F % 360
+
+    # Convert to radians for calculations
+    Lp_rad = math.radians(Lp)
+    D_rad = math.radians(D)
+    M_rad = math.radians(M)
+    Mp_rad = math.radians(Mp)
+    F_rad = math.radians(F)
+
+    # Periodic perturbations
+    # Longitude perturbations
+    dL = 6288.0160 * math.sin(Mp_rad)
+    dL += 1274.0198 * math.sin(2*D_rad - Mp_rad)
+    dL += 658.7141 * math.sin(2*D_rad)
+    dL += 214.2591 * math.sin(2*Mp_rad)
+    dL += 186.4060 * math.sin(M_rad)
+    dL += 153.0239 * math.sin(2*D_rad - 2*Mp_rad)
+    dL += 123.4722 * math.sin(2*D_rad - M_rad)
+    dL += 91.7750 * math.sin(2*D_rad + Mp_rad)
+    dL += 91.3347 * math.sin(2*Mp_rad - 2*D_rad)
+    dL = dL / 1000000.0  # Convert to degrees
+
+    # Latitude perturbations
+    dB = 5128.0 * math.sin(F_rad)
+    dB += 280.0 * math.sin(Mp_rad + F_rad)
+    dB += 277.0 * math.sin(Mp_rad - F_rad)
+    dB += 176.0 * math.sin(2*D_rad - F_rad)
+    dB += 115.0 * math.sin(2*D_rad + F_rad)
+    dB += 107.0 * math.sin(2*Mp_rad + F_rad)
+    dB += 88.0 * math.sin(2*D_rad - Mp_rad - F_rad)
+    dB = dB / 1000000.0  # Convert to degrees
+
+    # Calculate ecliptic longitude and latitude
+    lambda_moon = Lp + dL
+    beta_moon = dB
+
     # Convert to radians
-    L = math.radians(L)
-    M = math.radians(M)
-    F = math.radians(F)
+    lambda_moon = math.radians(lambda_moon)
+    beta_moon = math.radians(beta_moon)
+
+    # Convert to equatorial coordinates
+    epsilon = math.radians(23.43929111 - 0.013004167*T - 0.000000164*T**2 + 0.000000503*T**3)  # True obliquity
     
-    # Calculate simplified lunar coordinates
-    lambda_moon = L + math.radians(6.289) * math.sin(M)  # longitude
-    beta_moon = math.radians(5.128) * math.sin(F)        # latitude
+    # Calculate right ascension and declination
+    alpha = math.atan2(
+        math.sin(lambda_moon) * math.cos(epsilon) - math.tan(beta_moon) * math.sin(epsilon),
+        math.cos(lambda_moon)
+    )
+    delta = math.asin(
+        math.sin(beta_moon) * math.cos(epsilon) + 
+        math.cos(beta_moon) * math.sin(epsilon) * math.sin(lambda_moon)
+    )
+
+    # Get local sidereal time
+    lst = calculate_lst(dt)
     
-    # Calculate altitude and azimuth
-    ha = calculate_lst(dt) - lambda_moon
+    # Calculate hour angle
+    ha = lst - alpha
+    
+    # Convert to local horizontal coordinates
+    lat_rad = math.radians(LATITUDE)
     
     # Calculate altitude
-    alt = math.asin(math.sin(OBSERVER.lat) * math.sin(beta_moon) + 
-                    math.cos(OBSERVER.lat) * math.cos(beta_moon) * math.cos(ha))
+    sin_alt = (math.sin(lat_rad) * math.sin(delta) + 
+               math.cos(lat_rad) * math.cos(delta) * math.cos(ha))
+    alt = math.asin(sin_alt)
     
-    # Calculate azimuth
-    az = math.atan2(math.sin(ha), 
-                    math.cos(ha) * math.sin(OBSERVER.lat) - 
-                    math.tan(beta_moon) * math.cos(OBSERVER.lat))
+    # Calculate azimuth (improved formula)
+    az = math.atan2(
+        math.sin(ha),
+        math.cos(ha) * math.sin(lat_rad) - math.tan(delta) * math.cos(lat_rad)
+    )
+    az = (math.degrees(az) + 180) % 360  # Convert to degrees and normalize
     
-    return math.degrees(alt), (math.degrees(az) + 360) % 360
+    # Convert altitude to degrees
+    alt_deg = math.degrees(alt)
+    az_deg = az  # Azimuth already in degrees
+    
+    # Apply atmospheric refraction correction for low altitudes
+    if alt_deg > -0.575:
+        R = 1.02 / math.tan(math.radians(alt_deg + 10.3/(alt_deg + 5.11)))
+        alt_deg += R/60.0  # R is in arc-minutes, convert to degrees
+    
+    return alt_deg, az_deg
 
 def is_near_moon(obj_alt, obj_az, moon_alt, moon_az, radius=MOON_PROXIMITY_RADIUS):
-    """Check if object is within radius degrees of the moon"""
+    """Check if object is within radius degrees of the moon using great circle distance"""
     # Convert to radians
-    obj_alt = math.radians(obj_alt)
+    obj_alt = math.radians(90 - obj_alt)  # Convert altitude to co-latitude
     obj_az = math.radians(obj_az)
-    moon_alt = math.radians(moon_alt)
+    moon_alt = math.radians(90 - moon_alt)  # Convert altitude to co-latitude
     moon_az = math.radians(moon_az)
     
-    # Calculate angular separation using spherical law of cosines
-    separation = math.acos(math.sin(obj_alt) * math.sin(moon_alt) + 
-                          math.cos(obj_alt) * math.cos(moon_alt) * 
-                          math.cos(obj_az - moon_az))
+    # Calculate great circle distance using the Vincenty formula
+    dlon = moon_az - obj_az
     
-    return math.degrees(separation) <= radius
+    # Spherical law of cosines with Vincenty formula
+    cos_d = (math.cos(moon_alt) * math.cos(obj_alt) + 
+             math.sin(moon_alt) * math.sin(obj_alt) * math.cos(dlon))
+    
+    # Avoid floating point errors
+    if cos_d > 1:
+        cos_d = 1
+    elif cos_d < -1:
+        cos_d = -1
+        
+    separation = math.degrees(math.acos(cos_d))
+    
+    return separation <= radius
 
 
 # ============= UTILITY FUNCTIONS =============
