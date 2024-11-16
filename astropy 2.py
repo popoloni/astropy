@@ -1219,10 +1219,10 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
             times.append(current_time)
             alts.append(alt)
             azs.append(az)
+            
+            # Check moon proximity
             is_near = is_near_moon(alt, az, moon_alt, moon_az)
             near_moon.append(is_near)
-            if is_near:
-                obj.near_moon = True  # Set flag if object is ever near moon
             
             # Convert to local time for display
             local_time = utc_to_local(current_time)
@@ -1233,20 +1233,47 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
                 
         current_time += timedelta(minutes=1)  # Use 1-minute intervals for accuracy
     
+    # Set moon influence flag only if object is affected for a significant period
+    if near_moon:
+        moon_influence_periods = []
+        start_idx = None
+        
+        # Find continuous periods of moon influence
+        for i, is_near in enumerate(near_moon):
+            if is_near and start_idx is None:
+                start_idx = i
+            elif not is_near and start_idx is not None:
+                moon_influence_periods.append((start_idx, i))
+                start_idx = None
+        
+        # Don't forget the last period if it ends with moon influence
+        if start_idx is not None:
+            moon_influence_periods.append((start_idx, len(near_moon)))
+        
+        # Calculate total influence time
+        total_influence_minutes = sum(end - start for start, end in moon_influence_periods)
+        
+        # Set flag if moon influence is significant (more than 15 minutes)
+        obj.near_moon = total_influence_minutes >= 15
+        obj.moon_influence_periods = moon_influence_periods  # Store periods for later use
+    
     if azs:
         # Determine line style based on sufficient time
         line_style = '-' if getattr(obj, 'sufficient_time', True) else '--'
         
-        # Plot full trajectory first
-        ax.plot(azs, alts, line_style, color=color, linewidth=1, alpha=0.3)
+        # Plot base trajectory (lowest z-order)
+        ax.plot(azs, alts, line_style, color=color, linewidth=1.5, alpha=0.3, zorder=1)
         
-        # Plot moon-affected segments with different color
-        for i in range(len(azs)-1):
-            if near_moon[i] or (i < len(near_moon)-1 and near_moon[i+1]):
-                ax.plot(azs[i:i+2], alts[i:i+2], line_style, 
-                       color=MOON_INTERFERENCE_COLOR, 
+        # Plot moon-affected segments if any
+        if hasattr(obj, 'moon_influence_periods'):
+            for start_idx, end_idx in obj.moon_influence_periods:
+                # Plot the moon-affected segment
+                ax.plot(azs[start_idx:end_idx+1], 
+                       alts[start_idx:end_idx+1], 
+                       line_style,
+                       color=MOON_INTERFERENCE_COLOR,
                        linewidth=2,
-                       zorder=3)
+                       zorder=2)
         
         # Add label only once
         legend = ax.get_legend()
@@ -1286,10 +1313,10 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
             existing_positions.append(label_pos)
 
 def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="Object Visibility"):
-    """Create visibility chart for multiple objects, sorted by start time and highlighting recommended objects.
-    Also shows moon interference with different colors:
-    - Dark pink: Selected objects near moon
-    - Light pink: Non-selected objects near moon
+    """Create visibility chart showing moon interference periods in yellow tones.
+    - Goldenrod: Selected objects during moon interference
+    - Khaki: Non-selected objects during moon interference
+    - Green/Gray: Normal visibility periods
     """
     
     # Ensure times are in local timezone
@@ -1363,10 +1390,60 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
             local_start = period_start.astimezone(milan_tz)
             local_end = period_end.astimezone(milan_tz)
             
-            ax.barh(i, local_end - local_start, left=local_start, height=0.3,
-                   alpha=alpha,
-                   color=color,
-                   label=obj.name if period_start == periods[0][0] else "")
+            # If object has moon influence periods, we need to split the visibility bar
+            if hasattr(obj, 'moon_influence_periods') and obj.moon_influence_periods:
+                period_minutes = int((period_end - period_start).total_seconds() / 60)
+                
+                # Convert moon influence periods to actual times
+                moon_times = []
+                for start_idx, end_idx in obj.moon_influence_periods:
+                    moon_start = period_start + timedelta(minutes=start_idx)
+                    moon_end = period_start + timedelta(minutes=end_idx)
+                    if moon_start < period_end and moon_end > period_start:
+                        moon_times.append((
+                            max(moon_start, period_start),
+                            min(moon_end, period_end)
+                        ))
+                
+                # Plot non-moon-affected parts in normal color
+                last_end = period_start
+                for moon_start, moon_end in moon_times:
+                    if moon_start > last_end:
+                        # Plot normal visibility segment
+                        ax.barh(i, 
+                               moon_start.astimezone(milan_tz) - last_end.astimezone(milan_tz),
+                               left=last_end.astimezone(milan_tz),
+                               height=0.3,
+                               alpha=alpha,
+                               color=color)
+                    # Plot moon-affected segment
+                    ax.barh(i,
+                           moon_end.astimezone(milan_tz) - moon_start.astimezone(milan_tz),
+                           left=moon_start.astimezone(milan_tz),
+                           height=0.3,
+                           alpha=alpha,
+                           color='#DAA520' if is_recommended else '#F0E68C')  # Goldenrod/Khaki
+                    last_end = moon_end
+                
+                # Plot remaining normal visibility if any
+                if last_end < period_end:
+                    ax.barh(i,
+                           period_end.astimezone(milan_tz) - last_end.astimezone(milan_tz),
+                           left=last_end.astimezone(milan_tz),
+                           height=0.3,
+                           alpha=alpha,
+                           color=color)
+            else:
+                # Plot normal visibility bar if no moon influence
+                ax.barh(i, local_end - local_start, left=local_start, height=0.3,
+                       alpha=alpha,
+                       color=color)
+            
+            # Add label only for the first period
+            if period_start == periods[0][0]:
+                ax.barh(i, timedelta(minutes=1), left=local_start, height=0.3,
+                       alpha=0,  # Transparent
+                       label=obj.name)
                                
             # Add abbreviated name at the start of the bar
             if period_start == periods[0][0]:
