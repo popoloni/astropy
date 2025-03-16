@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytz
 import re
+import json
 
 import csv
 
@@ -22,55 +23,84 @@ class SchedulingStrategy(Enum):
     #MINIMAL_MOSAIC = "minimal_mosaic"     # Fewer panels needed
     #DIFFICULTY_BALANCED = "difficulty_balanced"  # Mix of easy and challenging
 
+# Load configuration from file
+def load_config():
+    with open('config.json', 'r') as f:
+        return json.load(f)
+
+def get_default_location(config):
+    """Get the default location from config"""
+    for loc_id, loc_data in config['locations'].items():
+        if loc_data.get('default', False):
+            return loc_id, loc_data
+    # If no default is set, use the first location
+    first_loc = next(iter(config['locations'].items()))
+    return first_loc
+
+CONFIG = load_config()
+DEFAULT_LOCATION_ID, DEFAULT_LOCATION = get_default_location(CONFIG)
+
 # ============= GLOBAL CONFIGURATION =============
+
 # Location Configuration
-LATITUDE = 45.516667  # Milan latitude
-LONGITUDE = 9.216667  # Milan longitude
-TIMEZONE = 'Europe/Rome'
+LATITUDE = DEFAULT_LOCATION['latitude']
+LONGITUDE = DEFAULT_LOCATION['longitude']
+TIMEZONE = DEFAULT_LOCATION['timezone']
 
 # Visibility Constraints
-MIN_ALT = 20  # Minimum altitude in degrees
-MAX_ALT = 75  # Maximum altitude in degrees
-MIN_AZ = 75   # Minimum azimuth in degrees
-MAX_AZ = 160  # Maximum azimuth in degrees
+MIN_ALT = DEFAULT_LOCATION['min_altitude']
+MAX_ALT = DEFAULT_LOCATION['max_altitude']
+MIN_AZ = DEFAULT_LOCATION['min_azimuth']
+MAX_AZ = DEFAULT_LOCATION['max_azimuth']
+
+# Location-specific settings
+BORTLE_INDEX = DEFAULT_LOCATION['bortle_index']
 
 # Catalog selection
-USE_CSV_CATALOG = False  # Use custom CSV catalog
-#CATALOGNAME="catalog_fixed.csv" #objects.csv
+USE_CSV_CATALOG = CONFIG['catalog']['use_csv_catalog']
+USE_CSV_CATALOG = False  # Override CSV catalog setting - using built-in catalog only
+CATALOGNAME = CONFIG['catalog']['catalog_name']
 
 # Time & Visibility Configuration
-MIN_VISIBILITY_HOURS = 2   # Minimum visibility window in hours
-MIN_TOTAL_AREA = 15 * 15     # Minimum area in square arcminutes
-TRAJECTORY_INTERVAL_MINUTES = 15  # Interval minutes for trajectory calculations
-SEARCH_INTERVAL_MINUTES = 1  # Interval minutes for searching rise/set times
+MIN_VISIBILITY_HOURS = CONFIG['visibility']['min_visibility_hours']
+MIN_TOTAL_AREA = CONFIG['visibility']['min_total_area']
+TRAJECTORY_INTERVAL_MINUTES = CONFIG['visibility']['trajectory_interval_minutes']
+SEARCH_INTERVAL_MINUTES = CONFIG['visibility']['search_interval_minutes']
 
 # Scheduling Configuration
-SCHEDULING_STRATEGY = SchedulingStrategy.MAX_OBJECTS
-MAX_OVERLAP_MINUTES = 15  # Maximum allowed overlap between observations
+SCHEDULING_STRATEGY = SchedulingStrategy[CONFIG['scheduling']['strategy'].upper()]
+MAX_OVERLAP_MINUTES = CONFIG['scheduling']['max_overlap_minutes']
 
 # Visibility Filtering
-EXCLUDE_INSUFFICIENT_TIME = False  # Whether to exclude objects with insufficient visibility time
+EXCLUDE_INSUFFICIENT_TIME = CONFIG['scheduling']['exclude_insufficient_time']
 
 # Imaging Configuration
-BORTLE_INDEX = 9      # Milan sky condition (1-9 scale)
 # Vespera Passenger Specifications
-SCOPE_FOV_WIDTH = 2.4  # degrees
-SCOPE_FOV_HEIGHT = 1.8  # degrees
+SCOPE_FOV_WIDTH = CONFIG['imaging']['scope']['fov_width']
+SCOPE_FOV_HEIGHT = CONFIG['imaging']['scope']['fov_height']
 SCOPE_FOV_AREA = SCOPE_FOV_WIDTH * SCOPE_FOV_HEIGHT  # square degrees
-SINGLE_EXPOSURE = 10  # Vespera typically uses 10-30s exposures
-MIN_SNR = 20          # Good balance for Vespera's capabilities
-GAIN = 800            # Sony IMX585 optimal gain setting
-READ_NOISE = 0.8      # Sony IMX585 typical read noise
-PIXEL_SIZE = 2.9      # Sony IMX585 pixel size in microns
-FOCAL_LENGTH = 200    # Vespera's focal length
-APERTURE = 50         # Vespera's aperture
+SINGLE_EXPOSURE = CONFIG['imaging']['scope']['single_exposure']
+MIN_SNR = CONFIG['imaging']['scope']['min_snr']
+GAIN = CONFIG['imaging']['scope']['gain']
+READ_NOISE = CONFIG['imaging']['scope']['read_noise']
+PIXEL_SIZE = CONFIG['imaging']['scope']['pixel_size']
+FOCAL_LENGTH = CONFIG['imaging']['scope']['focal_length']
+APERTURE = CONFIG['imaging']['scope']['aperture']
 
 # Plot Configuration
-MAX_OBJECTS_OPTIMAL = 5  # Maximum number of objects to show in optimal plot
-FIGURE_SIZE = (12, 10)   # Default figure size for plots
-COLOR_MAP = 'tab20'      # Color map for trajectory plots
-GRID_ALPHA = 0.3         # Grid transparency
-VISIBLE_REGION_ALPHA = 0.1  # Visibility region transparency
+MAX_OBJECTS_OPTIMAL = CONFIG['plotting']['max_objects_optimal']
+FIGURE_SIZE = tuple(CONFIG['plotting']['figure_size'])
+COLOR_MAP = CONFIG['plotting']['color_map']
+GRID_ALPHA = CONFIG['plotting']['grid_alpha']
+VISIBLE_REGION_ALPHA = CONFIG['plotting']['visible_region_alpha']
+
+# Moon Configuration
+MOON_PROXIMITY_RADIUS = CONFIG['moon']['proximity_radius']
+MOON_TRAJECTORY_COLOR = CONFIG['moon']['trajectory_color']
+MOON_MARKER_COLOR = CONFIG['moon']['marker_color']
+MOON_LINE_WIDTH = CONFIG['moon']['line_width']
+MOON_MARKER_SIZE = CONFIG['moon']['marker_size']
+MOON_INTERFERENCE_COLOR = CONFIG['moon']['interference_color']
 
 # ============ DEEP SKY CATALOG FUNCTIONS =============
 
@@ -1323,7 +1353,18 @@ def print_schedule(schedule):
 def print_combined_report(objects, start_time, end_time, bortle_index):
     """Print combined visibility and imaging report"""
     print("\nCombined Visibility and Imaging Report")
+    print("=" * 50)
+    
+    # Print location information first
+    print("\nLocation Parameters:")
+    print(f"Location: {DEFAULT_LOCATION['name']}")
+    print(f"Latitude: {LATITUDE:.6f}°")
+    print(f"Longitude: {LONGITUDE:.6f}°")
+    print(f"Timezone: {TIMEZONE}")
     print(f"Bortle Index: {bortle_index}")
+    print(f"Visibility Constraints:")
+    print(f"  Altitude: {MIN_ALT}° to {MAX_ALT}°")
+    print(f"  Azimuth: {MIN_AZ}° to {MAX_AZ}°")
     print("=" * 50)
     
     # Collect all object data
@@ -1352,6 +1393,8 @@ def print_combined_report(objects, start_time, end_time, bortle_index):
     object_data.sort(key=lambda x: x['start'])
     
     # Print sorted report
+    print("\nObject Visibility and Imaging Details:")
+    print("=" * 50)
     for data in object_data:
         print(f"\n{data['name']}")
         print(f"Visibility: {format_time(data['start'])} - {format_time(data['end'])} "

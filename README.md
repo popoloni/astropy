@@ -49,43 +49,151 @@ The project uses the following Python libraries:
 
 ## Configuration
 
-The main configuration parameters can be found at the top of `astropy.py`. Key settings include:
+The tool now uses a `config.json` file for all configuration settings. This makes it easier to manage multiple observation locations and adjust settings without modifying the code.
 
-### Location Settings
-- `LATITUDE` - Observer's latitude (default: 45.516667 for Milan)
-- `LONGITUDE` - Observer's longitude (default: 9.216667 for Milan)
-- `TIMEZONE` - Local timezone (default: 'Europe/Rome')
+### Configuration File Structure
 
-### Visibility Constraints
-- `MIN_ALT` - Minimum altitude in degrees (default: 15°)
-- `MAX_ALT` - Maximum altitude in degrees (default: 75°)
-- `MIN_AZ` - Minimum azimuth in degrees (default: 65°)
-- `MAX_AZ` - Maximum azimuth in degrees (default: 165°)
+The `config.json` file is organized into the following sections:
 
-### Time & Visibility Parameters
-- `MIN_VISIBILITY_HOURS` - Minimum visibility window (default: 2 hours)
-- `MIN_TOTAL_AREA` - Minimum area in square arcminutes (default: 225)
-- `TRAJECTORY_INTERVAL_MINUTES` - Interval for trajectory calculations (default: 15)
+```json
+{
+    "locations": {
+        "Milano": {
+            "name": "Milano",
+            "latitude": 45.516667,
+            "longitude": 9.216667,
+            "timezone": "Europe/Rome",
+            "min_altitude": 15,
+            "max_altitude": 75,
+            "min_azimuth": 65,
+            "max_azimuth": 165,
+            "bortle_index": 9,
+            "default": true
+        },
+        "Lozio": {
+            "name": "Lozio",
+            "latitude": 45.516667,
+            "longitude": 9.216667,
+            "timezone": "Europe/Rome",
+            "min_altitude": 15,
+            "max_altitude": 75,
+            "min_azimuth": 65,
+            "max_azimuth": 165,
+            "bortle_index": 6
+        }
+    },
+    "catalog": {
+        "use_csv_catalog": true,
+        "catalog_name": "catalog_fixed.csv"
+    },
+    "visibility": {
+        "min_visibility_hours": 2,
+        "min_total_area": 225,
+        "trajectory_interval_minutes": 15,
+        "search_interval_minutes": 1
+    },
+    "scheduling": {
+        "strategy": "longest_duration",
+        "max_overlap_minutes": 15,
+        "exclude_insufficient_time": true
+    },
+    "imaging": {
+        "scope": {
+            "fov_width": 2.4,
+            "fov_height": 1.8,
+            "single_exposure": 10,
+            "min_snr": 20,
+            "gain": 1600,
+            "read_noise": 1.7,
+            "pixel_size": 2.9,
+            "focal_length": 200,
+            "aperture": 50
+        }
+    },
+    "plotting": {
+        "max_objects_optimal": 5,
+        "figure_size": [12, 10],
+        "color_map": "tab20",
+        "grid_alpha": 0.3,
+        "visible_region_alpha": 0.1
+    },
+    "moon": {
+        "proximity_radius": 30,
+        "trajectory_color": "yellow",
+        "marker_color": "yellow",
+        "line_width": 1.5,
+        "marker_size": 6,
+        "interference_color": "goldenrod"
+    }
+}
+```
 
-### Telescope Settings (Vespera Specifications)
-- `SCOPE_FOV_WIDTH` - Field of view width in degrees (default: 2.4°)
-- `SCOPE_FOV_HEIGHT` - Field of view height in degrees (default: 1.8°)
-- `SINGLE_EXPOSURE` - Exposure time in seconds (default: 10s)
-- `FOCAL_LENGTH` - Focal length in mm (default: 200)
-- `APERTURE` - Aperture in mm (default: 50)
+### Key Configuration Sections
 
-### Moon Configuration
-- `MOON_PROXIMITY_RADIUS` - Base radius in degrees to check for moon interference (default: 30°)
-- `MOON_TRAJECTORY_COLOR` - Color for moon's trajectory (default: 'yellow')
-- `MOON_INTERFERENCE_COLOR` - Color for object trajectories near moon (default: 'lightblue')
-- `MOON_MARKER_SIZE` - Size of moon's hour markers (default: 6)
+1. **Locations**: Define multiple observation sites with their specific parameters:
+   - Geographic coordinates (latitude/longitude)
+   - Timezone
+   - Visibility constraints (altitude/azimuth limits)
+   - Bortle index for light pollution
+   - Set `"default": true` for your primary location
 
-### Scheduling Options
-- `SCHEDULING_STRATEGY` - Available strategies:
-  - `LONGEST_DURATION` - Prioritize longest visibility windows
-  - `MAX_OBJECTS` - Maximize number of observable objects
-  - `OPTIMAL_SNR` - Optimize for best imaging conditions
-- `MAX_OVERLAP_MINUTES` - Maximum allowed overlap between observations (default: 15)
+2. **Catalog**: Configure catalog sources:
+   - `use_csv_catalog`: Whether to use a custom CSV catalog
+   - `catalog_name`: Path to your CSV catalog file
+
+3. **Visibility**: Set observation parameters:
+   - Minimum visibility duration
+   - Minimum object area
+   - Time intervals for calculations
+
+4. **Scheduling**: Configure observation scheduling:
+   - Strategy selection (`longest_duration`, `max_objects`, `optimal_snr`)
+   - Maximum overlap between observations
+   - Whether to exclude objects with insufficient visibility time
+
+5. **Imaging**: Telescope and camera specifications:
+   - Field of view dimensions
+   - Exposure settings
+   - Sensor characteristics
+   - Optical specifications
+
+6. **Plotting**: Visualization settings:
+   - Maximum number of objects to show
+   - Figure dimensions
+   - Color schemes
+   - Transparency settings
+
+7. **Moon**: Moon-related visualization settings:
+   - Interference radius
+   - Colors for trajectory and markers
+   - Line and marker styles
+
+### Using the Configuration
+
+1. Create a `config.json` file in your project directory using the structure above.
+
+2. Customize the settings for your needs:
+   - Add your observation locations
+   - Set your preferred location as default
+   - Adjust visibility constraints
+   - Configure your telescope specifications
+
+3. The program will automatically load these settings when run:
+```bash
+python astropy.py
+```
+
+4. To switch between locations, either:
+   - Modify the `"default": true` flag in the config file
+   - Use the location-specific functions in the code
+
+### Modifying the Configuration
+
+To modify settings:
+1. Open `config.json` in any text editor
+2. Make your changes while maintaining the JSON structure
+3. Save the file
+4. Run the program - it will automatically use the new settings
 
 ## Usage
 

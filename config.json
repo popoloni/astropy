@@ -1,0 +1,73 @@
+{
+    "locations": {
+        "milano": {
+            "name": "Milano",
+            "latitude": 45.516667,
+            "longitude": 9.216667,
+            "timezone": "Europe/Rome",
+            "min_altitude": 15,
+            "max_altitude": 75,
+            "min_azimuth": 65,
+            "max_azimuth": 165,
+            "bortle_index": 9,
+            "default": true,
+            "comment": "Milan coordinates"
+        },
+        "lozio": {
+            "name": "Lozio",
+            "latitude": 45.9928841,
+            "longitude": 10.2299690,
+            "timezone": "Europe/Rome",
+            "min_altitude": 15,
+            "max_altitude": 80,
+            "min_azimuth": 45,
+            "max_azimuth": 180,
+            "bortle_index": 6,
+            "default": false,
+            "comment": "Lozio coordinates"
+        }
+    },
+    "visibility": {
+        "min_visibility_hours": 2,
+        "min_total_area": 225,
+        "trajectory_interval_minutes": 15,
+        "search_interval_minutes": 1
+    },
+    "catalog": {
+        "use_csv_catalog": true,
+        "catalog_name": "objects.csv"
+    },
+    "scheduling": {
+        "strategy": "max_objects",
+        "max_overlap_minutes": 15,
+        "exclude_insufficient_time": false
+    },
+    "imaging": {
+        "scope": {
+            "fov_width": 2.4,
+            "fov_height": 1.8,
+            "single_exposure": 10,
+            "min_snr": 20,
+            "gain": 800,
+            "read_noise": 0.8,
+            "pixel_size": 2.9,
+            "focal_length": 200,
+            "aperture": 50
+        }
+    },
+    "moon": {
+        "proximity_radius": 30,
+        "trajectory_color": "yellow",
+        "marker_color": "yellow",
+        "line_width": 2,
+        "marker_size": 6,
+        "interference_color": "lightblue"
+    },
+    "plotting": {
+        "max_objects_optimal": 5,
+        "figure_size": [12, 10],
+        "color_map": "tab20",
+        "grid_alpha": 0.3,
+        "visible_region_alpha": 0.1
+    }
+} 
