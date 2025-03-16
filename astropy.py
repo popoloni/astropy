@@ -23,7 +23,6 @@ class SchedulingStrategy(Enum):
     #DIFFICULTY_BALANCED = "difficulty_balanced"  # Mix of easy and challenging
 
 # ============= GLOBAL CONFIGURATION =============
-CATALOGNAME="objects.csv" #catalog_fixed.csv
 # Location Configuration
 LATITUDE = 45.516667  # Milan latitude
 LONGITUDE = 9.216667  # Milan longitude
@@ -36,7 +35,8 @@ MIN_AZ = 75   # Minimum azimuth in degrees
 MAX_AZ = 160  # Maximum azimuth in degrees
 
 # Catalog selection
-USE_CSV_CATALOG = True  # Use custom CSV catalog
+USE_CSV_CATALOG = False  # Use custom CSV catalog
+#CATALOGNAME="catalog_fixed.csv" #objects.csv
 
 # Time & Visibility Configuration
 MIN_VISIBILITY_HOURS = 2   # Minimum visibility window in hours
