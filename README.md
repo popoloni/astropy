@@ -1,6 +1,6 @@
 # AstroPy Observation Planner
 
-A Python-based astronomical observation planning tool that helps astronomers and astrophotographers plan their observation sessions. The tool includes a comprehensive catalog of deep sky objects (DSOs) including Messier objects and other notable celestial objects, with features for visibility calculation and observation scheduling.
+A Python-based astronomical observation planning tool that helps astronomers and astrophotographers plan their observation sessions. The tool includes a comprehensive catalog of deep sky objects (DSOs) including Messier objects and other notable celestial objects, with features for visibility calculation, moon phase tracking, and observation scheduling.
 
 ## Features
 
@@ -12,13 +12,21 @@ A Python-based astronomical observation planning tool that helps astronomers and
   - Observer's location (latitude/longitude)
   - Time and date
   - Minimum/maximum altitude and azimuth constraints
+- Advanced moon phase and interference tracking:
+  - Real-time moon phase calculation and visualization
+  - Moon interference detection and visualization
+  - Moon rise/set times
+  - Phase-specific interference radius calculation
 - Observation scheduling with multiple strategies:
   - Longest duration visibility
   - Maximum number of objects
   - Optimal signal-to-noise ratio
-- Support for custom CSV catalogs
+- Support for custom CSV catalogs with name enhancement
 - Imaging configuration for telescope specifications
-- Plotting capabilities for visibility windows and trajectories
+- Enhanced plotting capabilities:
+  - Object trajectories with moon interference highlighting
+  - Time-based visibility charts with moon influence periods
+  - Moon phase icons and status indicators
 
 ## Installation
 
@@ -49,10 +57,10 @@ The main configuration parameters can be found at the top of `astropy.py`. Key s
 - `TIMEZONE` - Local timezone (default: 'Europe/Rome')
 
 ### Visibility Constraints
-- `MIN_ALT` - Minimum altitude in degrees (default: 20°)
+- `MIN_ALT` - Minimum altitude in degrees (default: 15°)
 - `MAX_ALT` - Maximum altitude in degrees (default: 75°)
-- `MIN_AZ` - Minimum azimuth in degrees (default: 75°)
-- `MAX_AZ` - Maximum azimuth in degrees (default: 160°)
+- `MIN_AZ` - Minimum azimuth in degrees (default: 65°)
+- `MAX_AZ` - Maximum azimuth in degrees (default: 165°)
 
 ### Time & Visibility Parameters
 - `MIN_VISIBILITY_HOURS` - Minimum visibility window (default: 2 hours)
@@ -66,6 +74,12 @@ The main configuration parameters can be found at the top of `astropy.py`. Key s
 - `FOCAL_LENGTH` - Focal length in mm (default: 200)
 - `APERTURE` - Aperture in mm (default: 50)
 
+### Moon Configuration
+- `MOON_PROXIMITY_RADIUS` - Base radius in degrees to check for moon interference (default: 30°)
+- `MOON_TRAJECTORY_COLOR` - Color for moon's trajectory (default: 'yellow')
+- `MOON_INTERFERENCE_COLOR` - Color for object trajectories near moon (default: 'lightblue')
+- `MOON_MARKER_SIZE` - Size of moon's hour markers (default: 6)
+
 ### Scheduling Options
 - `SCHEDULING_STRATEGY` - Available strategies:
   - `LONGEST_DURATION` - Prioritize longest visibility windows
@@ -75,10 +89,11 @@ The main configuration parameters can be found at the top of `astropy.py`. Key s
 
 ## Usage
 
-1. Set your observation location and preferences in the configuration section of `astropy.py`. At minimum, you should update:
+1. Set your observation location and preferences in the configuration section. At minimum, you should update:
    - `LATITUDE` and `LONGITUDE` to match your observation site
    - `TIMEZONE` to your local timezone
    - `MIN_ALT` and `MAX_ALT` based on your local horizon constraints
+   - `BORTLE_INDEX` to match your local sky conditions
 
 2. Choose your catalog source:
    - Use the built-in catalog by setting `USE_CSV_CATALOG = False`
@@ -94,78 +109,79 @@ The main configuration parameters can be found at the top of `astropy.py`. Key s
 
 4. Run the planner:
 ```bash
-python astropy.py  # Basic version
-python "astropy 2.py"  # Enhanced version with moon influence tracking
+python astropy.py
 ```
 
 The program will output:
 - A list of observable objects for your location
+- Moon phase and interference information
 - Visibility windows for each object
 - An optimized observation schedule based on your chosen strategy
-- Plots showing object trajectories and visibility periods
+- Enhanced plots showing:
+  - Object trajectories with moon interference
+  - Visibility periods with moon influence indicators
+  - Moon phase and position information
 
 ## Project Files
 
 ### Core Files
-- `astropy.py` - Main planning tool containing:
-  - Built-in celestial object catalogs (Messier and additional DSOs)
-  - Visibility calculation algorithms
-  - Scheduling optimization logic
-  - Plotting functions
+- `astropy.py` - Main planning tool with all features including moon tracking
+- `astropy_legacy.py` - Legacy version without moon tracking features
 
 ### Data Files
 - `objects.csv` - Default catalog file with object information
 - `catalog_fixed.csv` - Alternative catalog with corrected coordinates
 - `objects.json` - JSON format of the object catalog
 - `Sac72.csv` - SAC catalog data
+- `catalog_fixed_names.txt` - Additional object names for enhancement
+- `objects_names.txt` - Extended object names database
 
 ### Utility Scripts
 - `convert_json.py` - Converts between different catalog formats (CSV/JSON)
 - `export_api_key.py` - Helper script for managing API keys for external services
 
-### Development Files
-- `astropy 2.py` - Enhanced version with moon influence tracking and extended features:
-  - Moon position calculation and interference detection
-  - Extended trajectory visualization (±5° outside visibility area)
-  - Time-accurate moon influence display
-  - Enhanced visibility charts with moon interference periods
-- `Untitled.py` - Testing and development scratch file
+## Catalog Conversion and Name Enhancement
 
-## Moon Influence Features (astropy 2.py)
+### Converting JSON to CSV
+The tool includes a `convert_json.py` script that can convert the `objects.json` catalog to CSV format. To convert:
 
-The enhanced version includes sophisticated moon interference tracking and visualization:
+1. Ensure you have both `objects.json` and `convert_json.py` in your directory
+2. Run:
+```bash
+python convert_json.py
+```
 
-### Moon Configuration
-- `MOON_PROXIMITY_RADIUS` - Radius in degrees to check for moon interference (default: 30°)
-- `MOON_TRAJECTORY_COLOR` - Color for moon's trajectory (default: 'yellow')
-- `MOON_INTERFERENCE_COLOR` - Color for object trajectories near moon (default: 'lightblue')
-- `MOON_MARKER_SIZE` - Size of moon's hour markers (default: 6)
+The script will:
+- Parse the JSON catalog
+- Extract relevant fields (name, RA, Dec, size, magnitude)
+- Format coordinates properly
+- Generate a CSV file with the required columns
 
-### Visualization Features
-- Trajectory Plot:
-  - Object paths shown ±5° outside visibility area
-  - Moon interference highlighted in real-time
-  - Clear distinction between normal and moon-affected periods
-  - Proper z-ordering of visual elements
+### Object Name Enhancement
+The tool automatically enhances object names by:
 
-- Visibility Chart:
-  - Moon-affected periods shown in yellow tones:
-    - Goldenrod (#DAA520) for selected objects
-    - Khaki (#F0E68C) for non-selected objects
-  - Time-accurate display of interference periods
-  - Split visibility bars showing exact affected times
+1. Cross-referencing multiple catalogs:
+   - Messier catalog (M)
+   - New General Catalog (NGC)
+   - Index Catalog (IC)
+   - Sharpless catalog (SH2)
+   - Barnard catalog (B)
 
-### Moon Influence Detection
-- Minute-by-minute moon position calculation
-- Real-time interference checking for each object
-- Influence periods tracked with precise timing
-- Minimum 15-minute threshold for significant interference
+2. Adding common names when available:
+   - Extracts common names from the full designation
+   - Handles multiple catalog designations (e.g., "M31/NGC 224")
+   - Preserves original catalog numbers
+   - Adds parenthetical common names (e.g., "M31 (Andromeda Galaxy)")
 
-### Reports and Analysis
-- Moon influence summary in visibility reports
-- Per-object moon interference status
-- Detailed timing of affected periods
-- Impact assessment on observation scheduling
+3. Processing special cases:
+   - Double clusters
+   - Multiple designations
+   - Catalog-specific formats (e.g., "SH2-" prefix)
+
+Example enhancements:
+- "M31" → "M31/NGC 224 (Andromeda Galaxy)"
+- "NGC 7000" → "NGC 7000/C20 (North America Nebula)"
+- "IC 434" → "IC 434/B33 (Horsehead Nebula)"
 
 ## Contributing
 

@@ -23,20 +23,25 @@ class SchedulingStrategy(Enum):
     #DIFFICULTY_BALANCED = "difficulty_balanced"  # Mix of easy and challenging
 
 # ============= GLOBAL CONFIGURATION =============
+
 # Location Configuration
+# Lozio coordinates
+# LATITUDE = 45.9928841
+# LONGITUDE = 10.2299690
+
 LATITUDE = 45.516667  # Milan latitude
 LONGITUDE = 9.216667  # Milan longitude
 TIMEZONE = 'Europe/Rome'
 
 # Visibility Constraints
-MIN_ALT = 20  # Minimum altitude in degrees
-MAX_ALT = 75  # Maximum altitude in degrees
-MIN_AZ = 75   # Minimum azimuth in degrees
-MAX_AZ = 160  # Maximum azimuth in degrees
+MIN_ALT = 15  # Minimum altitude in degrees
+MAX_ALT = 75 #80  # Maximum altitude in degrees
+MIN_AZ = 65#45   # Minimum azimuth in degrees
+MAX_AZ = 165#180  # Maximum azimuth in degrees
 
 # Catalog selection
-USE_CSV_CATALOG = False  # Use custom CSV catalog
-#CATALOGNAME="catalog_fixed.csv" #objects.csv
+USE_CSV_CATALOG = True  # Use custom CSV catalog
+CATALOGNAME="objects.csv" #catalog_fixed.csv
 
 # Time & Visibility Configuration
 MIN_VISIBILITY_HOURS = 2   # Minimum visibility window in hours
@@ -71,6 +76,14 @@ FIGURE_SIZE = (12, 10)   # Default figure size for plots
 COLOR_MAP = 'tab20'      # Color map for trajectory plots
 GRID_ALPHA = 0.3         # Grid transparency
 VISIBLE_REGION_ALPHA = 0.1  # Visibility region transparency
+
+# Moon Configuration
+MOON_PROXIMITY_RADIUS = 30  # Radius in degrees to check for moon proximity (increased for light pollution)
+MOON_TRAJECTORY_COLOR = 'yellow'  # Color for moon's trajectory
+MOON_MARKER_COLOR = 'yellow'  # Color for moon's hour markers
+MOON_LINE_WIDTH = 2  # Width of moon's trajectory line
+MOON_MARKER_SIZE = 6  # Size of moon's hour markers
+MOON_INTERFERENCE_COLOR = 'lightblue'  # Color for object trajectories near moon
 
 # ============ DEEP SKY CATALOG FUNCTIONS =============
 
@@ -618,6 +631,226 @@ def calculate_altaz(obj, dt):
         
     return math.degrees(alt), math.degrees(az)
 
+def calculate_moon_phase(dt):
+    """
+    Calculate moon phase (0-1) where 0=new moon, 0.5=full moon, 1=new moon again
+    Using a more accurate algorithm based on astronomical calculations
+    """
+    # Ensure we're working with UTC
+    if dt.tzinfo is None:
+        dt = pytz.UTC.localize(dt)
+    elif dt.tzinfo != pytz.UTC:
+        dt = dt.astimezone(pytz.UTC)
+    
+    jd = calculate_julian_date(dt)
+    
+    # Meeus first approximation
+    T = (jd - 2451545.0) / 36525  # Time in Julian centuries since J2000.0
+    
+    # Sun's mean elongation
+    D = 297.8502042 + 445267.1115168 * T - 0.0016300 * T**2 + T**3 / 545868 - T**4 / 113065000
+    
+    # Sun's mean anomaly
+    M = 357.5291092 + 35999.0502909 * T - 0.0001536 * T**2 + T**3 / 24490000
+    
+    # Moon's mean anomaly
+    Mm = 134.9634114 + 477198.8676313 * T - 0.0089970 * T**2 + T**3 / 69699 - T**4 / 14712000
+    
+    # Moon's argument of latitude
+    F = 93.2720993 + 483202.0175273 * T - 0.0034029 * T**2 - T**3 / 3526000 + T**4 / 863310000
+    
+    # Corrections for perturbations
+    dE = 1.0 - 0.002516 * T - 0.0000074 * T**2  # Correction for eccentricity
+    
+    # Convert to radians for calculations
+    D = math.radians(D % 360)
+    M = math.radians(M % 360)
+    Mm = math.radians(Mm % 360)
+    F = math.radians(F % 360)
+    
+    # Calculate phase angle
+    phase_angle = 180 - D * 180/math.pi - 6.289 * math.sin(Mm) + 2.100 * math.sin(M) - 1.274 * math.sin(2*D - Mm) - 0.658 * math.sin(2*D) - 0.214 * math.sin(2*Mm) - 0.110 * math.sin(D)
+    
+    # Convert phase angle to illuminated fraction
+    phase = (1 + math.cos(math.radians(phase_angle))) / 2
+    
+    return phase
+
+def calculate_moon_position(dt):
+    """Calculate moon's position using a more accurate model based on Jean Meeus' algorithms"""
+    # Ensure we're working with UTC
+    if dt.tzinfo is None:
+        dt = pytz.UTC.localize(dt)
+    elif dt.tzinfo != pytz.UTC:
+        dt = dt.astimezone(pytz.UTC)
+    
+    jd = calculate_julian_date(dt)
+    
+    # Time in Julian centuries since J2000.0
+    T = (jd - 2451545.0) / 36525.0
+    
+    # Meeus' Astronomical Algorithms - Chapter 47
+    # Lunar mean elements
+    Lp = 218.3164477 + 481267.88123421 * T - 0.0015786 * T**2 + T**3 / 538841.0 - T**4 / 65194000.0  # Mean longitude
+    D = 297.8501921 + 445267.1114034 * T - 0.0018819 * T**2 + T**3 / 545868.0 - T**4 / 113065000.0   # Mean elongation
+    M = 357.5291092 + 35999.0502909 * T - 0.0001536 * T**2 + T**3 / 24490000.0                        # Sun's mean anomaly
+    Mp = 134.9633964 + 477198.8675055 * T + 0.0087414 * T**2 + T**3 / 69699.0 - T**4 / 14712000.0     # Moon's mean anomaly
+    F = 93.2720950 + 483202.0175233 * T - 0.0036539 * T**2 - T**3 / 3526000.0 + T**4 / 863310000.0    # Argument of latitude
+
+    # Reduce angles to range 0-360 degrees
+    Lp = Lp % 360
+    D = D % 360
+    M = M % 360
+    Mp = Mp % 360
+    F = F % 360
+
+    # Convert to radians for calculations
+    Lp_rad = math.radians(Lp)
+    D_rad = math.radians(D)
+    M_rad = math.radians(M)
+    Mp_rad = math.radians(Mp)
+    F_rad = math.radians(F)
+
+    # Periodic perturbations
+    # Longitude perturbations
+    dL = 6288.0160 * math.sin(Mp_rad)
+    dL += 1274.0198 * math.sin(2*D_rad - Mp_rad)
+    dL += 658.7141 * math.sin(2*D_rad)
+    dL += 214.2591 * math.sin(2*Mp_rad)
+    dL += 186.4060 * math.sin(M_rad)
+    dL /= 1000000.0  # Convert to degrees
+
+    # Latitude perturbations
+    dB = 5128.0 * math.sin(F_rad)
+    dB += 280.0 * math.sin(Mp_rad + F_rad)
+    dB += 277.0 * math.sin(Mp_rad - F_rad)
+    dB += 176.0 * math.sin(2*D_rad - F_rad)
+    dB += 115.0 * math.sin(2*D_rad + F_rad)
+    dB /= 1000000.0  # Convert to degrees
+
+    # Calculate ecliptic coordinates
+    lambda_moon = Lp + dL
+    beta_moon = dB
+
+    # Convert to equatorial coordinates
+    epsilon = math.radians(23.43929111 - 0.013004167*T)  # Obliquity of ecliptic
+    
+    lambda_moon = math.radians(lambda_moon)
+    beta_moon = math.radians(beta_moon)
+    
+    # Calculate right ascension and declination
+    alpha = math.atan2(
+        math.sin(lambda_moon) * math.cos(epsilon) - math.tan(beta_moon) * math.sin(epsilon),
+        math.cos(lambda_moon)
+    )
+    delta = math.asin(
+        math.sin(beta_moon) * math.cos(epsilon) + 
+        math.cos(beta_moon) * math.sin(epsilon) * math.sin(lambda_moon)
+    )
+
+    # Get local sidereal time
+    lst = calculate_lst(dt)
+    
+    # Calculate hour angle
+    ha = lst - alpha
+    
+    # Convert to local horizontal coordinates
+    lat_rad = math.radians(LATITUDE)
+    
+    # Calculate altitude
+    sin_alt = (math.sin(lat_rad) * math.sin(delta) + 
+               math.cos(lat_rad) * math.cos(delta) * math.cos(ha))
+    alt = math.asin(sin_alt)
+    
+    # Calculate azimuth
+    az = math.atan2(
+        math.sin(ha),
+        math.cos(ha) * math.sin(lat_rad) - math.tan(delta) * math.cos(lat_rad)
+    )
+    az = (math.degrees(az) + 180) % 360
+    
+    # Convert altitude to degrees and apply refraction correction
+    alt_deg = math.degrees(alt)
+    if alt_deg > -0.575:
+        R = 1.02 / math.tan(math.radians(alt_deg + 10.3/(alt_deg + 5.11)))
+        alt_deg += R/60.0  # R is in arc-minutes, convert to degrees
+    
+    return alt_deg, az
+
+def calculate_moon_interference_radius(moon_phase, obj_magnitude, sky_brightness):
+    """
+    Calculate the radius of moon interference based on multiple factors.
+    
+    Parameters:
+    - moon_phase: 0-1 where 0=new moon, 0.5=full moon
+    - obj_magnitude: Visual magnitude of the object
+    - sky_brightness: Bortle scale (1-9)
+    
+    Returns:
+    - Interference radius in degrees
+    """
+    # Base radius calculation based on moon phase
+    if moon_phase >= 0.875 or moon_phase <= 0.125:  # New Moon ±0.125
+        base_radius = 20
+    elif 0.375 <= moon_phase <= 0.625:  # Full Moon ±0.125
+        base_radius = 60
+    elif 0.25 <= moon_phase < 0.375 or 0.625 < moon_phase <= 0.75:  # Quarter Moons
+        base_radius = 40
+    else:  # Crescent Moons
+        base_radius = 30
+    
+    # Magnitude factor (fainter objects are more affected)
+    # Normalize magnitude to a factor between 1.0 and 2.0
+    mag_factor = min(2.0, max(1.0, obj_magnitude / 8.0))
+    
+    # Sky brightness factor (light pollution makes moon interference worse)
+    # In Bortle 9 skies, interference is much more significant
+    sky_factor = (sky_brightness / 5.0) ** 1.5  # Exponential effect for high Bortle
+    
+    # Calculate final radius
+    radius = base_radius * mag_factor * sky_factor
+    
+    # Ensure minimum and maximum reasonable values
+    # Maximum increased for very bright moon in light-polluted skies
+    radius = min(90.0, max(15.0, radius))
+    
+    return radius
+
+def is_near_moon(obj_alt, obj_az, moon_alt, moon_az, obj_magnitude, dt):
+    """
+    Enhanced moon proximity check taking into account moon phase and object brightness.
+    """
+    # Skip check if moon is below horizon
+    if moon_alt < 0:
+        return False
+        
+    # Calculate moon phase
+    moon_phase = calculate_moon_phase(dt)
+    
+    # Calculate interference radius based on conditions
+    radius = calculate_moon_interference_radius(
+        moon_phase=moon_phase,
+        obj_magnitude=obj_magnitude,
+        sky_brightness=BORTLE_INDEX
+    )
+    
+    # Convert coordinates to radians
+    obj_alt = math.radians(90 - obj_alt)    # Convert to co-latitude
+    obj_az = math.radians(obj_az)
+    moon_alt = math.radians(90 - moon_alt)  # Convert to co-latitude
+    moon_az = math.radians(moon_az)
+    
+    # Calculate angular separation using spherical trig
+    dlon = moon_az - obj_az
+    cos_d = (math.cos(moon_alt) * math.cos(obj_alt) +
+             math.sin(moon_alt) * math.sin(obj_alt) * math.cos(dlon))
+    cos_d = min(1.0, max(-1.0, cos_d))  # Ensure value is in valid range
+    
+    # Convert to degrees
+    separation = math.degrees(math.acos(cos_d))
+    
+    return separation < radius
+
 # ============= UTILITY FUNCTIONS =============
 
 def parse_ra(ra_str):
@@ -869,6 +1102,55 @@ def find_best_objects(visibility_periods, max_overlapping=MAX_OBJECTS_OPTIMAL):
 
 # ============= PLOTTING FUNCTIONS =============
 
+def plot_moon_trajectory(ax, start_time, end_time):
+    """Plot moon trajectory and add it to the legend"""
+    times = []
+    alts = []
+    azs = []
+    hour_times = []
+    hour_alts = []
+    hour_azs = []
+    
+    # Ensure times are in UTC for calculations
+    if start_time.tzinfo != pytz.UTC:
+        start_time = start_time.astimezone(pytz.UTC)
+    if end_time.tzinfo != pytz.UTC:
+        end_time = end_time.astimezone(pytz.UTC)
+    
+    current_time = start_time
+    while current_time <= end_time:
+        alt, az = calculate_moon_position(current_time)
+        if is_visible(alt, az):
+            times.append(current_time)
+            alts.append(alt)
+            azs.append(az)
+            
+            # Convert to local time for display
+            local_time = utc_to_local(current_time)
+            if local_time.minute == 0:
+                hour_times.append(local_time)
+                hour_alts.append(alt)
+                hour_azs.append(az)
+                
+        current_time += timedelta(minutes=1)
+    
+    if azs:
+        # Plot moon trajectory
+        ax.plot(azs, alts, '-', color=MOON_TRAJECTORY_COLOR, 
+               linewidth=MOON_LINE_WIDTH, label='Moon', zorder=2)
+        
+        # Add hour markers
+        for t, az, alt in zip(hour_times, hour_azs, hour_alts):
+            ax.plot(az, alt, 'o', color=MOON_MARKER_COLOR, 
+                   markersize=MOON_MARKER_SIZE, zorder=3)
+            ax.annotate(f'{t.hour:02d}h', 
+                       (az, alt),
+                       xytext=(5, 5),
+                       textcoords='offset points',
+                       fontsize=8,
+                       color=MOON_MARKER_COLOR,
+                       zorder=3)
+                       
 def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=EXCLUDE_INSUFFICIENT_TIME):
     """Filter objects based on visibility and exposure requirements"""
     filtered_objects = []
@@ -897,31 +1179,33 @@ def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=E
 
 def setup_altaz_plot():
     """Setup basic altitude-azimuth plot"""
-    # Increase figure size to accommodate legend
+    # Create figure with appropriate size
     fig = plt.figure(figsize=(15, 10))  # Wider figure
     
-    # Use gridspec to create better layout
+    # Use GridSpec for better control over spacing
     gs = fig.add_gridspec(1, 1)
-    gs.update(left=0.1, right=0.85)  # Leave more space for legend
+    # Adjust margins to accommodate axis labels and legend
+    gs.update(left=0.1, right=0.85, top=0.95, bottom=0.1)
     
     ax = fig.add_subplot(gs[0, 0])
     
+    # Set axis limits and labels
     ax.set_xlim(MIN_AZ-10, MAX_AZ+10)
     ax.set_ylim(MIN_ALT-10, MAX_ALT+10)
     ax.set_xlabel('Azimuth (degrees)')
     ax.set_ylabel('Altitude (degrees)')
-    
-    # Add visible region
-    visible_area = Rectangle((MIN_AZ, MIN_ALT), 
-                           MAX_AZ-MIN_AZ, 
-                           MAX_ALT-MIN_ALT, 
-                           fill=False, 
-                           edgecolor='green', 
-                           linestyle='--')
-    ax.add_patch(visible_area)
-    
-    # Configure grid
     ax.grid(True, alpha=GRID_ALPHA)
+    
+    # Add visible region rectangle
+    visible_region = Rectangle((MIN_AZ, MIN_ALT), 
+                             MAX_AZ - MIN_AZ, 
+                             MAX_ALT - MIN_ALT,
+                             facecolor='green', 
+                             alpha=VISIBLE_REGION_ALPHA,
+                             label='Visible Region')
+    ax.add_patch(visible_region)
+    
+    # Configure grid with major and minor ticks
     ax.xaxis.set_major_locator(MultipleLocator(10))
     ax.xaxis.set_minor_locator(MultipleLocator(5))
     ax.yaxis.set_major_locator(MultipleLocator(10))
@@ -986,24 +1270,50 @@ def find_label_position(azimuths, altitudes, existing_positions, margin=3):
     return None
 
 def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positions=None):
-    """Plot trajectory for a single object with hourly markers and abbreviated name"""
+    """Plot trajectory with moon proximity checking and legend.
+    Elements are plotted in specific z-order:
+    1. Base trajectory (z=1)
+    2. Moon interference segments (z=2)
+    3. Hour markers (z=3)
+    4. Hour labels (z=4)
+    5. Object name (z=5)
+    """
+    # Ensure there's a legend (even if empty) to avoid NoneType errors
+    if ax.get_legend() is None:
+        ax.legend()
     times = []
     alts = []
     azs = []
+    near_moon = []  # Track moon proximity
+    obj.near_moon = False  # Initialize moon proximity flag
     hour_times = []
     hour_alts = []
     hour_azs = []
+    
+    # Ensure times are in UTC for calculations
+    if start_time.tzinfo != pytz.UTC:
+        start_time = start_time.astimezone(pytz.UTC)
+    if end_time.tzinfo != pytz.UTC:
+        end_time = end_time.astimezone(pytz.UTC)
     
     # Use smaller interval for smoother trajectory
     current_time = start_time
     while current_time <= end_time:
         alt, az = calculate_altaz(obj, current_time)
-        if is_visible(alt, az):
+        moon_alt, moon_az = calculate_moon_position(current_time)
+        
+        # Extended visibility check for trajectory plotting (±5 degrees)
+        if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and 
+            MIN_AZ - 5 <= az <= MAX_AZ + 5):
             times.append(current_time)
             alts.append(alt)
             azs.append(az)
             
-            # Check if it's a full hour
+            # Check moon proximity
+            is_near = is_near_moon(alt, az, moon_alt, moon_az, obj.magnitude, current_time)
+            near_moon.append(is_near)
+            
+            # Convert to local time for display
             local_time = utc_to_local(current_time)
             if local_time.minute == 0:
                 hour_times.append(local_time)
@@ -1012,14 +1322,57 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
                 
         current_time += timedelta(minutes=1)  # Use 1-minute intervals for accuracy
     
-    if azs:  # Only plot if object is visible
+    # Set moon influence flag only if object is affected for a significant period
+    if near_moon:
+        moon_influence_periods = []
+        start_idx = None
         
+        # Find continuous periods of moon influence
+        for i, is_near in enumerate(near_moon):
+            if is_near and start_idx is None:
+                start_idx = i
+            elif not is_near and start_idx is not None:
+                moon_influence_periods.append((start_idx, i))
+                start_idx = None
+        
+        # Don't forget the last period if it ends with moon influence
+        if start_idx is not None:
+            moon_influence_periods.append((start_idx, len(near_moon)))
+        
+        # Calculate total influence time
+        total_influence_minutes = sum(end - start for start, end in moon_influence_periods)
+        
+        # Set flag if moon influence is significant (more than 15 minutes)
+        obj.near_moon = total_influence_minutes >= 15
+        obj.moon_influence_periods = moon_influence_periods  # Store periods for later use
+    
+    if azs:
         # Determine line style based on sufficient time
         line_style = '-' if getattr(obj, 'sufficient_time', True) else '--'
         
-        # Plot trajectory
-        ax.plot(azs, alts, line_style, color=color, label=obj.name, linewidth=2)
-
+        # Plot base trajectory (lowest z-order)
+        ax.plot(azs, alts, line_style, color=color, linewidth=1.5, alpha=0.3, zorder=1)
+        
+        # Plot moon-affected segments if any
+        if hasattr(obj, 'moon_influence_periods'):
+            for start_idx, end_idx in obj.moon_influence_periods:
+                # Plot the moon-affected segment
+                ax.plot(azs[start_idx:end_idx+1], 
+                       alts[start_idx:end_idx+1], 
+                       line_style,
+                       color=MOON_INTERFERENCE_COLOR,
+                       linewidth=2,
+                       zorder=2)
+        
+        # Add label only once
+        legend = ax.get_legend()
+        obj_name = obj.name.split('/')[0]
+        existing_labels = [t.get_text() for t in legend.get_texts()] if legend else []
+        
+        if obj_name not in existing_labels:
+            # Add a dummy line for the legend
+            ax.plot([], [], line_style, color=color, 
+                   linewidth=2, label=obj_name)
         
         # Add hour markers
         for t, az, alt in zip(hour_times, hour_azs, hour_alts):
@@ -1048,9 +1401,12 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
                        fontsize=10)
             existing_positions.append(label_pos)
 
-
 def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="Object Visibility"):
-    """Create visibility chart for multiple objects, sorted by start time and highlighting recommended objects"""
+    """Create visibility chart showing moon interference periods in yellow tones.
+    - Goldenrod: Selected objects during moon interference
+    - Khaki: Non-selected objects during moon interference
+    - Green/Gray: Normal visibility periods
+    """
     
     # Ensure times are in local timezone
     milan_tz = get_milan_timezone()
@@ -1059,12 +1415,13 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     if end_time.tzinfo != milan_tz:
         end_time = end_time.astimezone(milan_tz)
     
-    # Increase figure size
+    # Create figure with dynamic height based on number of objects
     fig = plt.figure(figsize=(15, max(10, len(objects)*0.3 + 4)))
     
-    # Use gridspec for better layout
+    # Use GridSpec for better control over spacing
     gs = fig.add_gridspec(1, 1)
-    gs.update(left=0.15, right=0.95, top=0.95, bottom=0.1)
+    # Adjust margins to accommodate labels and legend
+    gs.update(left=0.25, right=0.95, top=0.95, bottom=0.1)
     
     ax = fig.add_subplot(gs[0, 0])
 
@@ -1100,21 +1457,82 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
         periods = find_visibility_window(obj, start_time, end_time)
         is_recommended = obj in recommended_objects
         has_sufficient_time = getattr(obj, 'sufficient_time', True)
+        near_moon = getattr(obj, 'near_moon', False)
         
-        # Determine color based on status
-        if not has_sufficient_time:
-            color = 'darkmagenta' if is_recommended else 'pink'
+        # Determine color based on status and moon proximity
+        if near_moon:
+            # Dark yellow for selected objects near moon, pale yellow for others
+            if is_recommended:
+                color = '#DAA520'  # Goldenrod
+                alpha = 0.8
+            else:
+                color = '#F0E68C'  # Khaki
+                alpha = 0.6
         else:
-            color = 'green' if is_recommended else 'gray'
+            if not has_sufficient_time:
+                color = 'darkmagenta' if is_recommended else 'pink'
+            else:
+                color = 'green' if is_recommended else 'gray'
+            alpha = 0.8 if is_recommended else 0.4
         
         for period_start, period_end in periods:
             local_start = period_start.astimezone(milan_tz)
             local_end = period_end.astimezone(milan_tz)
             
-            ax.barh(i, local_end - local_start, left=local_start, height=0.3,
-                   alpha=0.8 if is_recommended else 0.4,
-                   color=color,
-                   label=obj.name if period_start == periods[0][0] else "")
+            # If object has moon influence periods, we need to split the visibility bar
+            if hasattr(obj, 'moon_influence_periods') and obj.moon_influence_periods:
+                period_minutes = int((period_end - period_start).total_seconds() / 60)
+                
+                # Convert moon influence periods to actual times
+                moon_times = []
+                for start_idx, end_idx in obj.moon_influence_periods:
+                    moon_start = period_start + timedelta(minutes=start_idx)
+                    moon_end = period_start + timedelta(minutes=end_idx)
+                    if moon_start < period_end and moon_end > period_start:
+                        moon_times.append((
+                            max(moon_start, period_start),
+                            min(moon_end, period_end)
+                        ))
+                
+                # Plot non-moon-affected parts in normal color
+                last_end = period_start
+                for moon_start, moon_end in moon_times:
+                    if moon_start > last_end:
+                        # Plot normal visibility segment
+                        ax.barh(i, 
+                               moon_start.astimezone(milan_tz) - last_end.astimezone(milan_tz),
+                               left=last_end.astimezone(milan_tz),
+                               height=0.3,
+                               alpha=alpha,
+                               color=color)
+                    # Plot moon-affected segment
+                    ax.barh(i,
+                           moon_end.astimezone(milan_tz) - moon_start.astimezone(milan_tz),
+                           left=moon_start.astimezone(milan_tz),
+                           height=0.3,
+                           alpha=alpha,
+                           color='#DAA520' if is_recommended else '#F0E68C')  # Goldenrod/Khaki
+                    last_end = moon_end
+                
+                # Plot remaining normal visibility if any
+                if last_end < period_end:
+                    ax.barh(i,
+                           period_end.astimezone(milan_tz) - last_end.astimezone(milan_tz),
+                           left=last_end.astimezone(milan_tz),
+                           height=0.3,
+                           alpha=alpha,
+                           color=color)
+            else:
+                # Plot normal visibility bar if no moon influence
+                ax.barh(i, local_end - local_start, left=local_start, height=0.3,
+                       alpha=alpha,
+                       color=color)
+            
+            # Add label only for the first period
+            if period_start == periods[0][0]:
+                ax.barh(i, timedelta(minutes=1), left=local_start, height=0.3,
+                       alpha=0,  # Transparent
+                       label=obj.name)
                                
             # Add abbreviated name at the start of the bar
             if period_start == periods[0][0]:
@@ -1129,7 +1547,14 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     ax.set_yticklabels([obj.name for obj in sorted_objects])
     ax.grid(True, alpha=GRID_ALPHA)
     
-    plt.tight_layout()
+    # Add legend entries for moon interference if needed
+    if any(getattr(obj, 'near_moon', False) for obj in objects):
+        # Add dummy patches for legend
+        ax.barh([-1], [0], height=0.3, color='#FF1493', alpha=0.8, 
+                label='Selected Object (Moon Interference)')
+        ax.barh([-1], [0], height=0.3, color='#FFB6C1', alpha=0.4,
+                label='Non-selected Object (Moon Interference)')
+    
     return fig, ax
 
 # ============= SCHEDULE GENERATION =============
@@ -1320,6 +1745,29 @@ def print_schedule(schedule):
         if obj.fov:
             print(f"Field of view: {obj.fov}")
 
+def get_moon_phase_icon(phase):
+    """
+    Get Unicode moon phase icon based on illumination percentage
+    phase: 0-1 where 0=new moon, 1=full moon
+    Returns appropriate moon phase emoji based on standard illumination percentages
+    """
+    if phase <= 0.01:  # New Moon (0%)
+        return "🌑", "New Moon"
+    elif phase <= 0.49:  # Waxing Crescent (0-50%)
+        return "🌒", "Waxing Crescent"
+    elif phase <= 0.51:  # First Quarter (50%)
+        return "🌓", "First Quarter"
+    elif phase <= 0.99:  # Waxing Gibbous (50-100%)
+        return "🌔", "Waxing Gibbous"
+    elif phase <= 1.0:  # Full Moon (100%)
+        return "🌕", "Full Moon"
+    elif phase <= 1.49:  # Waning Gibbous (100-50%)
+        return "🌖", "Waning Gibbous"
+    elif phase <= 1.51:  # Last Quarter (50%)
+        return "🌗", "Last Quarter"
+    else:  # Waning Crescent (50-0%)
+        return "🌘", "Waning Crescent"
+
 def print_combined_report(objects, start_time, end_time, bortle_index):
     """Print combined visibility and imaging report"""
     print("\nCombined Visibility and Imaging Report")
@@ -1336,11 +1784,24 @@ def print_combined_report(objects, start_time, end_time, bortle_index):
                 exposure_time, frames, panels = calculate_required_exposure(
                     obj.magnitude, bortle_index, obj.fov)
                 
+                # Check moon influence
+                moon_influenced = False
+                for period_start, period_end in periods:
+                    current_time = period_start
+                    while current_time <= period_end:
+                        obj_alt, obj_az = calculate_altaz(obj, current_time)
+                        moon_alt, moon_az = calculate_moon_position(current_time)
+                        if is_near_moon(obj_alt, obj_az, moon_alt, moon_az, obj.magnitude, current_time):
+                            moon_influenced = True
+                            break
+                        current_time += timedelta(minutes=15)  # Check every 15 minutes
+                
                 object_data.append({
                     'name': obj.name,
                     'start': periods[0][0],
                     'end': periods[-1][1],
                     'duration': duration,
+                    'moon_influenced': moon_influenced,
                     'magnitude': obj.magnitude,
                     'exposure': exposure_time,
                     'frames': frames,
@@ -1351,9 +1812,60 @@ def print_combined_report(objects, start_time, end_time, bortle_index):
     # Sort by visibility start time
     object_data.sort(key=lambda x: x['start'])
     
-    # Print sorted report
+    # Find moon rise and set times
+    moon_rise = None
+    moon_set = None
+    current_time = start_time
+    prev_alt = None
+    
+    while current_time <= end_time:
+        moon_alt, _ = calculate_moon_position(current_time)
+        
+        if prev_alt is not None:
+            # Moon rise detected
+            if prev_alt < 0 and moon_alt >= 0:
+                moon_rise = current_time
+            # Moon set detected
+            elif prev_alt >= 0 and moon_alt < 0:
+                moon_set = current_time
+        
+        prev_alt = moon_alt
+        current_time += timedelta(minutes=1)
+    
+    # Calculate moon phase
+    moon_phase = calculate_moon_phase(start_time)
+    moon_icon, phase_name = get_moon_phase_icon(moon_phase)
+    
+    # Get list of moon affected objects
+    moon_affected = [data for data in object_data if data.get('moon_influenced', False)]
+    
+    # Print moon influence summary
+    print("\nMoon Influence Summary:")
+    print("-" * 20)
+    print(f"Moon Phase: {moon_icon} {phase_name} ({moon_phase:.1%})")
+    if moon_rise:
+        print(f"Moon Rise: {format_time(moon_rise)}")
+    if moon_set:
+        print(f"Moon Set: {format_time(moon_set)}")
+    print(f"Objects affected by moon: {len(moon_affected)}/{len(object_data)}")
+    if moon_affected:
+        print("\nAffected objects:")
+        for data in moon_affected:
+            print(f"- {data['name']}")
+    else:
+        print("\nNo objects are significantly affected by moon proximity.")
+    
+    print("\nDetailed Object Report:")
+    print("=" * 30)
+    
+    # Print detailed report
     for data in object_data:
         print(f"\n{data['name']}")
+        # Get current moon icon for this object's observation period
+        current_moon_phase = calculate_moon_phase(data['start'])
+        current_moon_icon, current_phase_name = get_moon_phase_icon(current_moon_phase)
+        moon_status = f"{current_moon_icon} Moon interference" if data.get('moon_influenced', False) else "✨ Clear from moon"
+        print(f"Moon Status: {moon_status}")
         print(f"Visibility: {format_time(data['start'])} - {format_time(data['end'])} "
               f"({data['duration']:.1f} hours)")
         print(f"Magnitude: {data['magnitude']}")
@@ -1439,8 +1951,8 @@ def main():
     else:
         all_objects = get_combined_catalog()
     
-    if all_objects:
-        print_objects_by_type(all_objects, True)
+    #if all_objects:
+    #    print_objects_by_type(all_objects, True)
 
     # Print reports
     print(f"\nNight of {current_date.date()}")
@@ -1482,7 +1994,18 @@ def main():
     
     # Create plots
     fig, ax = setup_altaz_plot()
-    colors = plt.cm.get_cmap(COLOR_MAP)(np.linspace(0, 1, len(visible_objects)))
+
+    #colors = plt.colormaps[COLOR_MAP](np.linspace(0, 1, len(visible_objects)))
+    # Correct way to get colormap 
+    colormap = plt.get_cmap(COLOR_MAP) 
+    # Generate colors 
+    colors = colormap(np.linspace(0, 1, len(visible_objects)))
+    
+    # Initialize empty legend to avoid NoneType errors
+    ax.legend()
+    
+    # Plot moon trajectory first
+    plot_moon_trajectory(ax, twilight_evening, twilight_morning)
     
     existing_positions = []
     # Plot trajectories for visible objects
@@ -1497,7 +2020,25 @@ def main():
                                  'pink', existing_positions)
     
     plt.title(f"Object Trajectories for {current_date.date()}")
-    plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left')
+    # Create custom legend
+    handles, labels = ax.get_legend_handles_labels()
+    
+    # Add a legend entry for moon interference if any object was near moon
+    if any(obj for obj in visible_objects + insufficient_objects if hasattr(obj, 'near_moon')):
+        moon_line = plt.Line2D([0], [0], color=MOON_INTERFERENCE_COLOR, linestyle='-', label='Moon Interference')
+        handles.append(moon_line)
+    
+    # Add legend entry for insufficient time objects if any
+    if insufficient_objects:
+        insuf_line = plt.Line2D([0], [0], color='gray', linestyle='--', label='Insufficient Time')
+        handles.append(insuf_line)
+    
+    # Create the legend with all handles
+    ax.legend(handles=handles, 
+             bbox_to_anchor=(1.02, 1),
+             loc='upper left',
+             borderaxespad=0,
+             title='Objects and Conditions')
     plt.show()
     plt.close(fig)  # Explicitly close the figure
     
