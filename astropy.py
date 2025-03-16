@@ -999,6 +999,189 @@ class CelestialObject:
         self.total_area = calculate_total_area(fov) if fov else 0
         self.required_exposure = None  # Will be calculated later
 
+class ReportGenerator:
+    """Class to handle report generation and formatting"""
+    def __init__(self, date, location_data):
+        self.date = date
+        self.location = location_data
+        self.sections = []
+        
+    def add_section(self, title, content):
+        """Add a section to the report"""
+        self.sections.append({
+            'title': title,
+            'content': content
+        })
+    
+    def format_section(self, section):
+        """Format a single section"""
+        output = f"\n{section['title']}\n"
+        output += "=" * len(section['title']) + "\n"
+        output += section['content']
+        return output
+    
+    def generate_quick_summary(self, visible_objects, moon_affected_objects, twilight_evening, twilight_morning, moon_phase):
+        """Generate quick summary section"""
+        moon_icon, phase_name = get_moon_phase_icon(moon_phase)
+        content = (
+            f"Date: {self.date.date()}\n"
+            f"Location: {self.location['name']} ({LATITUDE:.2f}°N, {LONGITUDE:.2f}°E)\n\n"
+            f"Observable Objects: {len(visible_objects)} total ({len(moon_affected_objects)} affected by moon)\n"
+            f"Best Observation Window: {format_time(twilight_evening)} - {format_time(twilight_morning)}\n"
+            f"Moon Phase: {moon_icon} {phase_name} ({moon_phase:.1%})\n"
+            f"Seeing Conditions: Bortle {BORTLE_INDEX}\n"
+        )
+        self.add_section("QUICK SUMMARY", content)
+    
+    def generate_timing_section(self, sunset, sunrise, twilight_evening, twilight_morning, moon_rise, moon_set):
+        """Generate timing information section"""
+        content = (
+            f"Sunset: {format_time(sunset)}\n"
+            f"Astronomical Twilight Begins: {format_time(twilight_evening)}\n"
+        )
+        if moon_rise:
+            content += f"Moon Rise: {format_time(moon_rise)}\n"
+        if moon_set:
+            content += f"Moon Set: {format_time(moon_set)}\n"
+        content += (
+            f"Astronomical Twilight Ends: {format_time(twilight_morning)}\n"
+            f"Sunrise: {format_time(sunrise)}\n"
+        )
+        self.add_section("TIMING INFORMATION", content)
+    
+    def generate_moon_conditions(self, moon_phase, moon_affected_objects):
+        """Generate moon conditions section"""
+        moon_icon, phase_name = get_moon_phase_icon(moon_phase)
+        content = (
+            f"Current Phase: {moon_icon} {phase_name} ({moon_phase:.1%})\n"
+            f"Objects affected by moon: {len(moon_affected_objects)}\n\n"
+        )
+        if moon_affected_objects:
+            content += "Affected objects:\n"
+            for obj in moon_affected_objects:
+                periods = getattr(obj, 'moon_influence_periods', [])
+                # Calculate total minutes properly from timedelta objects
+                total_minutes = sum(
+                    int((end - start).total_seconds() / 60)
+                    for start, end in periods
+                )
+                content += f"- {obj.name} ({total_minutes} minutes of interference)\n"
+        else:
+            content += "No objects are significantly affected by moon proximity.\n"
+        self.add_section("MOON CONDITIONS", content)
+    
+    def generate_object_sections(self, visible_objects, insufficient_objects):
+        """Generate sections for different object categories"""
+        # Prime targets (sufficient time & good conditions)
+        prime_targets = [obj for obj in visible_objects 
+                        if not getattr(obj, 'near_moon', False)]
+        if prime_targets:
+            content = self._format_object_list("Prime observation targets:", prime_targets)
+            self.add_section("PRIME TARGETS", content)
+        
+        # Moon-affected targets
+        moon_affected = [obj for obj in visible_objects 
+                        if getattr(obj, 'near_moon', False)]
+        if moon_affected:
+            content = self._format_object_list("Objects affected by moon:", moon_affected)
+            self.add_section("MOON-AFFECTED TARGETS", content)
+        
+        # Time-limited targets
+        if insufficient_objects:
+            content = self._format_object_list("Objects with insufficient visibility time:", insufficient_objects)
+            self.add_section("TIME-LIMITED TARGETS", content)
+    
+    def _format_object_list(self, header, objects):
+        """Format a list of objects with their details"""
+        # Sort objects by visibility start time
+        sorted_objects = sorted(objects, 
+                              key=lambda obj: find_visibility_window(obj, self.date, self.date + timedelta(days=1))[0][0])
+        
+        content = f"{header}\n\n"
+        for obj in sorted_objects:
+            # Get visibility periods
+            periods = find_visibility_window(obj, self.date, self.date + timedelta(days=1))
+            if not periods:
+                continue
+                
+            start_time = periods[0][0]
+            end_time = periods[-1][1]
+            duration = calculate_visibility_duration(periods)
+            
+            # Get moon status
+            moon_status = ""
+            if hasattr(obj, 'near_moon') and obj.near_moon:
+                moon_phase = calculate_moon_phase(start_time)
+                moon_icon, _ = get_moon_phase_icon(moon_phase)
+                moon_status = f"{moon_icon} Moon interference"
+            else:
+                moon_status = "✨ Clear from moon"
+            
+            # Format the line
+            content += f"{obj.name}\n"
+            content += f"{moon_status}\n"
+            content += f"Visibility: {format_time(start_time)} - {format_time(end_time)} ({duration:.1f} hours)\n"
+            
+            if hasattr(obj, 'magnitude') and obj.magnitude is not None:
+                content += f"Magnitude: {obj.magnitude}\n"
+            
+            if obj.fov:
+                content += f"Field of view: {obj.fov}\n"
+                # Calculate panels needed
+                panels = calculate_required_panels(obj.fov)
+                if panels > 1:
+                    mosaic_size = math.ceil(math.sqrt(panels))
+                    content += f"Mosaic: {mosaic_size}x{mosaic_size} panels\n"
+            
+            if hasattr(obj, 'required_exposure') and obj.required_exposure is not None:
+                exposure_time, frames, _ = obj.required_exposure
+                content += f"Required exposure: {exposure_time:.2f} hours ({frames} frames of {SINGLE_EXPOSURE}s)\n"
+                
+                # Add clear indication of sufficient/insufficient time
+                if duration >= exposure_time:
+                    content += "✓ Sufficient visibility time for imaging\n"
+                else:
+                    content += f"✗ NOT ENOUGH visibility time (needs {exposure_time:.1f}h, have {duration:.1f}h)\n"
+            
+            content += "\n"
+        return content
+    
+    def generate_schedule_section(self, schedule, strategy):
+        """Generate schedule section"""
+        content = (
+            f"Strategy: {strategy.value}\n"
+            f"Total objects: {len(schedule)}\n"
+            f"Total observation time: {sum((end - start).total_seconds() / 3600 for start, end, _ in schedule):.1f} hours\n\n"
+        )
+        
+        for start, end, obj in schedule:
+            duration = (end - start).total_seconds() / 3600
+            exposure_time, frames, panels = calculate_required_exposure(
+                obj.magnitude, BORTLE_INDEX, obj.fov)
+            
+            content += (
+                f"{obj.name}\n"
+                f"  Start: {format_time(start)}\n"
+                f"  End: {format_time(end)}\n"
+                f"  Duration: {duration:.1f} hours\n"
+                f"  Required exposure: {exposure_time:.1f} hours\n"
+            )
+            if panels > 1:
+                content += f"  Mosaic: {math.ceil(math.sqrt(panels))}x{math.ceil(math.sqrt(panels))}\n"
+            content += "\n"
+        
+        self.add_section("RECOMMENDED SCHEDULE", content)
+    
+    def generate_report(self):
+        """Generate the complete report"""
+        output = "NIGHT OBSERVATION REPORT\n"
+        output += "=" * 23 + "\n"
+        
+        for section in self.sections:
+            output += self.format_section(section)
+            
+        return output
+
 # Create global observer
 OBSERVER = Observer(LATITUDE, LONGITUDE)
 
@@ -1177,11 +1360,12 @@ def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=E
         if periods:
             duration = calculate_visibility_duration(periods)
             if hasattr(obj, 'magnitude') and obj.magnitude is not None:
-                exposure_time, frames, panels = calculate_required_exposure(
+                # Calculate required exposure time and store it in the object
+                obj.required_exposure = calculate_required_exposure(
                     obj.magnitude, BORTLE_INDEX, obj.fov)
                 
                 if duration >= MIN_VISIBILITY_HOURS:
-                    obj.sufficient_time = duration >= exposure_time
+                    obj.sufficient_time = duration >= obj.required_exposure[0]
                     if exclude_insufficient:
                         if obj.sufficient_time:
                             filtered_objects.append(obj)
@@ -1978,18 +2162,6 @@ def main():
     else:
         all_objects = get_combined_catalog()
     
-    #if all_objects:
-    #    print_objects_by_type(all_objects, True)
-
-    # Print reports
-    print(f"\nNight of {current_date.date()}")
-    print(f"Sunset: {format_time(sunset)}")
-    print(f"Astronomical twilight begins: {format_time(twilight_evening)}")
-    print(f"Astronomical twilight ends: {format_time(twilight_morning)}")
-    print(f"Sunrise: {format_time(next_sunrise)}")
-
-    # Filter objects based on imaging requirements
-    visible_objects = []
     # Filter objects based on visibility and exposure requirements
     visible_objects, insufficient_objects = filter_visible_objects(
         all_objects, twilight_evening, twilight_morning)
@@ -1998,34 +2170,98 @@ def main():
         print("No objects are visible under current conditions")
         return
     
-    # Print combined report for all objects
-    print_combined_report(visible_objects + insufficient_objects, 
-                         twilight_evening, twilight_morning, 
-                         BORTLE_INDEX)
+    # Initialize report generator
+    report_gen = ReportGenerator(current_date, DEFAULT_LOCATION)
     
-    if not visible_objects:
-        print("\nNo objects have sufficient visibility time for imaging")
-        return
+    # Find moon rise and set times and check moon interference
+    moon_rise = None
+    moon_set = None
+    current_time = twilight_evening
+    prev_alt = None
+    
+    # First pass: find moon rise/set times
+    while current_time <= twilight_morning:
+        moon_alt, _ = calculate_moon_position(current_time)
         
+        if prev_alt is not None:
+            # Moon rise detected
+            if prev_alt < 0 and moon_alt >= 0:
+                moon_rise = current_time
+            # Moon set detected
+            elif prev_alt >= 0 and moon_alt < 0:
+                moon_set = current_time
+        
+        prev_alt = moon_alt
+        current_time += timedelta(minutes=1)
+    
+    # Calculate moon phase
+    moon_phase = calculate_moon_phase(twilight_evening)
+    
+    # Second pass: check moon interference for each object
+    moon_affected = []
+    all_objects_to_check = visible_objects + insufficient_objects
+    
+    for obj in all_objects_to_check:
+        # Reset moon interference attributes
+        obj.near_moon = False
+        obj.moon_influence_periods = []
+        
+        # Check visibility periods
+        visibility_periods = find_visibility_window(obj, twilight_evening, twilight_morning)
+        
+        for period_start, period_end in visibility_periods:
+            current_time = period_start
+            interference_start = None
+            
+            while current_time <= period_end:
+                obj_alt, obj_az = calculate_altaz(obj, current_time)
+                moon_alt, moon_az = calculate_moon_position(current_time)
+                
+                if is_near_moon(obj_alt, obj_az, moon_alt, moon_az, obj.magnitude, current_time):
+                    if interference_start is None:
+                        interference_start = current_time
+                elif interference_start is not None:
+                    obj.moon_influence_periods.append((interference_start, current_time))
+                    interference_start = None
+                
+                current_time += timedelta(minutes=15)  # Check every 15 minutes
+            
+            if interference_start is not None:
+                obj.moon_influence_periods.append((interference_start, period_end))
+        
+        if obj.moon_influence_periods:
+            obj.near_moon = True
+            moon_affected.append(obj)
+    
+    # Generate report sections
+    report_gen.generate_quick_summary(visible_objects, moon_affected, 
+                                    twilight_evening, twilight_morning, moon_phase)
+    report_gen.generate_timing_section(sunset, next_sunrise, 
+                                     twilight_evening, twilight_morning,
+                                     moon_rise, moon_set)
+    report_gen.generate_moon_conditions(moon_phase, moon_affected)
+    report_gen.generate_object_sections(visible_objects, insufficient_objects)
+    
     # Generate schedules for different strategies
     schedules = {}
     for strategy in SchedulingStrategy:
-        ischedule = generate_observation_schedule(
+        schedule = generate_observation_schedule(
             visible_objects, twilight_evening, twilight_morning,
             strategy=strategy)
-        schedules[strategy] = ischedule
-        print_schedule_strategy_report(ischedule, strategy)
+        schedules[strategy] = schedule
+        report_gen.generate_schedule_section(schedule, strategy)
+    
+    # Print the complete report
+    print(report_gen.generate_report())
     
     # Use selected strategy for visualization
     schedule = schedules[SCHEDULING_STRATEGY]
     
     # Create plots
     fig, ax = setup_altaz_plot()
-
-    #colors = plt.colormaps[COLOR_MAP](np.linspace(0, 1, len(visible_objects)))
-    # Correct way to get colormap 
-    colormap = plt.get_cmap(COLOR_MAP) 
+    
     # Generate colors 
+    colormap = plt.get_cmap(COLOR_MAP) 
     colors = colormap(np.linspace(0, 1, len(visible_objects)))
     
     # Initialize empty legend to avoid NoneType errors
