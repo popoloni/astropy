@@ -25,15 +25,19 @@ class SchedulingStrategy(Enum):
 # ============= GLOBAL CONFIGURATION =============
 
 # Location Configuration
+# Lozio coordinates
+# LATITUDE = 45.9928841
+# LONGITUDE = 10.2299690
+
 LATITUDE = 45.516667  # Milan latitude
 LONGITUDE = 9.216667  # Milan longitude
 TIMEZONE = 'Europe/Rome'
 
 # Visibility Constraints
-MIN_ALT = 20  # Minimum altitude in degrees
-MAX_ALT = 75  # Maximum altitude in degrees
-MIN_AZ = 75   # Minimum azimuth in degrees
-MAX_AZ = 160  # Maximum azimuth in degrees
+MIN_ALT = 15  # Minimum altitude in degrees
+MAX_ALT = 75 #80  # Maximum altitude in degrees
+MIN_AZ = 65#45   # Minimum azimuth in degrees
+MAX_AZ = 165#180  # Maximum azimuth in degrees
 
 # Catalog selection
 USE_CSV_CATALOG = True  # Use custom CSV catalog
