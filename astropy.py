@@ -1187,29 +1187,42 @@ OBSERVER = Observer(LATITUDE, LONGITUDE)
 
 # ============= VISIBILITY FUNCTIONS =============
 
-def is_visible(alt, az):
+def is_visible(alt, az, use_margins=True):
     """Check if object is within visibility limits"""
-    return (MIN_AZ <= az <= MAX_AZ) and (MIN_ALT <= alt <= MAX_ALT)
+    if use_margins:
+        # Use 5-degree margins as in trajectory plotting
+        return ((MIN_ALT - 5 <= alt <= MAX_ALT + 5) and 
+                (MIN_AZ - 5 <= az <= MAX_AZ + 5))
+    else:
+        return (MIN_AZ <= az <= MAX_AZ) and (MIN_ALT <= alt <= MAX_ALT)
 
-def find_visibility_window(obj, start_time, end_time):
+def find_visibility_window(obj, start_time, end_time, use_margins=True):
     """Find visibility window for an object"""
     current_time = start_time
     visibility_periods = []
     start_visible = None
+    last_visible = False
+    
+    # Use 1-minute intervals for better precision, matching trajectory plotting
+    interval = timedelta(minutes=1)
     
     while current_time <= end_time:
         alt, az = calculate_altaz(obj, current_time)
+        is_currently_visible = is_visible(alt, az, use_margins)
         
-        if is_visible(alt, az):
-            if start_visible is None:
-                start_visible = current_time
-        elif start_visible is not None:
+        # Object becomes visible
+        if is_currently_visible and not last_visible:
+            start_visible = current_time
+        # Object becomes invisible
+        elif not is_currently_visible and last_visible and start_visible is not None:
             visibility_periods.append((start_visible, current_time))
             start_visible = None
             
-        current_time += timedelta(minutes=SEARCH_INTERVAL_MINUTES)
+        last_visible = is_currently_visible
+        current_time += interval
     
-    if start_visible is not None:
+    # If object is still visible at the end, add the final period
+    if start_visible is not None and last_visible:
         visibility_periods.append((start_visible, end_time))
     
     return visibility_periods
@@ -1356,7 +1369,7 @@ def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=E
     insufficient_objects = []
     
     for obj in objects:
-        periods = find_visibility_window(obj, start_time, end_time)
+        periods = find_visibility_window(obj, start_time, end_time, use_margins=True)  # Added use_margins=True
         if periods:
             duration = calculate_visibility_duration(periods)
             if hasattr(obj, 'magnitude') and obj.magnitude is not None:
@@ -1615,6 +1628,9 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     if end_time.tzinfo != milan_tz:
         end_time = end_time.astimezone(milan_tz)
     
+    # Get current time in local timezone for the vertical line
+    current_time = datetime.now(milan_tz)
+    
     # Create figure with dynamic height based on number of objects
     fig = plt.figure(figsize=(15, max(10, len(objects)*0.3 + 4)))
     
@@ -1628,7 +1644,7 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     # Get visibility periods and sort objects by start time
     object_periods = []
     for obj in objects:
-        periods = find_visibility_window(obj, start_time, end_time)
+        periods = find_visibility_window(obj, start_time, end_time, use_margins=True)  # Added use_margins=True
         if periods:
             # Convert periods to local time
             local_periods = [(p[0].astimezone(milan_tz), p[1].astimezone(milan_tz)) 
@@ -1654,7 +1670,7 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     
     # Plot visibility periods
     for i, obj in enumerate(sorted_objects):
-        periods = find_visibility_window(obj, start_time, end_time)
+        periods = find_visibility_window(obj, start_time, end_time, use_margins=True)  # Added use_margins=True
         is_recommended = obj in recommended_objects
         has_sufficient_time = getattr(obj, 'sufficient_time', True)
         near_moon = getattr(obj, 'near_moon', False)
@@ -1742,6 +1758,10 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
                        fontsize=8,
                        fontweight='bold' if is_recommended else 'normal')
     
+    # Add vertical line for current time if it's within the plot range
+    if start_time <= current_time <= end_time:
+        ax.axvline(x=current_time, color='red', linestyle='-', linewidth=2, label='Current Time')
+    
     # Customize plot
     ax.set_yticks(range(len(sorted_objects)))
     ax.set_yticklabels([obj.name for obj in sorted_objects])
@@ -1750,9 +1770,9 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     # Add legend entries for moon interference if needed
     if any(getattr(obj, 'near_moon', False) for obj in objects):
         # Add dummy patches for legend
-        ax.barh([-1], [0], height=0.3, color='#FF1493', alpha=0.8, 
+        ax.barh([-1], [0], height=0.3, color='#DAA520', alpha=0.8, 
                 label='Selected Object (Moon Interference)')
-        ax.barh([-1], [0], height=0.3, color='#FFB6C1', alpha=0.4,
+        ax.barh([-1], [0], height=0.3, color='#F0E68C', alpha=0.4,
                 label='Non-selected Object (Moon Interference)')
     
     return fig, ax
@@ -1814,7 +1834,7 @@ def generate_observation_schedule(objects, start_time, end_time,
     # Calculate scores and periods for all objects
     object_data = []
     for obj in objects:
-        periods = find_visibility_window(obj, start_time, end_time)
+        periods = find_visibility_window(obj, start_time, end_time, use_margins=True)  # Added use_margins=True
         if periods:
             duration = calculate_visibility_duration(periods)
             if duration >= min_duration:
@@ -1878,7 +1898,7 @@ def generate_observation_schedule(objects, start_time, end_time,
 
 def format_time(time):
     """Format time for display"""
-    return time.strftime("%H:%M")
+    return time.strftime("%H:%M:%S")
 
 def print_visibility_report(objects, start_time, end_time):
     """Print detailed visibility report"""
@@ -1969,130 +1989,58 @@ def get_moon_phase_icon(phase):
         return "🌘", "Waning Crescent"
 
 def print_combined_report(objects, start_time, end_time, bortle_index):
-    """Print combined visibility and imaging report"""
-    print("\nCombined Visibility and Imaging Report")
-    print("=" * 50)
+    """Print a combined report including visibility and imaging information."""
+    print("\nNIGHT OBSERVATION REPORT")
+    print(f"Date: {start_time.date()}")
+    print(f"Location: Milano, Italy")
+    print("-" * 50)
     
-    # Print location information first
-    print("\nLocation Parameters:")
-    print(f"Location: {DEFAULT_LOCATION['name']}")
-    print(f"Latitude: {LATITUDE:.6f}°")
-    print(f"Longitude: {LONGITUDE:.6f}°")
-    print(f"Timezone: {TIMEZONE}")
-    print(f"Bortle Index: {bortle_index}")
-    print(f"Visibility Constraints:")
-    print(f"  Altitude: {MIN_ALT}° to {MAX_ALT}°")
-    print(f"  Azimuth: {MIN_AZ}° to {MAX_AZ}°")
-    print("=" * 50)
-    
-    # Collect all object data
-    object_data = []
+    # Sort objects by visibility duration for the entire night
+    sorted_objects = []
     for obj in objects:
-        periods = find_visibility_window(obj, start_time, end_time)
-        if periods:
-            duration = calculate_visibility_duration(periods)
-            if hasattr(obj, 'magnitude') and obj.magnitude is not None:
-                exposure_time, frames, panels = calculate_required_exposure(
-                    obj.magnitude, bortle_index, obj.fov)
-                
-                # Check moon influence
-                moon_influenced = False
-                for period_start, period_end in periods:
-                    current_time = period_start
-                    while current_time <= period_end:
-                        obj_alt, obj_az = calculate_altaz(obj, current_time)
-                        moon_alt, moon_az = calculate_moon_position(current_time)
-                        if is_near_moon(obj_alt, obj_az, moon_alt, moon_az, obj.magnitude, current_time):
-                            moon_influenced = True
-                            break
-                        current_time += timedelta(minutes=15)  # Check every 15 minutes
-                
-                object_data.append({
-                    'name': obj.name,
-                    'start': periods[0][0],
-                    'end': periods[-1][1],
-                    'duration': duration,
-                    'moon_influenced': moon_influenced,
-                    'magnitude': obj.magnitude,
-                    'exposure': exposure_time,
-                    'frames': frames,
-                    'panels': panels,
-                    'fov': obj.fov
-                })
+        visibility_periods = find_visibility_window(obj, start_time, end_time, use_margins=True)  # Added use_margins=True
+        if visibility_periods:
+            duration = calculate_visibility_duration(visibility_periods)
+            # Store the visibility periods with the object for later use
+            obj.visibility_periods = visibility_periods
+            sorted_objects.append((obj, duration))
     
-    # Sort by visibility start time
-    object_data.sort(key=lambda x: x['start'])
+    # Sort by duration in descending order
+    sorted_objects.sort(key=lambda x: x[1], reverse=True)
     
-    # Find moon rise and set times
-    moon_rise = None
-    moon_set = None
-    current_time = start_time
-    prev_alt = None
-    
-    while current_time <= end_time:
-        moon_alt, _ = calculate_moon_position(current_time)
+    # Print visibility information for each object
+    for obj, duration in sorted_objects:
+        # Get the first and last visibility periods
+        first_period = obj.visibility_periods[0]
+        last_period = obj.visibility_periods[-1]
         
-        if prev_alt is not None:
-            # Moon rise detected
-            if prev_alt < 0 and moon_alt >= 0:
-                moon_rise = current_time
-            # Moon set detected
-            elif prev_alt >= 0 and moon_alt < 0:
-                moon_set = current_time
+        # Calculate total visibility duration in hours
+        hours = duration.total_seconds() / 3600
         
-        prev_alt = moon_alt
-        current_time += timedelta(minutes=1)
-    
-    # Calculate moon phase
-    moon_phase = calculate_moon_phase(start_time)
-    moon_icon, phase_name = get_moon_phase_icon(moon_phase)
-    
-    # Get list of moon affected objects
-    moon_affected = [data for data in object_data if data.get('moon_influenced', False)]
-    
-    # Print moon influence summary
-    print("\nMoon Influence Summary:")
-    print("-" * 20)
-    print(f"Moon Phase: {moon_icon} {phase_name} ({moon_phase:.1%})")
-    if moon_rise:
-        print(f"Moon Rise: {format_time(moon_rise)}")
-    if moon_set:
-        print(f"Moon Set: {format_time(moon_set)}")
-    print(f"Objects affected by moon: {len(moon_affected)}/{len(object_data)}")
-    if moon_affected:
-        print("\nAffected objects:")
-        for data in moon_affected:
-            print(f"- {data['name']}")
-    else:
-        print("\nNo objects are significantly affected by moon proximity.")
-    
-    print("\nDetailed Object Report:")
-    print("=" * 30)
-    
-    # Print detailed report
-    for data in object_data:
-        print(f"\n{data['name']}")
-        # Get current moon icon for this object's observation period
-        current_moon_phase = calculate_moon_phase(data['start'])
-        current_moon_icon, current_phase_name = get_moon_phase_icon(current_moon_phase)
-        moon_status = f"{current_moon_icon} Moon interference" if data.get('moon_influenced', False) else "✨ Clear from moon"
-        print(f"Moon Status: {moon_status}")
-        print(f"Visibility: {format_time(data['start'])} - {format_time(data['end'])} "
-              f"({data['duration']:.1f} hours)")
-        print(f"Magnitude: {data['magnitude']}")
-        if data['fov']:
-            print(f"Field of view: {data['fov']}")
-            if data['panels'] > 1:
-                print(f"Requires {data['panels']} panels for full coverage")
-        print(f"Required exposure: {data['exposure']:.2f} hours "
-              f"({data['frames']} frames of {SINGLE_EXPOSURE}s)")
+        # Get imaging requirements
+        required_panels = calculate_required_panels(obj.fov) if obj.fov else None
+        required_exposure = calculate_required_exposure(obj.magnitude, bortle_index, obj.fov) if obj.magnitude and obj.fov else None
         
-        # Add imaging feasibility indication
-        if data['exposure'] <= data['duration']:
-            print("✓ Sufficient visibility time for imaging")
-        else:
-            print("✗ Insufficient visibility time for complete imaging "
-                  f"(needs {data['exposure']:.1f}h, have {data['duration']:.1f}h)")
+        print(f"\n{obj.name}:")
+        print(f"Visibility: {format_time(first_period[0])} - {format_time(last_period[1])} ({hours:.1f} hours)")
+        
+        if required_panels is not None:
+            print(f"Required panels: {required_panels}")
+        if required_exposure is not None:
+            print(f"Required exposure: {required_exposure[0]:.1f} hours")  # Fixed to use first element of tuple
+        
+        # Check if object is near moon during any visibility period
+        if hasattr(obj, 'near_moon') and obj.near_moon:
+            print("WARNING: Object will be near the moon during some visibility periods")
+        
+        # Check if object has sufficient time for imaging
+        if required_exposure is not None:
+            if hours >= required_exposure[0]:  # Fixed to use first element of tuple
+                print("✓ Sufficient time for imaging")
+            else:
+                print("✗ Insufficient time for imaging")
+    
+    print("\n" + "-" * 50)
 
 def print_schedule_strategy_report(schedule, strategy):
     """Print schedule details based on strategy"""
@@ -2146,12 +2094,18 @@ def print_objects_by_type(objects, abbreviate=False):
 
 def main():
     """Main program execution"""
-    # Initialize
+    # Get current time to determine which night we're in
     current_date = datetime.now(get_milan_timezone())
     
     # Get night period
     sunset, next_sunrise = find_sunset_sunrise(current_date)
     twilight_evening, twilight_morning = find_astronomical_twilight(current_date)
+    
+    # If current time is after midnight, adjust to previous day's sunset
+    if current_date.hour < 12:
+        yesterday = current_date - timedelta(days=1)
+        sunset, _ = find_sunset_sunrise(yesterday)
+        twilight_evening, _ = find_astronomical_twilight(yesterday)
     
     # Get objects
     if USE_CSV_CATALOG:
@@ -2162,7 +2116,7 @@ def main():
     else:
         all_objects = get_combined_catalog()
     
-    # Filter objects based on visibility and exposure requirements
+    # Filter objects based on visibility and exposure requirements for the entire night
     visible_objects, insufficient_objects = filter_visible_objects(
         all_objects, twilight_evening, twilight_morning)
     
@@ -2170,31 +2124,31 @@ def main():
         print("No objects are visible under current conditions")
         return
     
-    # Initialize report generator
+    # Initialize report generator with the full night period
     report_gen = ReportGenerator(current_date, DEFAULT_LOCATION)
     
     # Find moon rise and set times and check moon interference
     moon_rise = None
     moon_set = None
-    current_time = twilight_evening
+    check_time = twilight_evening
     prev_alt = None
     
-    # First pass: find moon rise/set times
-    while current_time <= twilight_morning:
-        moon_alt, _ = calculate_moon_position(current_time)
+    # First pass: find moon rise/set times for the entire night
+    while check_time <= twilight_morning:
+        moon_alt, _ = calculate_moon_position(check_time)
         
         if prev_alt is not None:
             # Moon rise detected
             if prev_alt < 0 and moon_alt >= 0:
-                moon_rise = current_time
+                moon_rise = check_time
             # Moon set detected
             elif prev_alt >= 0 and moon_alt < 0:
-                moon_set = current_time
+                moon_set = check_time
         
         prev_alt = moon_alt
-        current_time += timedelta(minutes=1)
+        check_time += timedelta(minutes=1)
     
-    # Calculate moon phase
+    # Calculate moon phase at the start of astronomical twilight
     moon_phase = calculate_moon_phase(twilight_evening)
     
     # Second pass: check moon interference for each object
@@ -2206,25 +2160,25 @@ def main():
         obj.near_moon = False
         obj.moon_influence_periods = []
         
-        # Check visibility periods
-        visibility_periods = find_visibility_window(obj, twilight_evening, twilight_morning)
+        # Check visibility periods for the entire night
+        visibility_periods = find_visibility_window(obj, twilight_evening, twilight_morning, use_margins=True)  # Added use_margins=True
         
         for period_start, period_end in visibility_periods:
-            current_time = period_start
+            check_time = period_start
             interference_start = None
             
-            while current_time <= period_end:
-                obj_alt, obj_az = calculate_altaz(obj, current_time)
-                moon_alt, moon_az = calculate_moon_position(current_time)
+            while check_time <= period_end:
+                obj_alt, obj_az = calculate_altaz(obj, check_time)
+                moon_alt, moon_az = calculate_moon_position(check_time)
                 
-                if is_near_moon(obj_alt, obj_az, moon_alt, moon_az, obj.magnitude, current_time):
+                if is_near_moon(obj_alt, obj_az, moon_alt, moon_az, obj.magnitude, check_time):
                     if interference_start is None:
-                        interference_start = current_time
+                        interference_start = check_time
                 elif interference_start is not None:
-                    obj.moon_influence_periods.append((interference_start, current_time))
+                    obj.moon_influence_periods.append((interference_start, check_time))
                     interference_start = None
                 
-                current_time += timedelta(minutes=15)  # Check every 15 minutes
+                check_time += timedelta(minutes=15)  # Check every 15 minutes
             
             if interference_start is not None:
                 obj.moon_influence_periods.append((interference_start, period_end))
@@ -2233,7 +2187,7 @@ def main():
             obj.near_moon = True
             moon_affected.append(obj)
     
-    # Generate report sections
+    # Generate report sections for the entire night
     report_gen.generate_quick_summary(visible_objects, moon_affected, 
                                     twilight_evening, twilight_morning, moon_phase)
     report_gen.generate_timing_section(sunset, next_sunrise, 
@@ -2242,7 +2196,7 @@ def main():
     report_gen.generate_moon_conditions(moon_phase, moon_affected)
     report_gen.generate_object_sections(visible_objects, insufficient_objects)
     
-    # Generate schedules for different strategies
+    # Generate schedules for different strategies for the entire night
     schedules = {}
     for strategy in SchedulingStrategy:
         schedule = generate_observation_schedule(
@@ -2257,7 +2211,7 @@ def main():
     # Use selected strategy for visualization
     schedule = schedules[SCHEDULING_STRATEGY]
     
-    # Create plots
+    # Create plots for the entire night period
     fig, ax = setup_altaz_plot()
     
     # Generate colors 
@@ -2282,7 +2236,7 @@ def main():
             plot_object_trajectory(ax, obj, twilight_evening, twilight_morning, 
                                  'pink', existing_positions)
     
-    plt.title(f"Object Trajectories for {current_date.date()}")
+    plt.title(f"Object Trajectories for Night of {sunset.date()}")
     # Create custom legend
     handles, labels = ax.get_legend_handles_labels()
     
@@ -2305,7 +2259,7 @@ def main():
     plt.show()
     plt.close(fig)  # Explicitly close the figure
     
-    # Create visibility chart
+    # Create visibility chart for the entire night
     if not EXCLUDE_INSUFFICIENT_TIME:
         visible_objects.extend(insufficient_objects)
     fig, ax = plot_visibility_chart(visible_objects, twilight_evening, 
