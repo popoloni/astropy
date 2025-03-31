@@ -15,6 +15,7 @@ from matplotlib.ticker import MultipleLocator
 import matplotlib.dates as mdates
 
 from enum import Enum
+import argparse
 
 class SchedulingStrategy(Enum):
     LONGEST_DURATION = "longest_duration"  # Current strategy: prioritize longest visibility
@@ -1372,13 +1373,13 @@ def plot_moon_trajectory(ax, start_time, end_time):
                        color=MOON_MARKER_COLOR,
                        zorder=3)
                        
-def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=EXCLUDE_INSUFFICIENT_TIME):
+def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=EXCLUDE_INSUFFICIENT_TIME, use_margins=True):
     """Filter objects based on visibility and exposure requirements"""
     filtered_objects = []
     insufficient_objects = []
     
     for obj in objects:
-        periods = find_visibility_window(obj, start_time, end_time, use_margins=True)  # Added use_margins=True
+        periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins) # Added use_margins=True
         if periods:
             duration = calculate_visibility_duration(periods)
             if hasattr(obj, 'magnitude') and obj.magnitude is not None:
@@ -1628,11 +1629,26 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
                        fontsize=10)
             existing_positions.append(label_pos)
 
-def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="Object Visibility"):
+def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="Object Visibility", use_margins=True):
     """Create visibility chart showing moon interference periods in yellow tones.
     - Goldenrod: Selected objects during moon interference
     - Khaki: Non-selected objects during moon interference
     - Green/Gray: Normal visibility periods
+    
+    Parameters:
+    -----------
+    objects : list
+        List of celestial objects to plot
+    start_time : datetime
+        Start time for visibility window
+    end_time : datetime
+        End time for visibility window
+    schedule : list, optional
+        List of scheduled objects
+    title : str, optional
+        Chart title
+    use_margins : bool, optional
+        Whether to use extended margins (±5°) for visibility boundaries
     """
     
     # Ensure times are in local timezone
@@ -1645,132 +1661,21 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     # Get current time in local timezone for the vertical line
     current_time = datetime.now(milan_tz)
     
-    # Create figure with dynamic height based on number of objects
-    fig = plt.figure(figsize=(15, max(10, len(objects)*0.3 + 4)))
+    # Create figure with settings
+    fig, ax = _create_visibility_chart_figure(objects)
     
-    # Use GridSpec for better control over spacing
-    gs = fig.add_gridspec(1, 1)
-    # Adjust margins to accommodate labels and legend
-    gs.update(left=0.25, right=0.95, top=0.95, bottom=0.1)
-    
-    ax = fig.add_subplot(gs[0, 0])
-
-    # Get visibility periods and sort objects by start time
-    object_periods = []
-    for obj in objects:
-        periods = find_visibility_window(obj, start_time, end_time, use_margins=True)  # Added use_margins=True
-        if periods:
-            # Convert periods to local time
-            local_periods = [(p[0].astimezone(milan_tz), p[1].astimezone(milan_tz)) 
-                           for p in periods]
-            duration = calculate_visibility_duration(periods)
-            object_periods.append((obj, local_periods[0][0], duration))
-    
-    # Sort by start time
-    object_periods.sort(key=lambda x: x[1], reverse=True)
-    sorted_objects = [item[0] for item in object_periods]
+    # Get visibility periods and sort objects
+    sorted_objects = _get_sorted_objects_for_chart(objects, start_time, end_time, use_margins)
     
     # Setup plot
-    ax.set_title(title)
-    ax.set_xlabel('Local Time')
-    ax.set_ylabel('Objects')
-    ax.set_xlim(start_time, end_time)
-    
-    # Use local time formatter
-    ax.xaxis.set_major_formatter(DateFormatter('%H:%M', tz=milan_tz))
-    
-     # Create color map for recommended vs non-recommended objects
+    _setup_visibility_chart_axes(ax, title, start_time, end_time, milan_tz)
+     
+    # Create color map for recommended vs non-recommended objects
     recommended_objects = [obj for _, _, obj in schedule] if schedule else []
     
     # Plot visibility periods
     for i, obj in enumerate(sorted_objects):
-        periods = find_visibility_window(obj, start_time, end_time, use_margins=True)  # Added use_margins=True
-        is_recommended = obj in recommended_objects
-        has_sufficient_time = getattr(obj, 'sufficient_time', True)
-        near_moon = getattr(obj, 'near_moon', False)
-        
-        # Determine color based on status and moon proximity
-        if near_moon:
-            # Dark yellow for selected objects near moon, pale yellow for others
-            if is_recommended:
-                color = '#DAA520'  # Goldenrod
-                alpha = 0.8
-            else:
-                color = '#F0E68C'  # Khaki
-                alpha = 0.6
-        else:
-            if not has_sufficient_time:
-                color = 'darkmagenta' if is_recommended else 'pink'
-            else:
-                color = 'green' if is_recommended else 'gray'
-            alpha = 0.8 if is_recommended else 0.4
-        
-        for period_start, period_end in periods:
-            local_start = period_start.astimezone(milan_tz)
-            local_end = period_end.astimezone(milan_tz)
-            
-            # If object has moon influence periods, we need to split the visibility bar
-            if hasattr(obj, 'moon_influence_periods') and obj.moon_influence_periods:
-                period_minutes = int((period_end - period_start).total_seconds() / 60)
-                
-                # Convert moon influence periods to actual times
-                moon_times = []
-                for start_idx, end_idx in obj.moon_influence_periods:
-                    moon_start = period_start + timedelta(minutes=start_idx)
-                    moon_end = period_start + timedelta(minutes=end_idx)
-                    if moon_start < period_end and moon_end > period_start:
-                        moon_times.append((
-                            max(moon_start, period_start),
-                            min(moon_end, period_end)
-                        ))
-                
-                # Plot non-moon-affected parts in normal color
-                last_end = period_start
-                for moon_start, moon_end in moon_times:
-                    if moon_start > last_end:
-                        # Plot normal visibility segment
-                        ax.barh(i, 
-                               moon_start.astimezone(milan_tz) - last_end.astimezone(milan_tz),
-                               left=last_end.astimezone(milan_tz),
-                               height=0.3,
-                               alpha=alpha,
-                               color=color)
-                    # Plot moon-affected segment
-                    ax.barh(i,
-                           moon_end.astimezone(milan_tz) - moon_start.astimezone(milan_tz),
-                           left=moon_start.astimezone(milan_tz),
-                           height=0.3,
-                           alpha=alpha,
-                           color='#DAA520' if is_recommended else '#F0E68C')  # Goldenrod/Khaki
-                    last_end = moon_end
-                
-                # Plot remaining normal visibility if any
-                if last_end < period_end:
-                    ax.barh(i,
-                           period_end.astimezone(milan_tz) - last_end.astimezone(milan_tz),
-                           left=last_end.astimezone(milan_tz),
-                           height=0.3,
-                           alpha=alpha,
-                           color=color)
-            else:
-                # Plot normal visibility bar if no moon influence
-                ax.barh(i, local_end - local_start, left=local_start, height=0.3,
-                       alpha=alpha,
-                       color=color)
-            
-            # Add label only for the first period
-            if period_start == periods[0][0]:
-                ax.barh(i, timedelta(minutes=1), left=local_start, height=0.3,
-                       alpha=0,  # Transparent
-                       label=obj.name)
-                               
-            # Add abbreviated name at the start of the bar
-            if period_start == periods[0][0]:
-                abbreviated_name = get_abbreviated_name(obj.name)
-                ax.text(local_start, i, f" {abbreviated_name}", 
-                       va='center', ha='left', 
-                       fontsize=8,
-                       fontweight='bold' if is_recommended else 'normal')
+        _plot_object_visibility_bars(ax, i, obj, start_time, end_time, recommended_objects, use_margins)
     
     # Add vertical line for current time if it's within the plot range
     if start_time <= current_time <= end_time:
@@ -1782,14 +1687,161 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     ax.grid(True, alpha=GRID_ALPHA)
     
     # Add legend entries for moon interference if needed
-    if any(getattr(obj, 'near_moon', False) for obj in objects):
-        # Add dummy patches for legend
-        ax.barh([-1], [0], height=0.3, color='#DAA520', alpha=0.8, 
-                label='Selected Object (Moon Interference)')
-        ax.barh([-1], [0], height=0.3, color='#F0E68C', alpha=0.4,
-                label='Non-selected Object (Moon Interference)')
+    if any(getattr(obj, 'near_moon', False) for obj in sorted_objects):
+        _add_moon_interference_legend(ax)
     
     return fig, ax
+
+def _create_visibility_chart_figure(objects):
+    """Create figure with appropriate size for visibility chart"""
+    fig = plt.figure(figsize=(15, max(10, len(objects)*0.3 + 4)))
+    
+    # Use GridSpec for better control over spacing
+    gs = fig.add_gridspec(1, 1)
+    # Adjust margins to accommodate labels and legend
+    gs.update(left=0.25, right=0.95, top=0.95, bottom=0.1)
+    
+    ax = fig.add_subplot(gs[0, 0])
+    return fig, ax
+
+def _get_sorted_objects_for_chart(objects, start_time, end_time, use_margins):
+    """Get objects sorted by visibility start time for chart display"""
+    milan_tz = get_local_timezone()
+    object_periods = []
+    
+    for obj in objects:
+        periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins)
+        if periods:
+            # Convert periods to local time
+            local_periods = [(p[0].astimezone(milan_tz), p[1].astimezone(milan_tz)) 
+                           for p in periods]
+            duration = calculate_visibility_duration(periods)
+            object_periods.append((obj, local_periods[0][0], duration))
+    
+    # Sort by start time
+    object_periods.sort(key=lambda x: x[1], reverse=True)
+    return [item[0] for item in object_periods]
+
+def _setup_visibility_chart_axes(ax, title, start_time, end_time, tz):
+    """Setup axes for visibility chart"""
+    ax.set_title(title)
+    ax.set_xlabel('Local Time')
+    ax.set_ylabel('Objects')
+    ax.set_xlim(start_time, end_time)
+    
+    # Use local time formatter
+    ax.xaxis.set_major_formatter(DateFormatter('%H:%M', tz=tz))
+
+def _plot_object_visibility_bars(ax, index, obj, start_time, end_time, recommended_objects, use_margins):
+    """Plot visibility bars for a single object"""
+    milan_tz = get_local_timezone()
+    periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins)
+    
+    is_recommended = obj in recommended_objects
+    has_sufficient_time = getattr(obj, 'sufficient_time', True)
+    near_moon = getattr(obj, 'near_moon', False)
+    
+    # Determine color based on status and moon proximity
+    color, alpha = _get_object_visibility_color(near_moon, is_recommended, has_sufficient_time)
+    
+    for period_start, period_end in periods:
+        local_start = period_start.astimezone(milan_tz)
+        local_end = period_end.astimezone(milan_tz)
+        
+        # If object has moon influence periods, we need to split the visibility bar
+        if hasattr(obj, 'moon_influence_periods') and obj.moon_influence_periods:
+            _plot_visibility_with_moon_interference(ax, index, obj, period_start, period_end, 
+                                                 local_start, local_end, color, alpha, is_recommended)
+        else:
+            # Plot normal visibility bar if no moon influence
+            ax.barh(index, local_end - local_start, left=local_start, height=0.3,
+                   alpha=alpha, color=color)
+        
+        # Add label only for the first period
+        if period_start == periods[0][0]:
+            # Add abbreviated name at the start of the bar
+            abbreviated_name = get_abbreviated_name(obj.name)
+            ax.text(local_start, index, f" {abbreviated_name}", 
+                   va='center', ha='left', 
+                   fontsize=8,
+                   fontweight='bold' if is_recommended else 'normal')
+            
+            ax.barh(index, timedelta(minutes=1), left=local_start, height=0.3,
+                   alpha=0,  # Transparent
+                   label=obj.name)
+
+def _get_object_visibility_color(near_moon, is_recommended, has_sufficient_time):
+    """Determine color and alpha for object visibility bars"""
+    if near_moon:
+        # Dark yellow for selected objects near moon, pale yellow for others
+        if is_recommended:
+            color = '#DAA520'  # Goldenrod
+            alpha = 0.8
+        else:
+            color = '#F0E68C'  # Khaki
+            alpha = 0.6
+    else:
+        if not has_sufficient_time:
+            color = 'darkmagenta' if is_recommended else 'pink'
+        else:
+            color = 'green' if is_recommended else 'gray'
+        alpha = 0.8 if is_recommended else 0.4
+    
+    return color, alpha
+
+def _plot_visibility_with_moon_interference(ax, index, obj, period_start, period_end, 
+                                         local_start, local_end, color, alpha, is_recommended):
+    """Plot visibility bars with moon interference segments"""
+    milan_tz = get_local_timezone()
+    period_minutes = int((period_end - period_start).total_seconds() / 60)
+    
+    # Convert moon influence periods to actual times
+    moon_times = []
+    for start_idx, end_idx in obj.moon_influence_periods:
+        moon_start = period_start + timedelta(minutes=start_idx)
+        moon_end = period_start + timedelta(minutes=end_idx)
+        if moon_start < period_end and moon_end > period_start:
+            moon_times.append((
+                max(moon_start, period_start),
+                min(moon_end, period_end)
+            ))
+    
+    # Plot non-moon-affected parts in normal color
+    last_end = period_start
+    for moon_start, moon_end in moon_times:
+        if moon_start > last_end:
+            # Plot normal visibility segment
+            ax.barh(index, 
+                   moon_start.astimezone(milan_tz) - last_end.astimezone(milan_tz),
+                   left=last_end.astimezone(milan_tz),
+                   height=0.3,
+                   alpha=alpha,
+                   color=color)
+        # Plot moon-affected segment
+        ax.barh(index,
+               moon_end.astimezone(milan_tz) - moon_start.astimezone(milan_tz),
+               left=moon_start.astimezone(milan_tz),
+               height=0.3,
+               alpha=alpha,
+               color='#DAA520' if is_recommended else '#F0E68C')  # Goldenrod/Khaki
+        last_end = moon_end
+    
+    # Plot remaining normal visibility if any
+    if last_end < period_end:
+        ax.barh(index,
+               period_end.astimezone(milan_tz) - last_end.astimezone(milan_tz),
+               left=last_end.astimezone(milan_tz),
+               height=0.3,
+               alpha=alpha,
+               color=color)
+
+def _add_moon_interference_legend(ax):
+    """Add legend entries for moon interference"""
+    # Add dummy patches for legend
+    ax.barh([-1], [0], height=0.3, color='#DAA520', alpha=0.8, 
+            label='Selected Object (Moon Interference)')
+    ax.barh([-1], [0], height=0.3, color='#F0E68C', alpha=0.4,
+            label='Non-selected Object (Moon Interference)')
 
 # ============= SCHEDULE GENERATION =============
 
@@ -2115,6 +2167,19 @@ def print_objects_by_type(objects, abbreviate=False):
 
 def main():
     """Main program execution"""
+    # Parse arguments
+    parser = argparse.ArgumentParser(description='Astronomical visibility report and charts')
+    parser.add_argument('--date', type=str, default=None, help='Date for calculations (YYYY-MM-DD)')
+    parser.add_argument('--object', type=str, default=None, help='Specific object to display')
+    parser.add_argument('--type', type=str, default=None, help='Filter by object type')
+    parser.add_argument('--report-only', action='store_true', help='Show only the text report')
+    parser.add_argument('--schedule', choices=['longest', 'max_objects', 'optimal_snr'], 
+                      default='longest', help='Scheduling strategy')
+    parser.add_argument('--no-margins', action='store_true', 
+                      help='Do not use extended margins for visibility chart')
+    
+    args = parser.parse_args()
+    
     # Get current time to determine which night we're in
     current_date = datetime.now(get_local_timezone())
     
@@ -2150,9 +2215,12 @@ def main():
     else:
         all_objects = get_combined_catalog()
     
+    # Determine use_margins setting from args (invert the no-margins flag)
+    use_margins = not args.no_margins
+    
     # Filter objects based on visibility and exposure requirements for the entire night
     visible_objects, insufficient_objects = filter_visible_objects(
-        all_objects, twilight_evening, twilight_morning)
+        all_objects, twilight_evening, twilight_morning, use_margins=use_margins)
     
     if not visible_objects and not insufficient_objects:
         print("No objects are visible under current conditions")
@@ -2195,7 +2263,7 @@ def main():
         obj.moon_influence_periods = []
         
         # Check visibility periods for the entire night
-        visibility_periods = find_visibility_window(obj, twilight_evening, twilight_morning, use_margins=True)  # Added use_margins=True
+        visibility_periods = find_visibility_window(obj, twilight_evening, twilight_morning, use_margins=True)
         
         for period_start, period_end in visibility_periods:
             check_time = period_start
@@ -2297,7 +2365,7 @@ def main():
     if not EXCLUDE_INSUFFICIENT_TIME:
         visible_objects.extend(insufficient_objects)
     fig, ax = plot_visibility_chart(visible_objects, twilight_evening, 
-                                  twilight_morning, schedule)
+                                  twilight_morning, schedule, use_margins=False)
     plt.show()
     plt.close(fig)  # Explicitly close the figure
 
