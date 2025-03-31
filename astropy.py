@@ -339,7 +339,7 @@ def enrich_object_name(name):
 def filter_visible_objects(objects, min_alt=MIN_ALT, max_alt=MAX_ALT, min_az=MIN_AZ, max_az=MAX_AZ):
     """Filter objects based on visibility constraints"""
     visible_objects = []
-    current_time = datetime.now(get_milan_timezone())
+    current_time = datetime.now(get_local_timezone())
     
     for obj in objects:
         alt, az = calculate_altaz(obj, current_time)
@@ -384,7 +384,7 @@ def sort_objects_by_size(objects):
 def sort_objects_by_altitude(objects, time=None):
     """Sort objects by current altitude"""
     if time is None:
-        time = datetime.now(get_milan_timezone())
+        time = datetime.now(get_local_timezone())
     
     def get_altitude(obj):
         alt, _ = calculate_altaz(obj, time)
@@ -485,20 +485,20 @@ def get_objects_from_csv():
 
 # ======== TIME CONVERSION FUNCTIONS =============
 
-def get_milan_timezone():
+def get_local_timezone():
     """Get configured timezone"""
     return pytz.timezone('Europe/Rome')
 
 def local_to_utc(local_time):
     """Convert local time to UTC"""
-    milan_tz = get_milan_timezone()
+    milan_tz = get_local_timezone()
     if local_time.tzinfo is None:
         local_time = milan_tz.localize(local_time)
     return local_time.astimezone(pytz.UTC)
 
 def utc_to_local(utc_time):
     """Convert UTC time to local time"""
-    milan_tz = get_milan_timezone()
+    milan_tz = get_local_timezone()
     if utc_time.tzinfo is None:
         utc_time = pytz.UTC.localize(utc_time)
     return utc_time.astimezone(milan_tz)
@@ -1105,8 +1105,9 @@ class ReportGenerator:
                 continue
                 
             start_time = periods[0][0]
-            end_time = periods[-1][1]
+            #end_time = periods[-1][1]
             duration = calculate_visibility_duration(periods)
+            end_time = start_time + timedelta(hours=duration)
             
             # Get moon status
             moon_status = ""
@@ -1197,7 +1198,7 @@ def is_visible(alt, az, use_margins=True):
         return (MIN_AZ <= az <= MAX_AZ) and (MIN_ALT <= alt <= MAX_ALT)
 
 def find_visibility_window(obj, start_time, end_time, use_margins=True):
-    """Find visibility window for an object"""
+    """Find visibility window for an object, considering sun position"""
     current_time = start_time
     visibility_periods = []
     start_visible = None
@@ -1207,8 +1208,16 @@ def find_visibility_window(obj, start_time, end_time, use_margins=True):
     interval = timedelta(minutes=1)
     
     while current_time <= end_time:
+        # Check object's position
         alt, az = calculate_altaz(obj, current_time)
-        is_currently_visible = is_visible(alt, az, use_margins)
+        
+        # Check sun's position
+        sun_alt, _ = calculate_sun_position(current_time)
+        
+        # Object is visible if:
+        # 1. It's within visibility limits
+        # 2. The sun is below the horizon (altitude < -5)
+        is_currently_visible = is_visible(alt, az, use_margins) and sun_alt < -5
         
         # Object becomes visible
         if is_currently_visible and not last_visible:
@@ -1239,7 +1248,7 @@ def calculate_visibility_duration(visibility_periods):
 
 def find_sunset_sunrise(date):
     """Find sunset and sunrise times"""
-    milan_tz = get_milan_timezone()
+    milan_tz = get_local_timezone()
     
     if date.tzinfo is not None:
         date = date.replace(tzinfo=None)
@@ -1265,7 +1274,7 @@ def find_sunset_sunrise(date):
 
 def find_astronomical_twilight(date):
     """Find astronomical twilight times"""
-    milan_tz = get_milan_timezone()
+    milan_tz = get_local_timezone()
     
     if date.tzinfo is not None:
         date = date.replace(tzinfo=None)
@@ -1445,10 +1454,15 @@ def get_abbreviated_name(full_name):
     if ic_match:
         return f"IC{ic_match.group(1)}"
     
-    # Then try Sh2 number - Fixed this part
+    # Then try SH2 number
     sh2_match = re.match(r'SH2-(\d+)', full_name)
     if sh2_match:
         return f"SH2-{sh2_match.group(1)}"  # Return complete SH2-nnn format
+    
+    # Then try SH number
+    sh_match = re.match(r'SH\s*(\d+)', full_name)
+    if sh_match:
+        return f"SH{sh_match.group(1)}"  # Return complete SH-nnn format
         
     # Then try Barnard number
     b_match = re.match(r'B\s*(\d+)', full_name)
@@ -1622,7 +1636,7 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     """
     
     # Ensure times are in local timezone
-    milan_tz = get_milan_timezone()
+    milan_tz = get_local_timezone()
     if start_time.tzinfo != milan_tz:
         start_time = start_time.astimezone(milan_tz)
     if end_time.tzinfo != milan_tz:
@@ -1898,6 +1912,13 @@ def generate_observation_schedule(objects, start_time, end_time,
 
 def format_time(time):
     """Format time for display"""
+    local_tz = get_local_timezone()
+    
+    if time.tzinfo != local_tz:
+        time = time.astimezone(local_tz)
+    elif time.tzinfo is None:
+        time = local_tz.localize(time)
+    
     return time.strftime("%H:%M:%S")
 
 def print_visibility_report(objects, start_time, end_time):
@@ -2095,18 +2116,31 @@ def print_objects_by_type(objects, abbreviate=False):
 def main():
     """Main program execution"""
     # Get current time to determine which night we're in
-    current_date = datetime.now(get_milan_timezone())
+    current_date = datetime.now(get_local_timezone())
     
     # Get night period
     sunset, next_sunrise = find_sunset_sunrise(current_date)
     twilight_evening, twilight_morning = find_astronomical_twilight(current_date)
-    
+
+     # Ensure twilight times are in the correct timezone
+    local_tz = get_local_timezone()
+    if twilight_evening.tzinfo != local_tz:
+        twilight_evening = twilight_evening.astimezone(local_tz)
+    if twilight_morning.tzinfo != local_tz:
+        twilight_morning = twilight_morning.astimezone(local_tz)
+
     # If current time is after midnight, adjust to previous day's sunset
     if current_date.hour < 12:
         yesterday = current_date - timedelta(days=1)
         sunset, _ = find_sunset_sunrise(yesterday)
         twilight_evening, _ = find_astronomical_twilight(yesterday)
-    
+    # If we're in daytime, calculate for tonight
+    elif sunset > current_date:
+        # We're in daytime before sunset, use today's twilight times
+        pass
+
+
+
     # Get objects
     if USE_CSV_CATALOG:
         all_objects = get_objects_from_csv()
@@ -2125,7 +2159,7 @@ def main():
         return
     
     # Initialize report generator with the full night period
-    report_gen = ReportGenerator(current_date, DEFAULT_LOCATION)
+    report_gen = ReportGenerator(twilight_evening, DEFAULT_LOCATION)
     
     # Find moon rise and set times and check moon interference
     moon_rise = None
