@@ -60,6 +60,7 @@ BORTLE_INDEX = DEFAULT_LOCATION['bortle_index']
 # Catalog selection
 USE_CSV_CATALOG = CONFIG['catalog']['use_csv_catalog']
 CATALOGNAME = CONFIG['catalog']['catalog_name']
+MERGING_CATALOGS = CONFIG['catalog']['merge']
 
 # Time & Visibility Configuration
 MIN_VISIBILITY_HOURS = CONFIG['visibility']['min_visibility_hours']
@@ -419,6 +420,70 @@ def get_object_type(type_str):
     else:
         return 'other'
 
+def normalize_object_name(name):
+    """
+    Normalize object name for comparison by extracting catalog prefix and number.
+    Example: 'NGC 6888 (Crescent Nebula)' -> ('ngc', '6888')
+    """
+    # Remove spaces, parentheses, and dashes, convert to lowercase
+    name = name.lower()
+    name = re.sub(r'[\s\(\)\-]', '', name)
+    
+    # Match catalog prefix and number
+    # Handle special cases like 'M31', 'IC1318', 'NGC6888', 'SH101', etc.
+    patterns = [
+        r'^(ngc)(\d+)',    # NGC cases
+        r'^(ic)(\d+)',     # IC cases
+        r'^(m)(\d+)',      # Messier cases
+        r'^(sh)(\d+)',     # SH cases
+        r'^(collinder)(\d+)',  # Collinder cases
+        r'^(melotte)(\d+)',    # Melotte cases
+        r'^(barnard)(\d+)',    # Barnard cases
+    ]
+    
+    for pattern in patterns:
+        match = re.match(pattern, name)
+        if match:
+            prefix, number = match.groups()
+            return (prefix, number)
+    
+    # If no standard pattern matches, return the whole string
+    return (name, '')
+
+def are_same_object(name1, name2):
+    """Compare two object names to determine if they refer to the same object"""
+    # Split names by '/' to handle multiple designations
+    names1 = name1.split('/')
+    names2 = name2.split('/')
+    
+    # Normalize each name part
+    norm_names1 = [normalize_object_name(n.strip()) for n in names1]
+    norm_names2 = [normalize_object_name(n.strip()) for n in names2]
+    
+    # Check if any normalized names match (just prefix and number)
+    return any(n1 == n2 and n1[0] != '' and n1[1] != '' 
+              for n1 in norm_names1 for n2 in norm_names2)
+
+def merge_catalogs(csv_objects, builtin_objects):
+    """Merge CSV and built-in catalogs, preferring CSV entries for duplicates"""
+    merged = []
+    used_builtin = set()
+    
+    # First add all CSV objects
+    merged.extend(csv_objects)
+    
+    # Add non-duplicate built-in objects
+    for builtin_obj in builtin_objects:
+        is_duplicate = False
+        for csv_obj in csv_objects:
+            if are_same_object(builtin_obj.name, csv_obj.name):
+                is_duplicate = True
+                break
+        if not is_duplicate:
+            merged.append(builtin_obj)
+    
+    return merged
+
 def get_objects_from_csv():
     """Read objects from CSV file and organize by type"""
     objects_by_type = {
@@ -433,6 +498,10 @@ def get_objects_from_csv():
         'other': []
     }
     
+    print(f"Catalog config: {CONFIG['catalog']}")  # Debug print
+    print(f"Merge flag value: {CONFIG['catalog'].get('merge', False)}")  # Debug print
+    
+    csv_objects = []
     try:
         with open(CATALOGNAME, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file, delimiter=';')
@@ -470,19 +539,32 @@ def get_objects_from_csv():
                     # Categorize object by type
                     obj_type = get_object_type(row['Type'])
                     objects_by_type[obj_type].append(obj)
+                    csv_objects.append(obj)  # Keep track of successfully parsed objects
                 
     except Exception as e:
         print(f"Error reading CSV file: {e}")
-        return []
+        # Don't return immediately, continue with merging if enabled
     
-    # Flatten the dictionary into a single list while maintaining type information
-    all_objects = []
-    for obj_type, objects in objects_by_type.items():
-        for obj in objects:
-            obj.type = obj_type  # Add type information to object
-            all_objects.append(obj)
+    print(f"CSV objects found: {len(csv_objects)}")  # Debug print
     
-    return all_objects
+    # If merge is enabled or CSV read failed, get built-in catalog
+    merge_enabled = MERGING_CATALOGS
+    print(f"Merge enabled: {merge_enabled}")  # Debug print
+    
+    if merge_enabled or not csv_objects:
+        print("Getting built-in catalog")
+        builtin_objects = get_combined_catalog()
+        
+        if merge_enabled and csv_objects:
+            print(f"Merging {len(csv_objects)} CSV objects with {len(builtin_objects)} built-in objects")
+            return merge_catalogs(csv_objects, builtin_objects)
+        else:
+            print("Using built-in catalog only")
+            return builtin_objects
+    
+    # If we have CSV objects and merge is not enabled, return just those
+    print(f"Using {len(csv_objects)} CSV objects only")
+    return csv_objects
 
 # ======== TIME CONVERSION FUNCTIONS =============
 
@@ -1403,7 +1485,7 @@ def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=E
 def setup_altaz_plot():
     """Setup basic altitude-azimuth plot"""
     # Create figure with appropriate size
-    fig = plt.figure(figsize=(15, 10))  # Wider figure
+    fig = plt.figure(figsize=FIGURE_SIZE)  # Wider figure
     
     # Use GridSpec for better control over spacing
     gs = fig.add_gridspec(1, 1)
@@ -1436,7 +1518,50 @@ def setup_altaz_plot():
     
     return fig, ax
 
-
+def finalize_plot_legend(ax):
+    """Finalize plot legend with sorted entries, keeping Visible Region and Moon first"""
+    # Get current handles and labels
+    handles, labels = ax.get_legend_handles_labels()
+    
+    # Find indices of special entries
+    try:
+        visible_idx = labels.index('Visible Region')
+        visible_handle = handles.pop(visible_idx)
+        visible_label = labels.pop(visible_idx)
+    except ValueError:
+        visible_handle, visible_label = None, None
+        
+    try:
+        moon_idx = labels.index('Moon')
+        moon_handle = handles.pop(moon_idx)
+        moon_label = labels.pop(moon_idx)
+    except ValueError:
+        moon_handle, moon_label = None, None
+    
+    # Sort remaining entries
+    sorted_pairs = sorted(zip(handles, labels), key=lambda x: x[1].lower())
+    handles, labels = zip(*sorted_pairs) if sorted_pairs else ([], [])
+    
+    # Reconstruct list with special entries first
+    final_handles = []
+    final_labels = []
+    
+    if visible_handle is not None:
+        final_handles.append(visible_handle)
+        final_labels.append(visible_label)
+    if moon_handle is not None:
+        final_handles.append(moon_handle)
+        final_labels.append(moon_label)
+        
+    final_handles.extend(handles)
+    final_labels.extend(labels)
+    
+    # Update legend
+    ax.legend(final_handles, final_labels,
+             bbox_to_anchor=(1.02, 1),
+             loc='upper left',
+             borderaxespad=0,
+             title='Objects and Conditions')
 
 def get_abbreviated_name(full_name):
     """Get abbreviated name (catalog designation) from full name"""
@@ -2353,11 +2478,7 @@ def main():
         handles.append(insuf_line)
     
     # Create the legend with all handles
-    ax.legend(handles=handles, 
-             bbox_to_anchor=(1.02, 1),
-             loc='upper left',
-             borderaxespad=0,
-             title='Objects and Conditions')
+    finalize_plot_legend(ax)
     plt.show()
     plt.close(fig)  # Explicitly close the figure
     

@@ -35,7 +35,8 @@
     },
     "catalog": {
         "use_csv_catalog": true,
-        "catalog_name": "objects.csv"
+        "catalog_name": "objects.csv",
+        "merge": true
     },
     "scheduling": {
         "strategy": "max_objects",
