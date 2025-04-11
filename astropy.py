@@ -9,7 +9,7 @@ import json
 import csv
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+from matplotlib.patches import Rectangle, Patch
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import MultipleLocator
 import matplotlib.dates as mdates
@@ -21,8 +21,8 @@ class SchedulingStrategy(Enum):
     LONGEST_DURATION = "longest_duration"  # Current strategy: prioritize longest visibility
     MAX_OBJECTS = "max_objects"           # Maximum number of objects
     OPTIMAL_SNR = "optimal_snr"           # Best imaging conditions
-    #MINIMAL_MOSAIC = "minimal_mosaic"     # Fewer panels needed
-    #DIFFICULTY_BALANCED = "difficulty_balanced"  # Mix of easy and challenging
+    MINIMAL_MOSAIC = "minimal_mosaic"     # Fewer panels needed
+    DIFFICULTY_BALANCED = "difficulty_balanced"  # Mix of easy and challenging
 
 # Load configuration from file
 def load_config():
@@ -498,8 +498,8 @@ def get_objects_from_csv():
         'other': []
     }
     
-    print(f"Catalog config: {CONFIG['catalog']}")  # Debug print
-    print(f"Merge flag value: {CONFIG['catalog'].get('merge', False)}")  # Debug print
+    #print(f"Catalog config: {CONFIG['catalog']}")  # Debug print
+    #print(f"Merge flag value: {CONFIG['catalog'].get('merge', False)}")  # Debug print
     
     csv_objects = []
     try:
@@ -545,25 +545,25 @@ def get_objects_from_csv():
         print(f"Error reading CSV file: {e}")
         # Don't return immediately, continue with merging if enabled
     
-    print(f"CSV objects found: {len(csv_objects)}")  # Debug print
+    #print(f"CSV objects found: {len(csv_objects)}")  # Debug print
     
     # If merge is enabled or CSV read failed, get built-in catalog
     merge_enabled = MERGING_CATALOGS
-    print(f"Merge enabled: {merge_enabled}")  # Debug print
+    #print(f"Merge enabled: {merge_enabled}")  # Debug print
     
     if merge_enabled or not csv_objects:
-        print("Getting built-in catalog")
+        #print("Getting built-in catalog")
         builtin_objects = get_combined_catalog()
         
         if merge_enabled and csv_objects:
-            print(f"Merging {len(csv_objects)} CSV objects with {len(builtin_objects)} built-in objects")
+            #print(f"Merging {len(csv_objects)} CSV objects with {len(builtin_objects)} built-in objects")
             return merge_catalogs(csv_objects, builtin_objects)
         else:
-            print("Using built-in catalog only")
+            #print("Using built-in catalog only")
             return builtin_objects
     
     # If we have CSV objects and merge is not enabled, return just those
-    print(f"Using {len(csv_objects)} CSV objects only")
+    #print(f"Using {len(csv_objects)} CSV objects only")
     return csv_objects
 
 # ======== TIME CONVERSION FUNCTIONS =============
@@ -1755,11 +1755,10 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
             existing_positions.append(label_pos)
 
 def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="Object Visibility", use_margins=True):
-    """Create visibility chart showing moon interference periods in yellow tones.
-    - Goldenrod: Selected objects during moon interference
-    - Khaki: Non-selected objects during moon interference
-    - Green/Gray: Normal visibility periods
-    
+    """Create visibility chart showing moon interference periods and scheduled intervals.
+    - Base bars show full visibility with colors indicating status/moon interference.
+    - Scheduled intervals are overlaid with hatching.
+
     Parameters:
     -----------
     objects : list
@@ -1769,53 +1768,158 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     end_time : datetime
         End time for visibility window
     schedule : list, optional
-        List of scheduled objects
+        List of scheduled observations [(start, end, obj), ...]
     title : str, optional
         Chart title
     use_margins : bool, optional
         Whether to use extended margins (±5°) for visibility boundaries
     """
-    
+
     # Ensure times are in local timezone
     milan_tz = get_local_timezone()
     if start_time.tzinfo != milan_tz:
         start_time = start_time.astimezone(milan_tz)
     if end_time.tzinfo != milan_tz:
         end_time = end_time.astimezone(milan_tz)
-    
+
     # Get current time in local timezone for the vertical line
     current_time = datetime.now(milan_tz)
+
+    # Create figure with settings - creating a brand new figure each time
+    # to avoid any remnant elements from previous plots
+    plt.close('all')  # Close any existing figures
+    fig = plt.figure(figsize=(15, max(10, len(objects)*0.3 + 4)))
     
-    # Create figure with settings
-    fig, ax = _create_visibility_chart_figure(objects)
+    # Full-width subplot - no need to reserve space for legend
+    ax = fig.add_subplot(111)
     
     # Get visibility periods and sort objects
     sorted_objects = _get_sorted_objects_for_chart(objects, start_time, end_time, use_margins)
-    
+
     # Setup plot
     _setup_visibility_chart_axes(ax, title, start_time, end_time, milan_tz)
-     
-    # Create color map for recommended vs non-recommended objects
+
+    # Create mapping for recommended objects and scheduled intervals (in local time)
     recommended_objects = [obj for _, _, obj in schedule] if schedule else []
-    
-    # Plot visibility periods
+    scheduled_intervals = {obj: (start.astimezone(milan_tz), end.astimezone(milan_tz))
+                           for start, end, obj in schedule} if schedule else {}
+
+    # Plot BASE visibility periods
     for i, obj in enumerate(sorted_objects):
-        _plot_object_visibility_bars(ax, i, obj, start_time, end_time, recommended_objects, use_margins)
-    
+        # Skip returning handles/labels since we don't need them for a legend
+        _plot_object_visibility_bars_no_legend(ax, i, obj, start_time, end_time,
+                                         recommended_objects, use_margins)
+
+    # OVERLAY the scheduled intervals with hatching
+    for i, obj in enumerate(sorted_objects):
+        if obj in scheduled_intervals:
+            sched_start_local, sched_end_local = scheduled_intervals[obj]
+            
+            # Get the object's actual visibility periods
+            periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins)
+            if not periods:
+                continue  # Skip if no visibility periods
+                
+            # Find the actual period that contains this scheduled time
+            containing_period = None
+            for p_start, p_end in periods:
+                local_p_start = p_start.astimezone(milan_tz)
+                local_p_end = p_end.astimezone(milan_tz)
+                
+                # Check if this period contains the scheduled interval
+                if (local_p_start <= sched_end_local and 
+                    local_p_end >= sched_start_local):
+                    # Found a containing period
+                    containing_period = (local_p_start, local_p_end)
+                    break
+                    
+            if not containing_period:
+                print(f"Warning: No visibility period found containing scheduled interval for {obj.name}")
+                continue
+                
+            # Ensure the scheduled interval is within the plot's time range and valid
+            # AND within the containing visibility period
+            plot_start = max(sched_start_local, start_time, containing_period[0])
+            plot_end = min(sched_end_local, end_time, containing_period[1])
+            
+            if plot_start < plot_end:  # Only plot if there's a non-zero duration within bounds
+                ax.barh(i, plot_end - plot_start, 
+                        left=plot_start, 
+                        height=0.35,  # Slightly taller than visibility bars
+                        color='none',  # Make base transparent
+                        edgecolor='red',  # Changed from black to RED as requested
+                        hatch='///',  # Hashing pattern
+                        linewidth=1.0,  # Slightly thicker for better visibility
+                        alpha=0.9,  # Higher alpha for better contrast
+                        zorder=9)  # Set to 9 so it's BELOW the labels but still above the bars
+
     # Add vertical line for current time if it's within the plot range
     if start_time <= current_time <= end_time:
-        ax.axvline(x=current_time, color='red', linestyle='-', linewidth=2, label='Current Time')
-    
-    # Customize plot
+        ax.plot([current_time, current_time], [-0.5, len(sorted_objects)-0.5],
+                color='red', linestyle='-', linewidth=2)
+
+    # Customize plot axes
     ax.set_yticks(range(len(sorted_objects)))
     ax.set_yticklabels([obj.name for obj in sorted_objects])
-    ax.grid(True, alpha=GRID_ALPHA)
+    ax.grid(True, axis='x', alpha=GRID_ALPHA)
     
-    # Add legend entries for moon interference if needed
-    if any(getattr(obj, 'near_moon', False) for obj in sorted_objects):
-        _add_moon_interference_legend(ax)
+    # ENSURE NO LEGEND IS CREATED
+    if ax.get_legend():
+        ax.get_legend().remove()
+    
+    # Use full figure width - no need to reserve space for legend
+    fig.tight_layout()
     
     return fig, ax
+
+def _plot_object_visibility_bars_no_legend(ax, index, obj, start_time, end_time, recommended_objects, use_margins):
+    """Plot visibility bars for a single object (BASE LAYER) without returning legend handles."""
+    milan_tz = get_local_timezone()
+    periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins)
+
+    is_recommended = obj in recommended_objects
+    has_sufficient_time = getattr(obj, 'sufficient_time', True)
+    near_moon = getattr(obj, 'near_moon', False)
+
+    color, alpha = _get_object_visibility_color(near_moon, is_recommended, has_sufficient_time)
+    base_zorder = 5
+
+    # Ensure periods is not None before iterating
+    if periods is None:
+        periods = []
+
+    for period_start, period_end in periods:
+        local_start = period_start.astimezone(milan_tz)
+        local_end = period_end.astimezone(milan_tz)
+
+        plot_start = max(local_start, start_time)
+        plot_end = min(local_end, end_time)
+
+        if plot_start >= plot_end: continue
+
+        # If object has moon influence periods, split the bar
+        if hasattr(obj, 'moon_influence_periods') and obj.moon_influence_periods:
+            _plot_visibility_with_moon_interference(ax, index, obj, period_start, period_end,
+                                                  plot_start, plot_end, color, alpha, is_recommended, base_zorder)
+        else:
+            # Plot normal visibility bar without legend label
+            ax.barh(index, plot_end - plot_start, left=plot_start, height=0.3,
+                   alpha=alpha, color=color, zorder=base_zorder)
+
+        # Add abbreviated name text annotation near the bar start (once per object ideally)
+        # Position text AT the bar start, aligned left
+        # Plot text label only for the first segment
+        if period_start == periods[0][0] and plot_start < plot_end:
+             abbreviated_name = get_abbreviated_name(obj.name)
+             text_pos_x = plot_start # Align with the actual start of the plotted bar segment
+             ax.text(text_pos_x + timedelta(minutes=1), index, # Small offset from the exact start
+                     f" {abbreviated_name}", # Add space for padding
+                     va='center', ha='left', # Align left
+                     fontsize=7, # Smaller font size for text on chart
+                     color='black', # Ensure visibility
+                     fontweight='bold', # Make text bold for better visibility
+                     bbox=dict(facecolor='white', alpha=0.7, pad=1, edgecolor='none'), # Add white background
+                     zorder=15) # Very high zorder to ensure it's above everything else
 
 def _create_visibility_chart_figure(objects):
     """Create figure with appropriate size for visibility chart"""
@@ -1858,42 +1962,70 @@ def _setup_visibility_chart_axes(ax, title, start_time, end_time, tz):
     ax.xaxis.set_major_formatter(DateFormatter('%H:%M', tz=tz))
 
 def _plot_object_visibility_bars(ax, index, obj, start_time, end_time, recommended_objects, use_margins):
-    """Plot visibility bars for a single object"""
+    """Plot visibility bars for a single object (BASE LAYER). Returns handles/labels for legend."""
     milan_tz = get_local_timezone()
     periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins)
-    
+
     is_recommended = obj in recommended_objects
     has_sufficient_time = getattr(obj, 'sufficient_time', True)
     near_moon = getattr(obj, 'near_moon', False)
-    
-    # Determine color based on status and moon proximity
+
     color, alpha = _get_object_visibility_color(near_moon, is_recommended, has_sufficient_time)
-    
+    base_zorder = 5
+
+    # Collect handles/labels created within this function for the main object entry
+    local_handles = []
+    local_labels = []
+    label_added = False # Track if the main legend label for this object has been added
+
+    # Ensure periods is not None before iterating
+    if periods is None:
+        periods = []
+
     for period_start, period_end in periods:
         local_start = period_start.astimezone(milan_tz)
         local_end = period_end.astimezone(milan_tz)
-        
-        # If object has moon influence periods, we need to split the visibility bar
+
+        plot_start = max(local_start, start_time)
+        plot_end = min(local_end, end_time)
+
+        if plot_start >= plot_end: continue
+
+        # If object has moon influence periods, split the bar
         if hasattr(obj, 'moon_influence_periods') and obj.moon_influence_periods:
-            _plot_visibility_with_moon_interference(ax, index, obj, period_start, period_end, 
-                                                 local_start, local_end, color, alpha, is_recommended)
+            _plot_visibility_with_moon_interference(ax, index, obj, period_start, period_end,
+                                                 plot_start, plot_end, color, alpha, is_recommended, base_zorder)
         else:
-            # Plot normal visibility bar if no moon influence
-            ax.barh(index, local_end - local_start, left=local_start, height=0.3,
-                   alpha=alpha, color=color)
-        
-        # Add label only for the first period
-        if period_start == periods[0][0]:
-            # Add abbreviated name at the start of the bar
-            abbreviated_name = get_abbreviated_name(obj.name)
-            ax.text(local_start, index, f" {abbreviated_name}", 
-                   va='center', ha='left', 
-                   fontsize=8,
-                   fontweight='bold' if is_recommended else 'normal')
-            
-            ax.barh(index, timedelta(minutes=1), left=local_start, height=0.3,
-                   alpha=0,  # Transparent
-                   label=obj.name)
+            # Plot normal visibility bar
+            ax.barh(index, plot_end - plot_start, left=plot_start, height=0.3,
+                   alpha=alpha, color=color, zorder=base_zorder, label='_nolegend_')
+
+        # Add the *main* legend entry using a hidden bar ONCE per object
+        # Use the first valid segment to create the handle
+        if not label_added and plot_start < plot_end:
+            # Use a representative color/alpha for the legend swatch (non-moon version)
+            legend_color, legend_alpha = _get_object_visibility_color(False, is_recommended, has_sufficient_time)
+            handle = Patch(facecolor=legend_color, alpha=legend_alpha, # Use Patch for better legend swatch
+                           label=obj.name) # Use full name for legend clarity
+            local_handles.append(handle)
+            local_labels.append(obj.name)
+            label_added = True
+
+        # Add abbreviated name text annotation near the bar start (once per object ideally)
+        # Position text AT the bar start, aligned left
+        # Plot text label only for the first segment
+        if period_start == periods[0][0] and plot_start < plot_end:
+             abbreviated_name = get_abbreviated_name(obj.name)
+             text_pos_x = plot_start # Align with the actual start of the plotted bar segment
+             ax.text(text_pos_x + timedelta(minutes=1), index, # Small offset from the exact start
+                     f" {abbreviated_name}", # Add space for padding
+                     va='center', ha='left', # Align left
+                     fontsize=7, # Smaller font size for text on chart
+                     color='black', # Ensure visibility
+                     zorder=base_zorder+1) # Above the bar
+
+    # *** Ensure the function always returns a tuple ***
+    return local_handles, local_labels
 
 def _get_object_visibility_color(near_moon, is_recommended, has_sufficient_time):
     """Determine color and alpha for object visibility bars"""
@@ -1915,7 +2047,7 @@ def _get_object_visibility_color(near_moon, is_recommended, has_sufficient_time)
     return color, alpha
 
 def _plot_visibility_with_moon_interference(ax, index, obj, period_start, period_end, 
-                                         local_start, local_end, color, alpha, is_recommended):
+                                         local_start, local_end, color, alpha, is_recommended, base_zorder):
     """Plot visibility bars with moon interference segments"""
     milan_tz = get_local_timezone()
     period_minutes = int((period_end - period_start).total_seconds() / 60)
@@ -1941,14 +2073,16 @@ def _plot_visibility_with_moon_interference(ax, index, obj, period_start, period
                    left=last_end.astimezone(milan_tz),
                    height=0.3,
                    alpha=alpha,
-                   color=color)
+                   color=color,
+                   zorder=base_zorder)
         # Plot moon-affected segment
         ax.barh(index,
                moon_end.astimezone(milan_tz) - moon_start.astimezone(milan_tz),
                left=moon_start.astimezone(milan_tz),
                height=0.3,
                alpha=alpha,
-               color='#DAA520' if is_recommended else '#F0E68C')  # Goldenrod/Khaki
+               color='#DAA520' if is_recommended else '#F0E68C',
+               zorder=base_zorder)  # Goldenrod/Khaki
         last_end = moon_end
     
     # Plot remaining normal visibility if any
@@ -1958,7 +2092,8 @@ def _plot_visibility_with_moon_interference(ax, index, obj, period_start, period
                left=last_end.astimezone(milan_tz),
                height=0.3,
                alpha=alpha,
-               color=color)
+               color=color,
+               zorder=base_zorder)
 
 def _add_moon_interference_legend(ax):
     """Add legend entries for moon interference"""
@@ -1967,6 +2102,14 @@ def _add_moon_interference_legend(ax):
             label='Selected Object (Moon Interference)')
     ax.barh([-1], [0], height=0.3, color='#F0E68C', alpha=0.4,
             label='Non-selected Object (Moon Interference)')
+
+def _add_moon_interference_legend_items(handles, labels):
+    """Add moon interference legend items"""
+    # Add dummy patches for legend
+    moon_line = plt.Line2D([0], [0], color=MOON_INTERFERENCE_COLOR, linestyle='-', label='Moon Interference')
+    handles.append(moon_line)
+    labels.append('Moon Interference')
+    return handles, labels
 
 # ============= SCHEDULE GENERATION =============
 
@@ -2017,68 +2160,229 @@ def generate_observation_schedule(objects, start_time, end_time,
                                 max_overlap=MAX_OVERLAP_MINUTES):
     """Generate optimal observation schedule based on selected strategy"""
     schedule = []
-    
-    # Filter objects based on sufficient time if needed
+
+    # Filter out objects affected by the moon first
+    objects_no_moon = [obj for obj in objects if not getattr(obj, 'near_moon', False)]
+
+    # Filter objects based on sufficient time if needed (applied after moon filter)
     if EXCLUDE_INSUFFICIENT_TIME:
-        objects = [obj for obj in objects if getattr(obj, 'sufficient_time', True)]
-    
-    # Calculate scores and periods for all objects
+        objects_filtered = [obj for obj in objects_no_moon if getattr(obj, 'sufficient_time', True)]
+    else:
+        objects_filtered = objects_no_moon
+
+    # Calculate scores and periods for all remaining objects
     object_data = []
-    for obj in objects:
-        periods = find_visibility_window(obj, start_time, end_time, use_margins=True)  # Added use_margins=True
+    for obj in objects_filtered:
+        # *** IMPORTANT: Skip objects without magnitude EARLY to prevent errors ***
+        if obj.magnitude is None:
+            print(f"Skipping {obj.name} for scheduling due to missing magnitude.")
+            continue # Skip objects without magnitude for scheduling
+
+        periods = find_visibility_window(obj, start_time, end_time, use_margins=True)
         if periods:
             duration = calculate_visibility_duration(periods)
             if duration >= min_duration:
                 exposure_time, frames, panels = calculate_required_exposure(
                     obj.magnitude, BORTLE_INDEX, obj.fov)
-                if not EXCLUDE_INSUFFICIENT_TIME or duration >= exposure_time:
+
+                # Check if we need to exclude based on insufficient time again,
+                # even if EXCLUDE_INSUFFICIENT_TIME is False, MAX_OBJECTS needs this check.
+                has_enough_time_for_exposure = (duration >= exposure_time)
+
+                # Only add if it meets basic duration and potentially exposure time criteria
+                if not EXCLUDE_INSUFFICIENT_TIME or has_enough_time_for_exposure:
+                    # Now it's safe to calculate the score
                     score = calculate_object_score(obj, periods, strategy)
-                    object_data.append((obj, periods, duration, score))
-    
+                    # Store exposure_time needed, especially for MAX_OBJECTS strategy
+                    object_data.append((obj, periods, duration, score, exposure_time))
+
     # Sort by score according to strategy
     object_data.sort(key=lambda x: x[3], reverse=True)
-    
+
     # Schedule observations based on strategy
+    scheduled_times = [] # This will store tuples of (start_time, end_time, object)
+
     if strategy == SchedulingStrategy.MAX_OBJECTS:
-        # Try to fit as many objects as possible
+        # --- Greedy Algorithm for MAX_OBJECTS with Multiple Potential Slots --- 
+        
+        # Configure sampling interval for potential slots (minutes)
+        sampling_interval_minutes = 15
+        sampling_interval = timedelta(minutes=sampling_interval_minutes)
+        
+        # Max allowable idle time between observations
+        max_idle_time = timedelta(minutes=15)
+
+        # 1. Generate Multiple Potential Slots throughout visibility periods
+        potential_slots = []
+        for obj, periods, duration, score, exposure_time in object_data:
+            # Basic validity checks
+            if duration < exposure_time or exposure_time <= 0:
+                continue
+            if not isinstance(exposure_time, (int, float)) or math.isinf(exposure_time) or math.isnan(exposure_time):
+                continue
+                
+            try:
+                needed_duration = timedelta(hours=exposure_time)
+            except OverflowError:
+                continue
+                
+            # For each visibility period, generate multiple potential start times
+            for period_start, period_end in periods:
+                # Calculate the latest possible start time that allows full observation
+                latest_start = period_end - needed_duration
+                
+                # If the period isn't long enough for the needed duration, skip it
+                if latest_start < period_start:
+                    continue
+                    
+                # Generate potential slots at regular intervals throughout the period
+                current_start = period_start
+                while current_start <= latest_start:
+                    potential_end = current_start + needed_duration
+                    
+                    # Add this potential slot
+                    potential_slots.append({
+                        'start': current_start,
+                        'end': potential_end,
+                        'obj': obj,
+                        'duration': needed_duration,
+                        'score': score  # Keep track of the original score
+                    })
+                    
+                    # Move to the next potential start time
+                    current_start += sampling_interval
+
+        # 2. Sort Potential Slots 
+        # First by finish time (primary), then by score (secondary)
+        potential_slots.sort(key=lambda x: (x['end'], -x['score']))
+        
+        # 3. Modified Greedy Selection with ZERO tolerance for overlaps
         scheduled_times = []
-        for obj, periods, duration, score in object_data:
-            exposure_time, frames, panels = calculate_required_exposure(
-                obj.magnitude, BORTLE_INDEX, obj.fov)
+        scheduled_objects = set()
+        
+        for slot in potential_slots:
+            s_start = slot['start']
+            s_end = slot['end']
+            s_obj = slot['obj']
             
-            # Try each visibility period
-            for period_start, period_end in periods:
-                conflict = False
-                for scheduled_start, scheduled_end, _ in scheduled_times:
-                    overlap = min(period_end, scheduled_end) - max(period_start, scheduled_start)
-                    if overlap.total_seconds() / 60 > max_overlap:
-                        conflict = True
-                        break
+            # Skip if object already scheduled
+            if s_obj in scheduled_objects:
+                continue
                 
-                if not conflict:
-                    # Schedule only needed time, not entire visibility window
-                    end_time = period_start + timedelta(hours=exposure_time)
-                    if end_time <= period_end:
-                        scheduled_times.append((period_start, end_time, obj))
-                        break
-    
-    else:
-        # Use standard scheduling with full visibility windows
-        scheduled_times = []
-        for obj, periods, duration, score in object_data:
-            for period_start, period_end in periods:
-                conflict = False
-                for scheduled_start, scheduled_end, _ in scheduled_times:
-                    overlap = min(period_end, scheduled_end) - max(period_start, scheduled_start)
-                    if overlap.total_seconds() / 60 > max_overlap:
-                        conflict = True
-                        break
-                
-                if not conflict:
-                    scheduled_times.append((period_start, period_end, obj))
+            # Check for ANY conflicts with existing schedule
+            is_conflicting = False
+            for sched_start, sched_end, _ in scheduled_times:
+                # Check if there's any overlap at all (strict check)
+                if (s_start < sched_end and s_end > sched_start):
+                    is_conflicting = True
                     break
-    
-    # Sort schedule by start time
+            
+            # If no conflict, add this slot
+            if not is_conflicting:
+                scheduled_times.append((s_start, s_end, s_obj))
+                scheduled_objects.add(s_obj)
+        
+        # 4. Sort the schedule by start time
+        scheduled_times.sort(key=lambda x: x[0])
+        
+        # 5. Try to minimize gaps by adjusting start times (post-processing)
+        if len(scheduled_times) > 1:
+            optimized_schedule = [scheduled_times[0]]  # Keep the first item as is
+            
+            for i in range(1, len(scheduled_times)):
+                prev_end = optimized_schedule[-1][1]
+                curr_start, curr_end, curr_obj = scheduled_times[i]
+                curr_duration = curr_end - curr_start
+                
+                # Calculate the gap
+                gap = curr_start - prev_end
+                
+                # If gap is larger than max_idle_time, try to move the current observation earlier
+                if gap > max_idle_time:
+                    # The earliest we can start is immediately after the previous observation ends
+                    earliest_possible_start = prev_end
+                    
+                    # Calculate how much we can shift this observation earlier
+                    shift_amount = min(gap, curr_start - earliest_possible_start)
+                    
+                    if shift_amount > timedelta(0):
+                        # Adjust the start and end times
+                        adjusted_start = curr_start - shift_amount
+                        adjusted_end = adjusted_start + curr_duration  # Preserve duration
+                        
+                        # Verify no conflicts with any earlier observations
+                        has_conflict = False
+                        for idx in range(len(optimized_schedule)):
+                            prev_start, prev_end, _ = optimized_schedule[idx]
+                            # Check for any overlap (strict check)
+                            if (adjusted_start < prev_end and adjusted_end > prev_start):
+                                has_conflict = True
+                                break
+                        
+                        if not has_conflict:
+                            # Add the adjusted observation to the schedule
+                            optimized_schedule.append((adjusted_start, adjusted_end, curr_obj))
+                        else:
+                            # Conflict found, use original times
+                            optimized_schedule.append((curr_start, curr_end, curr_obj))
+                    else:
+                        # Can't shift, use original times
+                        optimized_schedule.append((curr_start, curr_end, curr_obj))
+                else:
+                    # Gap is acceptable, use original times
+                    optimized_schedule.append((curr_start, curr_end, curr_obj))
+            
+            # Replace the original schedule with the optimized one
+            scheduled_times = optimized_schedule
+            
+        # 6. Final validation to ensure NO overlaps in the final schedule
+        if len(scheduled_times) > 1:
+            # Sort again to ensure proper ordering
+            scheduled_times.sort(key=lambda x: x[0])
+            
+            # Check for any remaining overlaps and fix if needed
+            validated_schedule = [scheduled_times[0]]
+            
+            for i in range(1, len(scheduled_times)):
+                curr_slot = scheduled_times[i]
+                curr_start, curr_end, curr_obj = curr_slot
+                
+                # Check for conflict with all previous validated slots
+                has_conflict = False
+                for prev_start, prev_end, _ in validated_schedule:
+                    # If there's ANY overlap, it's a conflict
+                    if (curr_start < prev_end and curr_end > prev_start):
+                        has_conflict = True
+                        break
+                
+                # Only add if no conflict
+                if not has_conflict:
+                    validated_schedule.append(curr_slot)
+            
+            # Use the final validated schedule
+            scheduled_times = validated_schedule
+    else:
+        # --- Standard Scheduling Logic for Other Strategies --- 
+
+        # Use standard scheduling logic for other strategies
+        # Schedule the entire first available non-conflicting window
+        for obj, periods, duration, score, exposure_time in object_data: # Unpack exposure_time even if not used directly
+            for period_start, period_end in periods:
+                conflict = False
+                for scheduled_start, scheduled_end, _ in scheduled_times:
+                    overlap = min(period_end, scheduled_end) - max(period_start, scheduled_start)
+                    # Use the *entire* period for conflict checking in non-MAX_OBJECTS strategies
+                    if overlap.total_seconds() / 60 > max_overlap:
+                        conflict = True
+                        break
+
+                if not conflict:
+                    # Schedule the *entire* first non-conflicting visibility period
+                    scheduled_times.append((period_start, period_end, obj))
+                    # Break from checking other periods for this object
+                    break
+
+    # Sort the final schedule by start time
     scheduled_times.sort(key=lambda x: x[0])
     return scheduled_times
 
