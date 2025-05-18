@@ -1187,12 +1187,26 @@ class ReportGenerator:
             content += "Affected objects:\n"
             for obj in moon_affected_objects:
                 periods = getattr(obj, 'moon_influence_periods', [])
+                
                 # Calculate total minutes properly from timedelta objects
                 total_minutes = sum(
                     int((end - start).total_seconds() / 60)
                     for start, end in periods
                 )
-                content += f"- {obj.name} ({total_minutes} minutes of interference)\n"
+                
+                # Get the actual time ranges for interference
+                if periods:
+                    interference_times = []
+                    for start, end in periods:
+                        # Convert to local time for display
+                        local_start = utc_to_local(start)
+                        local_end = utc_to_local(end)
+                        interference_times.append(f"{format_time(local_start)}-{format_time(local_end)}")
+                    
+                    interference_str = ", ".join(interference_times)
+                    content += f"- {obj.name} ({total_minutes} minutes of interference, during: {interference_str})\n"
+                else:
+                    content += f"- {obj.name} ({total_minutes} minutes of interference)\n"
         else:
             content += "No objects are significantly affected by moon proximity.\n"
         self.add_section("MOON CONDITIONS", content)
@@ -1220,29 +1234,24 @@ class ReportGenerator:
     
     def _format_object_list(self, header, objects):
         """Format a list of objects with their details"""
-        # Get start time and calculate a reasonable end time for visibility windows
+        # Time variables made available from outer scope
         start_time = self.date
-        end_time = self.date + timedelta(days=1)  # Default fallback
+        # Get end of day
+        end_time = self.date.replace(hour=23, minute=59, second=59)
         
-        # Find the actual twilight morning time for proper visibility window calculation
-        # By going back to the original date to get the full night period
-        date = start_time.replace(hour=12, minute=0, second=0, microsecond=0)
-        if date.hour >= 12:
-            # We're starting observation in the evening
-            _, morning_twilight = find_astronomical_twilight(date)
-            end_time = morning_twilight
-        else:
-            # We're starting observation after midnight
-            yesterday = date - timedelta(days=1)
-            _, morning_twilight = find_astronomical_twilight(yesterday)
-            end_time = morning_twilight
+        # Sort by visibility start time
+        sorted_objects = []
+        for obj in objects:
+            periods = find_visibility_window(obj, start_time, end_time)
+            if periods:
+                sorted_objects.append((obj, periods[0][0]))
         
-        # Sort objects by visibility start time
-        sorted_objects = sorted(objects, 
-                              key=lambda obj: find_visibility_window(obj, start_time, end_time)[0][0] 
-                              if find_visibility_window(obj, start_time, end_time) else start_time)
+        sorted_objects.sort(key=lambda x: x[1])
+        sorted_objects = [x[0] for x in sorted_objects]
         
+        # Format output
         content = f"{header}\n\n"
+        
         for obj in sorted_objects:
             # Get visibility periods
             periods = find_visibility_window(obj, start_time, end_time)
@@ -1258,7 +1267,28 @@ class ReportGenerator:
             if hasattr(obj, 'near_moon') and obj.near_moon:
                 moon_phase = calculate_moon_phase(visibility_start)
                 moon_icon, _ = get_moon_phase_icon(moon_phase)
-                moon_status = f"{moon_icon} Moon interference"
+                
+                # Find when moon rises if it's not already risen at the start of visibility
+                moon_alt_at_start, _ = calculate_moon_position(visibility_start)
+                if moon_alt_at_start < 0:
+                    # Moon hasn't risen yet, find rise time
+                    check_time = visibility_start
+                    moon_rise_time = None
+                    while check_time <= visibility_end:
+                        moon_alt, _ = calculate_moon_position(check_time)
+                        prev_moon_alt, _ = calculate_moon_position(check_time - timedelta(minutes=1))
+                        if prev_moon_alt < 0 and moon_alt >= 0:
+                            moon_rise_time = check_time
+                            break
+                        check_time += timedelta(minutes=1)
+                    
+                    if moon_rise_time:
+                        moon_status = f"{moon_icon} Moon interference after {format_time(moon_rise_time)}"
+                    else:
+                        moon_status = "✨ Clear from moon"
+                else:
+                    # Moon is already risen
+                    moon_status = f"{moon_icon} Moon interference"
             else:
                 moon_status = "✨ Clear from moon"
             
@@ -1278,17 +1308,11 @@ class ReportGenerator:
                     mosaic_size = math.ceil(math.sqrt(panels))
                     content += f"Mosaic: {mosaic_size}x{mosaic_size} panels\n"
             
-            if hasattr(obj, 'required_exposure') and obj.required_exposure is not None:
-                exposure_time, frames, _ = obj.required_exposure
-                content += f"Required exposure: {exposure_time:.2f} hours ({frames} frames of {SINGLE_EXPOSURE}s)\n"
+            if hasattr(obj, 'type') and obj.type:
+                content += f"Type: {obj.type}\n"
                 
-                # Add clear indication of sufficient/insufficient time
-                if duration >= exposure_time:
-                    content += "✓ Sufficient visibility time for imaging\n"
-                else:
-                    content += f"✗ NOT ENOUGH visibility time (needs {exposure_time:.1f}h, have {duration:.1f}h)\n"
-            
             content += "\n"
+        
         return content
     
     def generate_schedule_section(self, schedule, strategy):
@@ -1707,6 +1731,7 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
     alts = []
     azs = []
     near_moon = []  # Track moon proximity
+    moon_alts = []  # Track moon altitude for each point
     obj.near_moon = False  # Initialize moon proximity flag
     hour_times = []
     hour_alts = []
@@ -1731,9 +1756,12 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
             alts.append(alt)
             azs.append(az)
             
-            # Check moon proximity
-            is_near = is_near_moon(alt, az, moon_alt, moon_az, obj.magnitude, current_time)
+            # Check moon proximity - only consider when moon is risen
+            is_near = False
+            if moon_alt >= 0:  # Only check interference if moon is above horizon
+                is_near = is_near_moon(alt, az, moon_alt, moon_az, obj.magnitude, current_time)
             near_moon.append(is_near)
+            moon_alts.append(moon_alt)  # Store moon altitude for each point
             
             # Convert to local time for display
             local_time = utc_to_local(current_time)
@@ -1778,13 +1806,21 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         # Plot moon-affected segments if any
         if hasattr(obj, 'moon_influence_periods'):
             for start_idx, end_idx in obj.moon_influence_periods:
-                # Plot the moon-affected segment
-                ax.plot(azs[start_idx:end_idx+1], 
-                       alts[start_idx:end_idx+1], 
-                       line_style,
-                       color=MOON_INTERFERENCE_COLOR,
-                       linewidth=2,
-                       zorder=2)
+                # Validate that moon is actually above horizon during this segment
+                valid_segment = True
+                for i in range(start_idx, min(end_idx+1, len(moon_alts))):
+                    if moon_alts[i] < 0:  # Moon below horizon
+                        valid_segment = False
+                        break
+                
+                if valid_segment:
+                    # Plot the moon-affected segment
+                    ax.plot(azs[start_idx:end_idx+1], 
+                           alts[start_idx:end_idx+1], 
+                           line_style,
+                           color=MOON_INTERFERENCE_COLOR,
+                           linewidth=2,
+                           zorder=2)
         
         # Add label only once
         legend = ax.get_legend()
@@ -1932,11 +1968,30 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     ax.set_yticklabels([obj.name for obj in sorted_objects])
     ax.grid(True, axis='x', alpha=GRID_ALPHA)
     
-    # ENSURE NO LEGEND IS CREATED
-    if ax.get_legend():
-        ax.get_legend().remove()
+    # Add a simple legend for moon interference, scheduled observations, and insufficient time
+    legend_handles = []
     
-    # Use full figure width - no need to reserve space for legend
+    # Moon interference legend entry
+    moon_handle = Patch(facecolor=MOON_INTERFERENCE_COLOR, alpha=0.8, 
+                        label='Moon Interference')
+    legend_handles.append(moon_handle)
+    
+    # Scheduled observations legend entry
+    if schedule:
+        sched_handle = Patch(facecolor='none', edgecolor='red', hatch='///', 
+                             alpha=0.9, label='Scheduled Observation')
+        legend_handles.append(sched_handle)
+    
+    # Insufficient time legend entry (optional)
+    if any(not getattr(obj, 'sufficient_time', True) for obj in sorted_objects):
+        insuf_handle = Patch(facecolor='pink', alpha=0.4, label='Insufficient Time')
+        legend_handles.append(insuf_handle)
+    
+    # Add the legend
+    if legend_handles:
+        ax.legend(handles=legend_handles, loc='lower right')
+    
+    # Use full figure width
     fig.tight_layout()
     
     return fig, ax
@@ -1948,9 +2003,14 @@ def _plot_object_visibility_bars_no_legend(ax, index, obj, start_time, end_time,
 
     is_recommended = obj in recommended_objects
     has_sufficient_time = getattr(obj, 'sufficient_time', True)
-    near_moon = getattr(obj, 'near_moon', False)
-
-    color, alpha = _get_object_visibility_color(near_moon, is_recommended, has_sufficient_time)
+    
+    # Always use the regular color as the base color regardless of moon interference
+    if not has_sufficient_time:
+        color = 'darkmagenta' if is_recommended else 'pink'
+    else:
+        color = 'green' if is_recommended else 'gray'
+    alpha = 0.8 if is_recommended else 0.4
+    
     base_zorder = 5
 
     # Ensure periods is not None before iterating
@@ -1966,12 +2026,39 @@ def _plot_object_visibility_bars_no_legend(ax, index, obj, start_time, end_time,
 
         if plot_start >= plot_end: continue
 
-        # If object has moon influence periods, split the bar
+        # If object has moon influence periods, draw the base bar in normal color
+        # and overlay moon-affected segments separately
         if hasattr(obj, 'moon_influence_periods') and obj.moon_influence_periods:
-            _plot_visibility_with_moon_interference(ax, index, obj, period_start, period_end,
-                                                  plot_start, plot_end, color, alpha, is_recommended, base_zorder)
+            # First, draw the entire bar in normal color
+            ax.barh(index, plot_end - plot_start, left=plot_start, height=0.3,
+                   alpha=alpha, color=color, zorder=base_zorder)
+                   
+            # Then overlay the moon interference segments
+            for start_idx, end_idx in obj.moon_influence_periods:
+                moon_start = period_start + timedelta(minutes=start_idx)
+                moon_end = period_start + timedelta(minutes=end_idx)
+                
+                # Convert to local timezone
+                moon_start_local = moon_start.astimezone(milan_tz)
+                moon_end_local = moon_end.astimezone(milan_tz)
+                
+                # Check if this segment overlaps with the current visibility period
+                if moon_end_local > plot_start and moon_start_local < plot_end:
+                    # Calculate the overlapping segment
+                    segment_start = max(moon_start_local, plot_start)
+                    segment_end = min(moon_end_local, plot_end)
+                    
+                    # Draw the moon interference segment
+                    moon_color = '#DAA520' if is_recommended else '#F0E68C'  # Goldenrod/Khaki
+                    ax.barh(index, 
+                           segment_end - segment_start, 
+                           left=segment_start, 
+                           height=0.3,
+                           alpha=alpha,
+                           color=moon_color,
+                           zorder=base_zorder+1)  # Slightly higher zorder
         else:
-            # Plot normal visibility bar without legend label
+            # Plot normal visibility bar
             ax.barh(index, plot_end - plot_start, left=plot_start, height=0.3,
                    alpha=alpha, color=color, zorder=base_zorder)
 
@@ -2037,9 +2124,14 @@ def _plot_object_visibility_bars(ax, index, obj, start_time, end_time, recommend
 
     is_recommended = obj in recommended_objects
     has_sufficient_time = getattr(obj, 'sufficient_time', True)
-    near_moon = getattr(obj, 'near_moon', False)
-
-    color, alpha = _get_object_visibility_color(near_moon, is_recommended, has_sufficient_time)
+    
+    # Always use the regular color as the base color regardless of moon interference
+    if not has_sufficient_time:
+        color = 'darkmagenta' if is_recommended else 'pink'
+    else:
+        color = 'green' if is_recommended else 'gray'
+    alpha = 0.8 if is_recommended else 0.4
+    
     base_zorder = 5
 
     # Collect handles/labels created within this function for the main object entry
@@ -2060,10 +2152,38 @@ def _plot_object_visibility_bars(ax, index, obj, start_time, end_time, recommend
 
         if plot_start >= plot_end: continue
 
-        # If object has moon influence periods, split the bar
+        # If object has moon influence periods, draw the base bar in normal color
+        # and overlay moon-affected segments separately
         if hasattr(obj, 'moon_influence_periods') and obj.moon_influence_periods:
-            _plot_visibility_with_moon_interference(ax, index, obj, period_start, period_end,
-                                                 plot_start, plot_end, color, alpha, is_recommended, base_zorder)
+            # First, draw the entire bar in normal color
+            ax.barh(index, plot_end - plot_start, left=plot_start, height=0.3,
+                   alpha=alpha, color=color, zorder=base_zorder, label='_nolegend_')
+                   
+            # Then overlay the moon interference segments
+            for start_idx, end_idx in obj.moon_influence_periods:
+                moon_start = period_start + timedelta(minutes=start_idx)
+                moon_end = period_start + timedelta(minutes=end_idx)
+                
+                # Convert to local timezone
+                moon_start_local = moon_start.astimezone(milan_tz)
+                moon_end_local = moon_end.astimezone(milan_tz)
+                
+                # Check if this segment overlaps with the current visibility period
+                if moon_end_local > plot_start and moon_start_local < plot_end:
+                    # Calculate the overlapping segment
+                    segment_start = max(moon_start_local, plot_start)
+                    segment_end = min(moon_end_local, plot_end)
+                    
+                    # Draw the moon interference segment
+                    moon_color = '#DAA520' if is_recommended else '#F0E68C'  # Goldenrod/Khaki
+                    ax.barh(index, 
+                           segment_end - segment_start, 
+                           left=segment_start, 
+                           height=0.3,
+                           alpha=alpha,
+                           color=moon_color,
+                           zorder=base_zorder+1,  # Slightly higher zorder
+                           label='_nolegend_')  # Don't include in legend
         else:
             # Plot normal visibility bar
             ax.barh(index, plot_end - plot_start, left=plot_start, height=0.3,
@@ -2073,8 +2193,7 @@ def _plot_object_visibility_bars(ax, index, obj, start_time, end_time, recommend
         # Use the first valid segment to create the handle
         if not label_added and plot_start < plot_end:
             # Use a representative color/alpha for the legend swatch (non-moon version)
-            legend_color, legend_alpha = _get_object_visibility_color(False, is_recommended, has_sufficient_time)
-            handle = Patch(facecolor=legend_color, alpha=legend_alpha, # Use Patch for better legend swatch
+            handle = Patch(facecolor=color, alpha=alpha, # Use Patch for better legend swatch
                            label=obj.name) # Use full name for legend clarity
             local_handles.append(handle)
             local_labels.append(obj.name)
@@ -2126,6 +2245,9 @@ def _plot_visibility_with_moon_interference(ax, index, obj, period_start, period
     for start_idx, end_idx in obj.moon_influence_periods:
         moon_start = period_start + timedelta(minutes=start_idx)
         moon_end = period_start + timedelta(minutes=end_idx)
+        
+        # Only consider this period if it was properly checked for moon visibility earlier
+        # If it's in moon_influence_periods, we trust that it was properly filtered
         if moon_start < period_end and moon_end > period_start:
             moon_times.append((
                 max(moon_start, period_start),
@@ -2711,7 +2833,8 @@ def main():
                 obj_alt, obj_az = calculate_altaz(obj, check_time)
                 moon_alt, moon_az = calculate_moon_position(check_time)
                 
-                if is_near_moon(obj_alt, obj_az, moon_alt, moon_az, obj.magnitude, check_time):
+                # Only consider interference if moon is above horizon (risen)
+                if moon_alt >= 0 and is_near_moon(obj_alt, obj_az, moon_alt, moon_az, obj.magnitude, check_time):
                     if interference_start is None:
                         interference_start = check_time
                 elif interference_start is not None:
@@ -2721,8 +2844,14 @@ def main():
                 check_time += timedelta(minutes=15)  # Check every 15 minutes
             
             if interference_start is not None:
-                obj.moon_influence_periods.append((interference_start, period_end))
+                # For the last period, verify the moon is still above horizon
+                # This handles the case where interference starts but then moon sets
+                check_time = period_end
+                _, moon_alt = calculate_moon_position(check_time)
+                if moon_alt >= 0:
+                    obj.moon_influence_periods.append((interference_start, period_end))
         
+        # Only consider object affected if there are interference periods
         if obj.moon_influence_periods:
             obj.near_moon = True
             moon_affected.append(obj)
