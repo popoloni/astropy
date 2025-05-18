@@ -30,6 +30,68 @@ A Python-based astronomical observation planning tool that helps astronomers and
   - Time-based visibility charts with moon influence periods
   - Moon phase icons and status indicators
 
+## Recent Updates
+
+### Time Simulation Feature (May 2025)
+
+A new time simulation feature has been added to help test the application without waiting for specific astronomical events:
+
+- Added `--simulate-time` command-line argument to run the application as if it were a different time of day
+- Created modular time handling with a separate `time_sim.py` module
+- Implemented `get_current_datetime()` function that returns either the actual or simulated time
+- Added proper timezone handling for consistent time calculations
+- Fixed schedule generation to work correctly with simulated time
+
+These changes allow testing nighttime observation scenarios during daytime by simulating running the application at any specified time.
+
+**Usage:**
+```bash
+# Run the application simulating 1:30 AM
+python astropy.py --simulate-time "01:30" --report-only
+
+# Run the application simulating 10:30 PM
+python astropy.py --simulate-time "22:30" --report-only
+```
+
+#### The time_sim.py Module
+
+The time simulation functionality is implemented in a separate module with the following key components:
+
+```python
+# Global variable to store simulated time
+SIMULATED_DATETIME = None
+
+# Parse and convert a time string to a datetime object
+def get_simulated_datetime(simulation_time_str, timezone=None):
+    """
+    Convert a time string (HH:MM or HH:MM:SS) to a datetime.
+    Returns a datetime object set to the specified time on the current or next day.
+    """
+    # Implementation details...
+    
+# Return either simulated or actual current time
+def get_current_datetime(timezone=None):
+    """
+    Get the current datetime, using the simulated time if set.
+    This function serves as the central time provider for the application.
+    """
+    if SIMULATED_DATETIME is not None:
+        return SIMULATED_DATETIME
+    return datetime.now(timezone)
+```
+
+This modular approach ensures that all datetime operations throughout the application can be simulated consistently by simply modifying the global `SIMULATED_DATETIME` variable.
+
+### Schedule Generation Improvements
+
+Fixed an issue where the schedule generation would produce empty schedules:
+
+- Added proper return statement to the `generate_observation_schedule` function
+- Improved handling of moon-affected objects in scheduling
+- Implemented fallback logic to include moon-affected objects when no other options are available
+- Enhanced error handling for exposure time calculations
+- Added more robust handling for empty schedules in the report generator
+
 ## Installation
 
 1. Clone this repository:
@@ -198,8 +260,50 @@ python astropy.py
 To modify settings:
 1. Open `config.json` in any text editor
 2. Make your changes while maintaining the JSON structure
-3. Save the file
-4. Run the program - it will automatically use the new settings
+
+## Command-Line Arguments
+
+The application supports various command-line arguments to customize its behavior:
+
+```
+usage: astropy.py [-h] [--date DATE] [--object OBJECT] [--type TYPE] [--report-only]
+                 [--schedule {longest,max_objects,optimal_snr}] [--no-margins]
+                 [--simulate-time SIMULATE_TIME]
+```
+
+### Available Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `--date DATE` | Specify a date for calculations (format: YYYY-MM-DD) |
+| `--object OBJECT` | Display information for a specific celestial object |
+| `--type TYPE` | Filter objects by type (galaxy, nebula, cluster, etc.) |
+| `--report-only` | Show only text report without generating plots |
+| `--schedule {longest,max_objects,optimal_snr}` | Specify the scheduling strategy |
+| `--no-margins` | Do not use extended margins for visibility calculations |
+| `--simulate-time SIMULATE_TIME` | Simulate running at a specific time (format: HH:MM) |
+
+### Examples
+
+```bash
+# Show only text report for default settings
+python astropy.py --report-only
+
+# Generate report for a specific object
+python astropy.py --object "M31"
+
+# Generate report for a specific date
+python astropy.py --date "2025-06-01"
+
+# Filter objects by type
+python astropy.py --type "nebula"
+
+# Use a specific scheduling strategy
+python astropy.py --schedule max_objects
+
+# Simulate running at 1:30 AM
+python astropy.py --simulate-time "01:30" --report-only
+```
 
 ## Usage
 
