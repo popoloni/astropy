@@ -6,8 +6,11 @@ Simple wrapper to run mosaic trajectory plotting with your Vespera Passenger.
 Shows only objects that can be photographed together in mosaic groups.
 """
 
-import subprocess
 import sys
+import os
+
+# Add current directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def main():
     """Run the mosaic trajectory plotter."""
@@ -18,17 +21,18 @@ def main():
     print()
     
     try:
-        # Run the mosaic trajectory plotter
-        result = subprocess.run([sys.executable, "plot_mosaic_trajectories.py"], 
-                              capture_output=False, text=True)
+        # Import plot_mosaic_trajectories after setting up path
+        import plot_mosaic_trajectories
         
-        if result.returncode == 0:
-            print("\n✅ Mosaic plots completed successfully!")
-        else:
-            print(f"\n❌ Error running mosaic plotter (exit code: {result.returncode})")
-            
+        # Run the main mosaic plotting function
+        plot_mosaic_trajectories.main()
+        
+        print("\n✅ Mosaic plots completed successfully!")
+        
     except Exception as e:
         print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     main() 

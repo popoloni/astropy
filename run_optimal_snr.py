@@ -1,39 +1,45 @@
 #!/usr/bin/env python3
 """
-Optimal Signal-to-Noise Strategy
-===============================
-Optimizes for the best imaging conditions by balancing object brightness and altitude.
-Perfect for astrophotography sessions when image quality is paramount.
+Optimal SNR Strategy Wrapper for Pythonista
+============================================
+Optimizes for best imaging conditions (brightness + altitude).
+Perfect for astrophotography when image quality is paramount.
 """
 
 import sys
 import os
 
-# Add current directory to path
+# Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Set up arguments for astropy.py
-sys.argv = ['astropy.py', '--schedule', 'optimal_snr']
+def main():
+    """Run optimal SNR scheduling strategy."""
+    print("🎯 OPTIMAL SNR STRATEGY")
+    print("=" * 30)
+    print("Optimizing for best imaging conditions...")
+    print("Perfect for high-quality astrophotography!")
+    print()
+    
+    try:
+        # Import astropy after setting up path
+        import astropy
+        
+        # Set up arguments for optimal SNR mode
+        original_argv = sys.argv.copy()
+        sys.argv = ['astropy.py', '--schedule', 'optimal_snr']
+        
+        # Run the main astropy function
+        astropy.main()
+        
+        # Restore original argv
+        sys.argv = original_argv
+        
+        print("\n✅ Optimal SNR analysis completed successfully!")
+        
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
 
-# Import and run the main astropy program
-try:
-    from astropy import main
-    print("=" * 60)
-    print("ASTROPY OBSERVATION PLANNER - OPTIMAL SNR STRATEGY")
-    print("=" * 60)
-    print()
-    print("This will generate:")
-    print("- Complete text report")
-    print("- Optimized schedule for best signal-to-noise ratio")
-    print("- Single trajectory plot with all objects")
-    print("- Visibility chart with moon interference")
-    print()
-    print("Strategy: Prioritize objects when they're at optimal altitude")
-    print("and brightness for the best possible image quality.")
-    print()
-    
-    main()
-    
-except Exception as e:
-    print(f"Error running astropy: {e}")
-    print("Make sure astropy.py is in the same directory as this script.") 
+if __name__ == "__main__":
+    main() 

@@ -1,35 +1,45 @@
 #!/usr/bin/env python3
 """
-Full Observation Report with Plots
+Full Plots Wrapper for Pythonista
 ==================================
-Generates complete report with trajectory plots and visibility charts.
-Shows single-plot trajectory view with all objects.
+Complete observation planner with trajectory plots and visibility charts.
+Includes yellow labels for scheduled objects.
 """
 
 import sys
 import os
 
-# Add current directory to path
+# Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Set up arguments for astropy.py (default mode - no special flags)
-sys.argv = ['astropy.py']
+def main():
+    """Run full analysis with plots."""
+    print("📊 FULL OBSERVATION PLANNER")
+    print("=" * 35)
+    print("Generating complete report with plots...")
+    print("⭐ Includes yellow labels for scheduled objects")
+    print()
+    
+    try:
+        # Import astropy after setting up path
+        import astropy
+        
+        # Set up arguments for full mode (default behavior)
+        original_argv = sys.argv.copy()
+        sys.argv = ['astropy.py']
+        
+        # Run the main astropy function
+        astropy.main()
+        
+        # Restore original argv
+        sys.argv = original_argv
+        
+        print("\n✅ Full analysis completed successfully!")
+        
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
 
-# Import and run the main astropy program
-try:
-    from astropy import main
-    print("=" * 60)
-    print("ASTROPY OBSERVATION PLANNER - FULL REPORT WITH PLOTS")
-    print("=" * 60)
-    print()
-    print("This will generate:")
-    print("- Complete text report")
-    print("- Single trajectory plot with all objects")
-    print("- Visibility chart with moon interference")
-    print()
-    
-    main()
-    
-except Exception as e:
-    print(f"Error running astropy: {e}")
-    print("Make sure astropy.py is in the same directory as this script.") 
+if __name__ == "__main__":
+    main() 

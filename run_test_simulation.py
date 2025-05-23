@@ -1,35 +1,45 @@
 #!/usr/bin/env python3
 """
-Test Simulation - Nighttime Preview
-===================================
-Simulates running the program at 1:30 AM to test nighttime observations
-during daytime. Perfect for testing and planning ahead.
+Test Simulation Wrapper for Pythonista
+=======================================
+Simulates nighttime conditions (1:30 AM) during daytime.
+Perfect for testing the app during the day.
 """
 
 import sys
 import os
 
-# Add current directory to path
+# Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Set up arguments for astropy.py
-sys.argv = ['astropy.py', '--simulate-time', '01:30', '--report-only']
+def main():
+    """Run nighttime simulation for daytime testing."""
+    print("🧪 NIGHTTIME SIMULATION TEST")
+    print("=" * 35)
+    print("Simulating 1:30 AM conditions during daytime...")
+    print("Perfect for testing without waiting for night!")
+    print()
+    
+    try:
+        # Import astropy after setting up path
+        import astropy
+        
+        # Set up arguments for simulation mode
+        original_argv = sys.argv.copy()
+        sys.argv = ['astropy.py', '--simulate-time', '01:30', '--report-only']
+        
+        # Run the main astropy function
+        astropy.main()
+        
+        # Restore original argv
+        sys.argv = original_argv
+        
+        print("\n✅ Simulation test completed successfully!")
+        
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
 
-# Import and run the main astropy program
-try:
-    from astropy import main
-    print("=" * 60)
-    print("ASTROPY OBSERVATION PLANNER - NIGHTTIME SIMULATION TEST")
-    print("=" * 60)
-    print()
-    print("This simulates running the program at 1:30 AM")
-    print("Perfect for testing during daytime!")
-    print()
-    print("Will generate a text report as if it were the middle of the night.")
-    print()
-    
-    main()
-    
-except Exception as e:
-    print(f"Error running astropy: {e}")
-    print("Make sure astropy.py is in the same directory as this script.") 
+if __name__ == "__main__":
+    main() 

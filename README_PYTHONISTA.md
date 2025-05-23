@@ -101,6 +101,16 @@ Simply tap on any of these scripts in Pythonista to run them:
 2. **Ensure you have** `astropy.py` and `config.json` in the same directory
 3. **Tap any script** to run it directly in Pythonista
 
+## ✅ iOS Compatibility
+
+All wrapper scripts have been updated for full iOS/Pythonista compatibility:
+- **No subprocess calls** - Scripts now directly import and call functions
+- **Native iOS support** - Works perfectly in Pythonista 3
+- **Error handling** - Comprehensive error reporting for debugging
+- **Path management** - Automatic import path setup for all dependencies
+
+The scripts are now fully optimized for iOS and will work without any compatibility issues.
+
 ## Configuration for iPad
 
 Make sure your `config.json` is configured for your location:

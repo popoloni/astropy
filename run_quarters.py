@@ -1,37 +1,45 @@
 #!/usr/bin/env python3
 """
-4-Quarter Trajectory View
-========================
-Generates report with 4-quarter trajectory plots for cleaner visualization.
-Splits the night into 4 time periods to reduce visual clutter.
+Quarters Plot Wrapper for Pythonista
+=====================================
+4-quarter trajectory plots for cleaner visualization.
+Perfect for nights with many visible objects.
 """
 
 import sys
 import os
 
-# Add current directory to path
+# Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Set up arguments for astropy.py
-sys.argv = ['astropy.py', '--quarters']
+def main():
+    """Run quarters analysis with 4-quarter plots."""
+    print("📊 4-QUARTER TRAJECTORY PLOTS")
+    print("=" * 35)
+    print("Generating 4-quarter plots for cleaner visualization...")
+    print("⭐ Includes yellow labels for scheduled objects")
+    print()
+    
+    try:
+        # Import astropy after setting up path
+        import astropy
+        
+        # Set up arguments for quarters mode
+        original_argv = sys.argv.copy()
+        sys.argv = ['astropy.py', '--quarters']
+        
+        # Run the main astropy function
+        astropy.main()
+        
+        # Restore original argv
+        sys.argv = original_argv
+        
+        print("\n✅ 4-quarter analysis completed successfully!")
+        
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
 
-# Import and run the main astropy program
-try:
-    from astropy import main
-    print("=" * 60)
-    print("ASTROPY OBSERVATION PLANNER - 4-QUARTER TRAJECTORY VIEW")
-    print("=" * 60)
-    print()
-    print("This will generate:")
-    print("- Complete text report")
-    print("- 4-quarter trajectory plots (less cluttered)")
-    print("- Visibility chart with moon interference")
-    print()
-    print("Each quarter shows objects visible during that time period.")
-    print()
-    
-    main()
-    
-except Exception as e:
-    print(f"Error running astropy: {e}")
-    print("Make sure astropy.py is in the same directory as this script.") 
+if __name__ == "__main__":
+    main() 

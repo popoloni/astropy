@@ -1,30 +1,44 @@
 #!/usr/bin/env python3
 """
-Quick Report - Text Only
-========================
-Generates a comprehensive text report without any plots.
-Perfect for quick checks and when you just need the information.
+Report Only Wrapper for Pythonista
+===================================
+Generates text-only observation reports without plots.
+Perfect for quick checks on mobile devices.
 """
 
 import sys
 import os
 
-# Add current directory to path
+# Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Set up arguments for astropy.py
-sys.argv = ['astropy.py', '--report-only']
-
-# Import and run the main astropy program
-try:
-    from astropy import main
-    print("=" * 60)
-    print("ASTROPY OBSERVATION PLANNER - TEXT REPORT ONLY")
-    print("=" * 60)
+def main():
+    """Run report-only analysis."""
+    print("📊 OBSERVATION REPORT ONLY")
+    print("=" * 30)
+    print("Generating text report without plots...")
     print()
     
-    main()
-    
-except Exception as e:
-    print(f"Error running astropy: {e}")
-    print("Make sure astropy.py is in the same directory as this script.") 
+    try:
+        # Import astropy after setting up path
+        import astropy
+        
+        # Set up arguments for report-only mode
+        original_argv = sys.argv.copy()
+        sys.argv = ['astropy.py', '--report-only']
+        
+        # Run the main astropy function
+        astropy.main()
+        
+        # Restore original argv
+        sys.argv = original_argv
+        
+        print("\n✅ Report completed successfully!")
+        
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
+
+if __name__ == "__main__":
+    main() 

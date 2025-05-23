@@ -1,33 +1,44 @@
 #!/usr/bin/env python3
 """
-4-Quarter Analysis - Text Only
-=============================
-Generates text report optimized for 4-quarter night analysis.
-Perfect for planning without plots on mobile devices.
+Quarters Report Wrapper for Pythonista
+=======================================
+Text report optimized for 4-quarter night analysis.
+Mobile-friendly without plots.
 """
 
 import sys
 import os
 
-# Add current directory to path
+# Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Set up arguments for astropy.py
-sys.argv = ['astropy.py', '--quarters', '--report-only']
+def main():
+    """Run quarters text report analysis."""
+    print("📊 4-QUARTER TEXT REPORT")
+    print("=" * 30)
+    print("Generating quarterly analysis without plots...")
+    print()
+    
+    try:
+        # Import astropy after setting up path
+        import astropy
+        
+        # Set up arguments for quarters report mode
+        original_argv = sys.argv.copy()
+        sys.argv = ['astropy.py', '--quarters', '--report-only']
+        
+        # Run the main astropy function
+        astropy.main()
+        
+        # Restore original argv
+        sys.argv = original_argv
+        
+        print("\n✅ Quarters report completed successfully!")
+        
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
 
-# Import and run the main astropy program
-try:
-    from astropy import main
-    print("=" * 60)
-    print("ASTROPY OBSERVATION PLANNER - 4-QUARTER TEXT ANALYSIS")
-    print("=" * 60)
-    print()
-    print("This will generate a comprehensive text report")
-    print("optimized for 4-quarter night planning.")
-    print()
-    
-    main()
-    
-except Exception as e:
-    print(f"Error running astropy: {e}")
-    print("Make sure astropy.py is in the same directory as this script.") 
+if __name__ == "__main__":
+    main() 
