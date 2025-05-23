@@ -29,8 +29,68 @@ A Python-based astronomical observation planning tool that helps astronomers and
   - Object trajectories with moon interference highlighting
   - Time-based visibility charts with moon influence periods
   - Moon phase icons and status indicators
+  - **Professional-quality trajectory plots with intelligent label positioning**
+  - **4-quarter trajectory visualization for reduced visual clutter**
+  - **Smart collision detection preventing label overlaps**
+  - **Transparent label backgrounds preserving trajectory visibility**
+  - **🆕 Mosaic photography planning with specialized trajectory plots**
+  - **🆕 Mosaic group analysis for multi-target imaging sessions**
+  - **🆕 Three-chart mosaic visualization system (combined, grid, timeline)**
+- **🆕 Mosaic Photography Support (January 2025)**:
+  - Specialized planning for Vaonis Vespera Passenger smart telescope
+  - Identifies objects that can be photographed together in 4.7° × 3.5° mosaic FOV
+  - Three dedicated chart types: combined trajectory plot, detail grid, and visibility timeline
+  - Angular separation calculations and simultaneous visibility analysis
+  - Field of view indicators showing optimal mosaic positioning
+  - iPad-optimized with Pythonista wrapper scripts
 
 ## Recent Updates
+
+### 🆕 Mosaic Photography Features (January 2025)
+
+A comprehensive mosaic photography planning system has been added specifically for the Vaonis Vespera Passenger smart telescope:
+
+**New Analysis Capabilities**
+- **Mosaic Group Detection**: Automatically identifies objects that can be photographed together within the 4.7° × 3.5° mosaic field of view
+- **Angular Separation Calculations**: Uses spherical trigonometry to compute precise object separations
+- **Simultaneous Visibility**: Finds time windows when multiple objects are observable together
+- **Optimal Positioning**: Calculates best telescope positioning for each mosaic group
+
+**Three-Chart Visualization System**
+1. **Combined Trajectory Plot**: All mosaic groups color-coded on one chart with legend
+2. **Detail Grid Plot**: Individual group subplots without legends for space optimization
+3. **Mosaic Visibility Chart**: Timeline showing observation windows and durations
+
+**New Files Added**
+- `analyze_mosaic_groups.py` - Core mosaic group analysis engine
+- `plot_mosaic_trajectories.py` - Three-chart plotting system
+- `run_mosaic_plots.py` - Pythonista wrapper script
+- Updated `config.json` with Vespera Passenger specifications
+
+**iPad Integration**
+- Full integration with existing Pythonista wrapper script system
+- Space-optimized grid layouts for tablet viewing
+- Touch-friendly interface with comprehensive documentation
+
+**Technical Features**
+- Field of view ellipses showing optimal mosaic positioning
+- Color-coded trajectories with consistent styling across all charts
+- Duration and separation information for each group
+- Automatic grid layout adjustment based on number of groups
+
+**Example Usage**
+```bash
+# Analyze mosaic groups
+python3 analyze_mosaic_groups.py
+
+# Create all three chart types
+python3 plot_mosaic_trajectories.py
+
+# Pythonista (iPad) - just tap
+run_mosaic_plots.py
+```
+
+The system typically finds 6-8 mosaic groups per night, each containing 2-4 objects that can be photographed together, providing 8-15 hours of total observation opportunities.
 
 ### Time Simulation Feature (May 2025)
 
@@ -81,6 +141,118 @@ def get_current_datetime(timezone=None):
 ```
 
 This modular approach ensures that all datetime operations throughout the application can be simulated consistently by simply modifying the global `SIMULATED_DATETIME` variable.
+
+### Trajectory Plotting Enhancements (December 2024)
+
+Major improvements have been made to the trajectory plotting system to provide cleaner, more readable visualizations with better label positioning and reduced visual clutter.
+
+#### Key Improvements
+
+**1. Enhanced Label Positioning System**
+- **Smart Collision Detection**: Implemented comprehensive algorithm that avoids overlaps between object labels and hourly time markers
+- **Fallback Positioning**: Added multiple fallback strategies to ensure every trajectory gets a label, even in crowded plots
+- **Trajectory-Aware Placement**: Labels are positioned on straighter segments of trajectories for better readability
+- **Configurable Margins**: Adjustable minimum distances between different label types
+
+**2. Improved Label Transparency**
+- **Reduced Background Opacity**: Changed label background alpha from 0.8-0.9 to 0.4 for better transparency
+- **Trajectory Visibility**: Labels no longer hide the trajectory lines underneath
+- **Consistent Styling**: Uniform transparency across all plotting modes
+
+**3. 4-Quarter Trajectory Plots**
+- **Clean Visualization**: Splits the night into 4 quarters to reduce trajectory overlapping
+- **Simplified Legends**: Replaced messy individual subplot legends with a clean text summary
+- **Time Indicators**: Each quarter clearly shows its time range and object count
+- **Scheduled Object Highlighting**: Visual indicators for recommended observations
+
+**4. Enhanced Object Labeling**
+- **Intelligent Abbreviation**: Smart extraction of catalog designations (M31, NGC 6888, etc.)
+- **Multi-Catalog Support**: Handles Messier, NGC, IC, Sharpless, and other catalog formats
+- **Directional Offsets**: Labels positioned based on trajectory direction to avoid line overlap
+
+#### Available Plotting Modes
+
+**Standard Single Plot (Default)**
+```bash
+python astropy.py
+```
+- Complete night overview with all visible objects
+- Intelligent label positioning to minimize overlaps
+- Color-coded trajectories with comprehensive legend
+- Moon trajectory and interference highlighting
+
+**4-Quarter Trajectory Plots**
+```bash
+python astropy.py --quarters
+```
+- Night split into 4 time periods for reduced clutter
+- Each quarter shows objects visible during that period
+- Cleaner visualization with fewer overlapping trajectories
+- Simple text summary instead of complex legends
+
+#### Technical Features
+
+**Label Positioning Algorithm**
+- **Primary Strategy**: Find optimal positions avoiding all conflicts with 8-degree margins around hour markers
+- **Fallback Strategy**: Use reduced margins (4 degrees) if no optimal position found
+- **Final Fallback**: Use trajectory midpoint to ensure every object gets labeled
+
+**Visual Improvements**
+- **Smart Trajectory Selection**: Prefers straighter segments for label placement
+- **Z-Order Management**: Proper layering with labels above trajectories
+- **Offset Calculation**: Direction-aware label offsets based on trajectory slope
+
+**Performance Optimizations**
+- **Efficient Collision Detection**: Fast distance calculations for overlap prevention
+- **Reduced Computation**: Optimized trajectory sampling for better performance
+- **Memory Management**: Proper cleanup of plot resources
+
+#### Usage Examples
+
+```bash
+# Standard trajectory plot with enhanced labels
+python astropy.py
+
+# 4-quarter view for reduced clutter
+python astropy.py --quarters
+
+# Text report only (skip all plots)
+python astropy.py --report-only
+
+# Use extended visibility margins
+python astropy.py --quarters
+
+# Strict visibility boundaries
+python astropy.py --quarters --no-margins
+```
+
+#### Configuration Options
+
+The trajectory plotting improvements work with existing configuration options:
+
+| Option | Description |
+|--------|-------------|
+| `--quarters` | Use 4-quarter trajectory plots instead of single plot |
+| `--report-only` | Show only text report, skip all plots |
+| `--no-margins` | Disable extended visibility margins (±5°) |
+
+#### Results
+
+**Before Improvements**:
+- ❌ Missing labels on many trajectories
+- ❌ Labels overlapping with hour markers and each other
+- ❌ Opaque label backgrounds hiding trajectory lines
+- ❌ Messy legends in 4-quarter plots
+- ❌ Poor visual clarity in crowded plots
+
+**After Improvements**:
+- ✅ Every trajectory has a clear, readable label
+- ✅ Smart positioning avoids all types of overlaps
+- ✅ Transparent labels (α=0.4) show trajectories underneath
+- ✅ Clean 4-quarter plots with simple text summaries
+- ✅ Professional-quality astronomical charts
+
+The enhanced trajectory plotting system provides professional-quality visualizations that maintain readability even with many objects visible simultaneously. The 4-quarter approach is particularly useful for crowded nights when many objects are visible, while the improved single-plot mode offers the best overall view of the entire observing session.
 
 ### Schedule Generation Improvements
 
@@ -268,7 +440,7 @@ The application supports various command-line arguments to customize its behavio
 ```
 usage: astropy.py [-h] [--date DATE] [--object OBJECT] [--type TYPE] [--report-only]
                  [--schedule {longest,max_objects,optimal_snr}] [--no-margins]
-                 [--simulate-time SIMULATE_TIME]
+                 [--simulate-time SIMULATE_TIME] [--quarters]
 ```
 
 ### Available Arguments
@@ -282,6 +454,7 @@ usage: astropy.py [-h] [--date DATE] [--object OBJECT] [--type TYPE] [--report-o
 | `--schedule {longest,max_objects,optimal_snr}` | Specify the scheduling strategy |
 | `--no-margins` | Do not use extended margins for visibility calculations |
 | `--simulate-time SIMULATE_TIME` | Simulate running at a specific time (format: HH:MM) |
+| `--quarters` | Use 4-quarter trajectory plots instead of single plot |
 
 ### Examples
 
@@ -303,6 +476,12 @@ python astropy.py --schedule max_objects
 
 # Simulate running at 1:30 AM
 python astropy.py --simulate-time "01:30" --report-only
+
+# Use 4-quarter trajectory plots for cleaner visualization
+python astropy.py --quarters
+
+# Combine options for specific analysis
+python astropy.py --quarters --no-margins --date "2025-06-01"
 ```
 
 ## Usage
@@ -628,5 +807,13 @@ This project is open source and available under the MIT License.
 - Fixed various edge cases in the scheduling algorithm for more reliable operation.
 - Added validation to prevent scheduling objects with invalid exposure time calculations.
 - Enhanced file loading logic for more robust configuration handling.
+
+#### Trajectory Plotting System Overhaul (December 2024)
+- **Enhanced Label Positioning**: Implemented comprehensive label positioning algorithm with smart collision detection
+- **Transparency Improvements**: Reduced label background opacity from 0.8-0.9 to 0.4 for better trajectory visibility
+- **4-Quarter Plot Optimization**: Replaced complex legends with clean text summaries in quarterly trajectory plots
+- **Fallback Systems**: Added multiple fallback strategies to ensure every trajectory gets a label
+- **Visual Polish**: Improved z-ordering, directional offsets, and trajectory-aware label placement
+- **Code Cleanup**: Removed the problematic enhanced plotting mode and streamlined to two clean plotting options
 
 To use these new features, update your config.json with the new options shown in the Configuration section above.

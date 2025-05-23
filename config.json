@@ -45,15 +45,22 @@
     },
     "imaging": {
         "scope": {
+            "name": "Vaonis Vespera Passenger",
             "fov_width": 2.4,
             "fov_height": 1.8,
+            "mosaic_fov_width": 4.7,
+            "mosaic_fov_height": 3.5,
+            "native_resolution_mp": 6.2,
+            "mosaic_resolution_mp": 24,
+            "sensor": "Sony IMX585",
             "single_exposure": 10,
             "min_snr": 20,
             "gain": 800,
             "read_noise": 0.8,
             "pixel_size": 2.9,
             "focal_length": 200,
-            "aperture": 50
+            "aperture": 50,
+            "comment": "Updated for Vaonis Vespera Passenger with mosaic capabilities"
         }
     },
     "moon": {

@@ -1696,26 +1696,144 @@ def get_abbreviated_name(full_name):
     # If no catalog number found, return first word
     return full_name.split()[0]
 
-def find_label_position(azimuths, altitudes, existing_positions, margin=3):
-    """Find suitable position for label that doesn't overlap with others"""
-    # Try middle position first
+def find_optimal_label_position(azimuths, altitudes, hour_positions, existing_positions, 
+                               existing_labels, margin=8):
+    """
+    Find optimal position for label that avoids overlapping with:
+    - Other object labels
+    - Hourly tick markers and their labels
+    - Trajectory endpoints
+    
+    Parameters:
+    - azimuths, altitudes: trajectory coordinates
+    - hour_positions: list of (az, alt) tuples for hourly markers
+    - existing_positions: list of (az, alt) tuples for other object labels
+    - existing_labels: list of existing label texts to avoid duplication
+    - margin: minimum distance in degrees for avoiding overlaps
+    
+    Returns:
+    - (az, alt) tuple for label position, with fallback if no optimal position found
+    """
+    if len(azimuths) < 3:
+        return None
+    
+    # Create list of forbidden zones (hourly ticks + existing labels)
+    forbidden_zones = []
+    
+    # Add hourly tick positions with larger margin
+    for pos in hour_positions:
+        forbidden_zones.append((pos[0], pos[1], margin * 1.5))  # Larger margin for ticks
+    
+    # Add existing label positions
+    for pos in existing_positions:
+        forbidden_zones.append((pos[0], pos[1], margin))
+    
+    # Find potential label positions along trajectory
+    # Avoid first and last 20% of trajectory (near endpoints)
+    start_idx = max(1, len(azimuths) // 5)
+    end_idx = min(len(azimuths) - 1, len(azimuths) * 4 // 5)
+    
+    candidate_positions = []
+    
+    for i in range(start_idx, end_idx):
+        az, alt = azimuths[i], altitudes[i]
+        
+        # Check if this position conflicts with forbidden zones
+        conflicts = False
+        for fz_az, fz_alt, fz_margin in forbidden_zones:
+            distance = ((az - fz_az)**2 + (alt - fz_alt)**2)**0.5
+            if distance < fz_margin:
+                conflicts = True
+                break
+        
+        if not conflicts:
+            # Calculate trajectory curvature at this point for better placement
+            curvature_score = 0
+            if i > 0 and i < len(azimuths) - 1:
+                # Simple curvature estimation
+                prev_az, prev_alt = azimuths[i-1], altitudes[i-1]
+                next_az, next_alt = azimuths[i+1], altitudes[i+1]
+                
+                # Prefer straighter segments for labels
+                angle1 = np.arctan2(alt - prev_alt, az - prev_az)
+                angle2 = np.arctan2(next_alt - alt, next_az - az)
+                angle_diff = abs(angle1 - angle2)
+                curvature_score = 1 / (1 + angle_diff)  # Higher score for straighter segments
+            
+            # Distance from center of trajectory (prefer middle)
+            center_preference = 1 - abs(i - len(azimuths) // 2) / (len(azimuths) // 2)
+            
+            # Combined score
+            total_score = curvature_score * 0.7 + center_preference * 0.3
+            
+            candidate_positions.append((az, alt, total_score, i))
+    
+    if candidate_positions:
+        # Sort by score and return best position
+        candidate_positions.sort(key=lambda x: x[2], reverse=True)
+        best_az, best_alt, _, _ = candidate_positions[0]
+        return (best_az, best_alt)
+    
+    # FALLBACK: If no optimal position found, use middle of trajectory with reduced margin check
+    fallback_candidates = []
+    reduced_margin = margin * 0.5  # Use smaller margin for fallback
+    
+    for i in range(start_idx, end_idx):
+        az, alt = azimuths[i], altitudes[i]
+        
+        # Check conflicts with reduced margin
+        conflicts = False
+        for fz_az, fz_alt, fz_margin in forbidden_zones:
+            distance = ((az - fz_az)**2 + (alt - fz_alt)**2)**0.5
+            if distance < reduced_margin:  # Use reduced margin
+                conflicts = True
+                break
+        
+        if not conflicts:
+            # Distance from center of trajectory (prefer middle)
+            center_preference = 1 - abs(i - len(azimuths) // 2) / (len(azimuths) // 2)
+            fallback_candidates.append((az, alt, center_preference, i))
+    
+    if fallback_candidates:
+        # Sort by center preference and return best fallback position
+        fallback_candidates.sort(key=lambda x: x[2], reverse=True)
+        best_az, best_alt, _, _ = fallback_candidates[0]
+        return (best_az, best_alt)
+    
+    # FINAL FALLBACK: Just use trajectory middle point if all else fails
     mid_idx = len(azimuths) // 2
-    mid_pos = (azimuths[mid_idx], altitudes[mid_idx])
-    
-    if not any(abs(mid_pos[0] - pos[0]) < margin and abs(mid_pos[1] - pos[1]) < margin 
-              for pos in existing_positions):
-        return mid_pos
-    
-    # Try other positions along the trajectory
-    for i in range(len(azimuths)):
-        pos = (azimuths[i], altitudes[i])
-        if not any(abs(pos[0] - existing_pos[0]) < margin and abs(pos[1] - existing_pos[1]) < margin 
-                  for existing_pos in existing_positions):
-            return pos
-    
-    return None
+    return (azimuths[mid_idx], altitudes[mid_idx])
 
-def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positions=None):
+def calculate_label_offset(trajectory_az, trajectory_alt, trajectory_idx, azimuths, altitudes):
+    """
+    Calculate smart offset for label based on trajectory direction and position
+    to avoid overlapping with the trajectory line itself.
+    """
+    # Default offset
+    offset_x, offset_y = 8, 8
+    
+    if trajectory_idx > 0 and trajectory_idx < len(azimuths) - 1:
+        # Calculate trajectory direction
+        prev_az, prev_alt = azimuths[trajectory_idx - 1], altitudes[trajectory_idx - 1]
+        next_az, next_alt = azimuths[trajectory_idx + 1], altitudes[trajectory_idx + 1]
+        
+        # Direction vector
+        dir_az = next_az - prev_az
+        dir_alt = next_alt - prev_alt
+        
+        # Perpendicular offset (rotated 90 degrees)
+        if abs(dir_az) > abs(dir_alt):
+            # More horizontal trajectory - offset vertically
+            offset_x = 8 if dir_az > 0 else -8
+            offset_y = 12 if dir_alt >= 0 else -12
+        else:
+            # More vertical trajectory - offset horizontally
+            offset_x = 12 if dir_az >= 0 else -12
+            offset_y = 8 if dir_alt > 0 else -8
+    
+    return offset_x, offset_y
+
+def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positions=None, schedule=None):
     """Plot trajectory with moon proximity checking and legend.
     Elements are plotted in specific z-order:
     1. Base trajectory (z=1)
@@ -1723,6 +1841,23 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
     3. Hour markers (z=3)
     4. Hour labels (z=4)
     5. Object name (z=5)
+    
+    Parameters:
+    -----------
+    ax : matplotlib.axes.Axes
+        Axes to plot on
+    obj : CelestialObject
+        Object to plot trajectory for
+    start_time : datetime
+        Start time for trajectory
+    end_time : datetime
+        End time for trajectory
+    color : str
+        Color for trajectory and markers
+    existing_positions : list, optional
+        List of existing label positions to avoid overlap
+    schedule : list, optional
+        List of scheduled observations [(start, end, obj), ...] for label styling
     """
     # Ensure there's a legend (even if empty) to avoid NoneType errors
     if ax.get_legend() is None:
@@ -1736,6 +1871,12 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
     hour_times = []
     hour_alts = []
     hour_azs = []
+    
+    # Check if this object is scheduled
+    is_scheduled = False
+    if schedule:
+        scheduled_objects = [sched_obj for _, _, sched_obj in schedule]
+        is_scheduled = obj in scheduled_objects
     
     # Ensure times are in UTC for calculations
     if start_time.tzinfo != pytz.UTC:
@@ -1847,16 +1988,40 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         if existing_positions is None:
             existing_positions = []
             
-        label_pos = find_label_position(azs, alts, existing_positions)
+        # Collect hour positions for avoiding overlap
+        hour_positions = [(az, alt) for az, alt in zip(hour_azs, hour_alts)]
+        
+        # Get existing labels from legend to avoid duplicates
+        legend = ax.get_legend()
+        existing_labels = [t.get_text() for t in legend.get_texts()] if legend else []
+            
+        label_pos = find_optimal_label_position(azs, alts, hour_positions, existing_positions, existing_labels, margin=6)
         if label_pos:
             abbreviated_name = get_abbreviated_name(obj.name)
+            
+            # Calculate smart offset based on trajectory direction
+            trajectory_idx = len(azs) // 2  # Use middle point for direction calculation
+            offset_x, offset_y = calculate_label_offset(label_pos[0], label_pos[1], trajectory_idx, azs, alts)
+            
+            # Choose label background color based on scheduling status
+            if is_scheduled:
+                # Yellow transparent background for scheduled objects
+                label_bg_color = "yellow"
+                label_alpha = 0.6  # Slightly more opaque for better visibility of yellow
+            else:
+                # White transparent background for non-scheduled objects
+                label_bg_color = "white"
+                label_alpha = 0.4
+            
             ax.annotate(abbreviated_name, 
                        label_pos,
-                       xytext=(5, 5),
+                       xytext=(offset_x, offset_y),
                        textcoords='offset points',
                        color=color,
                        fontweight='bold',
-                       fontsize=10)
+                       fontsize=10,
+                       bbox=dict(boxstyle="round,pad=0.2", facecolor=label_bg_color, alpha=label_alpha),
+                       zorder=15)
             existing_positions.append(label_pos)
 
 def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="Object Visibility", use_margins=True):
@@ -2703,6 +2868,363 @@ def print_objects_by_type(objects, abbreviate=False):
                 if hasattr(obj, 'comments') and obj.comments:
                     print(f"    Comments: {obj.comments}")
 
+def plot_quarterly_trajectories(objects, start_time, end_time, schedule=None):
+    """Create 4-quarter trajectory plots to reduce visual clutter"""
+    
+    # Calculate quarter durations
+    total_duration = end_time - start_time
+    quarter_duration = total_duration / 4
+    
+    quarters = {
+        'Q1': (start_time, start_time + quarter_duration),
+        'Q2': (start_time + quarter_duration, start_time + 2 * quarter_duration),
+        'Q3': (start_time + 2 * quarter_duration, start_time + 3 * quarter_duration),
+        'Q4': (start_time + 3 * quarter_duration, end_time)
+    }
+    
+    # Count objects visible in each quarter
+    quarter_objects = {'Q1': [], 'Q2': [], 'Q3': [], 'Q4': []}
+    
+    for obj in objects:
+        # Check visibility in each quarter
+        for quarter_name, (q_start, q_end) in quarters.items():
+            # Sample a few time points in the quarter to check visibility
+            sample_times = [
+                q_start + (q_end - q_start) * i / 4 
+                for i in range(5)
+            ]
+            
+            visible_in_quarter = False
+            for sample_time in sample_times:
+                alt, az = calculate_altaz(obj, sample_time)
+                if is_visible(alt, az, use_margins=True):
+                    visible_in_quarter = True
+                    break
+            
+            if visible_in_quarter:
+                quarter_objects[quarter_name].append(obj)
+    
+    # Create 2x2 subplot with more space for cleaner look
+    fig = plt.figure(figsize=(16, 12))
+    gs = fig.add_gridspec(2, 2, hspace=0.25, wspace=0.15)
+    
+    # Use the same date as the original for consistency
+    night_date = start_time.date()
+    fig.suptitle(f'Object Trajectories by Night Quarter - {night_date}', fontsize=16, fontweight='bold')
+    
+    quarter_names = ['Q1', 'Q2', 'Q3', 'Q4']
+    quarter_titles = [
+        'First Quarter (Early Night)',
+        'Second Quarter (Mid-Early Night)', 
+        'Third Quarter (Mid-Late Night)',
+        'Fourth Quarter (Late Night)'
+    ]
+    
+    # Collect all unique objects across quarters for a single legend
+    all_quarter_objects = set()
+    has_moon_trajectory = False
+    
+    # Plot each quarter
+    for i, (quarter_name, title) in enumerate(zip(quarter_names, quarter_titles)):
+        row = i // 2
+        col = i % 2
+        ax = fig.add_subplot(gs[row, col])
+        
+        # Setup axis like the original plot
+        ax.set_xlim(MIN_AZ-10, MAX_AZ+10)
+        ax.set_ylim(MIN_ALT-10, MAX_ALT+10)
+        ax.set_xlabel('Azimuth (degrees)')
+        ax.set_ylabel('Altitude (degrees)')
+        ax.grid(True, alpha=GRID_ALPHA)
+        ax.set_title(title, fontweight='bold')
+        
+        # Add visible region (no label to avoid legend entry)
+        visible_region = Rectangle((MIN_AZ, MIN_ALT), 
+                                 MAX_AZ - MIN_AZ, 
+                                 MAX_ALT - MIN_ALT,
+                                 facecolor='green', 
+                                 alpha=VISIBLE_REGION_ALPHA)
+        ax.add_patch(visible_region)
+        
+        # Get quarter time range and objects
+        q_start, q_end = quarters[quarter_name]
+        quarter_visible_objects = quarter_objects[quarter_name]
+        
+        # Check if moon is visible in this quarter
+        moon_visible_in_quarter = False
+        check_time = q_start
+        while check_time <= q_end and not moon_visible_in_quarter:
+            moon_alt, moon_az = calculate_moon_position(check_time)
+            if is_visible(moon_alt, moon_az, use_margins=True):
+                moon_visible_in_quarter = True
+                has_moon_trajectory = True
+            check_time += timedelta(minutes=30)
+        
+        # Plot moon trajectory for this quarter (no legend)
+        if moon_visible_in_quarter:
+            plot_moon_trajectory_no_legend(ax, q_start, q_end)
+        
+        # Generate colors for this quarter's objects
+        if quarter_visible_objects:
+            # Use a better color distribution
+            colormap = plt.get_cmap(COLOR_MAP)
+            colors = colormap(np.linspace(0, 1, len(quarter_visible_objects)))
+            
+            # Plot trajectories for this quarter only (no legend)
+            existing_positions = []
+            for obj, color in zip(quarter_visible_objects, colors):
+                plot_object_trajectory_no_legend(ax, obj, q_start, q_end, color, existing_positions, schedule)
+                all_quarter_objects.add(obj.name)
+        
+        # Add quarter time info
+        local_tz = get_local_timezone()
+        q_start_local = q_start.astimezone(local_tz)
+        q_end_local = q_end.astimezone(local_tz)
+        time_text = f"{q_start_local.strftime('%H:%M')} - {q_end_local.strftime('%H:%M')}"
+        ax.text(0.02, 0.98, time_text, transform=ax.transAxes, 
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.4),
+                verticalalignment='top', fontsize=10, fontweight='bold')
+        
+        # Add object count
+        obj_count_text = f"Objects: {len(quarter_visible_objects)}"
+        ax.text(0.02, 0.02, obj_count_text, transform=ax.transAxes,
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="lightblue", alpha=0.9),
+                verticalalignment='bottom', fontsize=10, fontweight='bold')
+        
+        # Add scheduled objects indicator if schedule provided
+        if schedule:
+            scheduled_in_quarter = []
+            for sched_start, sched_end, sched_obj in schedule:
+                # Check if schedule overlaps with this quarter
+                if (sched_start < q_end and sched_end > q_start and 
+                    sched_obj in quarter_visible_objects):
+                    scheduled_in_quarter.append(sched_obj.name)
+            
+            if scheduled_in_quarter:
+                scheduled_text = f"Scheduled: {len(scheduled_in_quarter)}"
+                ax.text(0.98, 0.02, scheduled_text, transform=ax.transAxes,
+                        bbox=dict(boxstyle="round,pad=0.3", facecolor="yellow", alpha=0.9),
+                        verticalalignment='bottom', horizontalalignment='right', 
+                        fontsize=10, fontweight='bold')
+        
+        # Finalize legend for this subplot
+        # finalize_plot_legend(ax)  # Commented out to avoid messy legends
+    
+    # Add a simple text summary instead of complex legends
+    summary_text = (
+        f"Total unique objects shown: {len(all_quarter_objects)}\n"
+        f"Green area: Visible region"
+    )
+    if has_moon_trajectory:
+        summary_text += " | Gold line: Moon trajectory"
+    
+    summary_text += "\nSolid lines: Sufficient time | Dashed lines: Insufficient time"
+    
+    # Add information about scheduled objects if any exist
+    if schedule:
+        summary_text += "\nYellow labels: Scheduled for observation"
+    
+    # Add summary as text in the figure (adjust position to avoid tight_layout issues)
+    fig.text(0.02, 0.01, summary_text, fontsize=9, 
+             bbox=dict(boxstyle="round,pad=0.4", facecolor="lightgray", alpha=0.9),
+             verticalalignment='bottom')
+    
+    # Adjust layout manually instead of tight_layout to avoid warnings
+    plt.subplots_adjust(left=0.08, right=0.98, top=0.93, bottom=0.12)
+    return fig
+
+def plot_moon_trajectory_no_legend(ax, start_time, end_time):
+    """Plot moon trajectory without adding legend entries"""
+    times = []
+    alts = []
+    azs = []
+    hour_times = []
+    hour_alts = []
+    hour_azs = []
+    
+    # Ensure times are in UTC for calculations
+    if start_time.tzinfo != pytz.UTC:
+        start_time = start_time.astimezone(pytz.UTC)
+    if end_time.tzinfo != pytz.UTC:
+        end_time = end_time.astimezone(pytz.UTC)
+    
+    current_time = start_time
+    while current_time <= end_time:
+        alt, az = calculate_moon_position(current_time)
+        if is_visible(alt, az):
+            times.append(current_time)
+            alts.append(alt)
+            azs.append(az)
+            
+            # Convert to local time for display
+            local_time = utc_to_local(current_time)
+            if local_time.minute == 0:
+                hour_times.append(local_time)
+                hour_alts.append(alt)
+                hour_azs.append(az)
+                
+        current_time += timedelta(minutes=1)
+    
+    if azs:
+        # Plot moon trajectory (no label for legend)
+        ax.plot(azs, alts, '-', color=MOON_TRAJECTORY_COLOR, 
+               linewidth=MOON_LINE_WIDTH, zorder=2)
+        
+        # Add hour markers
+        for t, az, alt in zip(hour_times, hour_azs, hour_alts):
+            ax.plot(az, alt, 'o', color=MOON_MARKER_COLOR, 
+                   markersize=MOON_MARKER_SIZE, zorder=3)
+            ax.annotate(f'{t.hour:02d}h', 
+                       (az, alt),
+                       xytext=(5, 5),
+                       textcoords='offset points',
+                       fontsize=8,
+                       color=MOON_MARKER_COLOR,
+                       zorder=3)
+
+def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, existing_positions=None, schedule=None):
+    """Plot object trajectory without adding legend entries
+    
+    Parameters:
+    -----------
+    ax : matplotlib.axes.Axes
+        Axes to plot on
+    obj : CelestialObject
+        Object to plot trajectory for
+    start_time : datetime
+        Start time for trajectory
+    end_time : datetime
+        End time for trajectory
+    color : str
+        Color for trajectory and markers
+    existing_positions : list, optional
+        List of existing label positions to avoid overlap
+    schedule : list, optional
+        List of scheduled observations [(start, end, obj), ...] for label styling
+    """
+    times = []
+    alts = []
+    azs = []
+    near_moon = []
+    moon_alts = []
+    obj.near_moon = False
+    hour_times = []
+    hour_alts = []
+    hour_azs = []
+    
+    # Check if this object is scheduled
+    is_scheduled = False
+    if schedule:
+        scheduled_objects = [sched_obj for _, _, sched_obj in schedule]
+        is_scheduled = obj in scheduled_objects
+    
+    # Ensure times are in UTC for calculations
+    if start_time.tzinfo != pytz.UTC:
+        start_time = start_time.astimezone(pytz.UTC)
+    if end_time.tzinfo != pytz.UTC:
+        end_time = end_time.astimezone(pytz.UTC)
+    
+    current_time = start_time
+    while current_time <= end_time:
+        alt, az = calculate_altaz(obj, current_time)
+        moon_alt, moon_az = calculate_moon_position(current_time)
+        
+        # Extended visibility check
+        if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and 
+            MIN_AZ - 5 <= az <= MAX_AZ + 5):
+            times.append(current_time)
+            alts.append(alt)
+            azs.append(az)
+            
+            # Check moon proximity
+            is_near = False
+            if moon_alt >= 0:
+                is_near = is_near_moon(alt, az, moon_alt, moon_az, obj.magnitude, current_time)
+            near_moon.append(is_near)
+            moon_alts.append(moon_alt)
+            
+            # Hour markers
+            local_time = utc_to_local(current_time)
+            if local_time.minute == 0:
+                hour_times.append(local_time)
+                hour_alts.append(alt)
+                hour_azs.append(az)
+                
+        current_time += timedelta(minutes=1)
+    
+    if not azs:
+        return
+    
+    # Determine line style
+    line_style = '-' if getattr(obj, 'sufficient_time', True) else '--'
+    
+    # Plot base trajectory (no label for legend)
+    ax.plot(azs, alts, line_style, color=color, linewidth=1.5, alpha=0.3, zorder=1)
+    
+    # Plot moon-affected segments if any
+    if hasattr(obj, 'moon_influence_periods'):
+        for start_idx, end_idx in obj.moon_influence_periods:
+            valid_segment = True
+            for i in range(start_idx, min(end_idx+1, len(moon_alts))):
+                if moon_alts[i] < 0:
+                    valid_segment = False
+                    break
+            
+            if valid_segment:
+                ax.plot(azs[start_idx:end_idx+1], 
+                       alts[start_idx:end_idx+1], 
+                       line_style,
+                       color=MOON_INTERFERENCE_COLOR,
+                       linewidth=2,
+                       zorder=2)
+    
+    # Add hour markers
+    for t, az, alt in zip(hour_times, hour_azs, hour_alts):
+        ax.plot(az, alt, 'o', color=color, markersize=6, zorder=3)
+        ax.annotate(f'{t.hour:02d}h', 
+                   (az, alt),
+                   xytext=(5, 5),
+                   textcoords='offset points',
+                   fontsize=8,
+                   color=color,
+                   zorder=3)
+    
+    # Add abbreviated name near trajectory
+    if existing_positions is None:
+        existing_positions = []
+        
+    # Collect hour positions for avoiding overlap
+    hour_positions = [(az, alt) for az, alt in zip(hour_azs, hour_alts)]
+    existing_labels = []  # No legend in this version
+    
+    label_pos = find_optimal_label_position(azs, alts, hour_positions, existing_positions, 
+                                           existing_labels, margin=6)
+    if label_pos:
+        abbreviated_name = get_abbreviated_name(obj.name)
+        # Calculate smart offset
+        trajectory_idx = len(azs) // 2
+        offset_x, offset_y = calculate_label_offset(label_pos[0], label_pos[1], trajectory_idx, azs, alts)
+        
+        # Choose label background color based on scheduling status
+        if is_scheduled:
+            # Yellow transparent background for scheduled objects
+            label_bg_color = "yellow"
+            label_alpha = 0.6  # Slightly more opaque for better visibility of yellow
+        else:
+            # White transparent background for non-scheduled objects
+            label_bg_color = "white"
+            label_alpha = 0.4
+        
+        ax.annotate(abbreviated_name, 
+                   label_pos,
+                   xytext=(offset_x, offset_y),
+                   textcoords='offset points',
+                   color=color,
+                   fontweight='bold',
+                   fontsize=10,
+                   bbox=dict(boxstyle="round,pad=0.2", facecolor=label_bg_color, alpha=label_alpha),
+                   zorder=15)
+        existing_positions.append(label_pos)
 
 # ============= MAIN PROGRAM =============
 
@@ -2720,6 +3242,8 @@ def main():
                       help='Do not use extended margins for visibility chart')
     parser.add_argument('--simulate-time', type=str, default=None, 
                       help='Simulate running at a specific time (format: HH:MM or HH:MM:SS)')
+    parser.add_argument('--quarters', action='store_true',
+                      help='Use 4-quarter trajectory plots instead of single plot')
     
     args = parser.parse_args()
     
@@ -2884,50 +3408,63 @@ def main():
     # Use selected strategy for visualization
     schedule = schedules[SCHEDULING_STRATEGY]
     
-    # Create plots for the observation period
-    fig, ax = setup_altaz_plot()
-    
-    # Generate colors 
-    colormap = plt.get_cmap(COLOR_MAP) 
-    colors = colormap(np.linspace(0, 1, len(visible_objects)))
-    
-    # Initialize empty legend to avoid NoneType errors
-    ax.legend()
-    
-    # Plot moon trajectory first
-    plot_moon_trajectory(ax, start_time, end_time)
-    
-    existing_positions = []
-    # Plot trajectories for visible objects
-    for obj, color in zip(visible_objects, colors):
-        plot_object_trajectory(ax, obj, start_time, end_time, 
-                             color, existing_positions)
-    
-    # Plot trajectories for insufficient time objects if not excluded
-    if not EXCLUDE_INSUFFICIENT_TIME:
-        for obj in insufficient_objects:
+    # Choose plotting method based on arguments
+    if args.quarters:
+        # Create 4-quarter trajectory plots
+        if not EXCLUDE_INSUFFICIENT_TIME:
+            all_visible = visible_objects + insufficient_objects
+        else:
+            all_visible = visible_objects
+        
+        fig = plot_quarterly_trajectories(all_visible, start_time, end_time, schedule)
+        plt.show()
+        plt.close(fig)
+        
+    else:
+        # Create original plots for the observation period
+        fig, ax = setup_altaz_plot()
+        
+        # Generate colors 
+        colormap = plt.get_cmap(COLOR_MAP) 
+        colors = colormap(np.linspace(0, 1, len(visible_objects)))
+        
+        # Initialize empty legend to avoid NoneType errors
+        ax.legend()
+        
+        # Plot moon trajectory first
+        plot_moon_trajectory(ax, start_time, end_time)
+        
+        existing_positions = []
+        # Plot trajectories for visible objects
+        for obj, color in zip(visible_objects, colors):
             plot_object_trajectory(ax, obj, start_time, end_time, 
-                                 'pink', existing_positions)
-    
-    # Use sunset date for the title to maintain consistency in the display
-    plt.title(f"Object Trajectories for Night of {sunset.date()}")
-    # Create custom legend
-    handles, labels = ax.get_legend_handles_labels()
-    
-    # Add a legend entry for moon interference if any object was near moon
-    if any(obj for obj in visible_objects + insufficient_objects if hasattr(obj, 'near_moon')):
-        moon_line = plt.Line2D([0], [0], color=MOON_INTERFERENCE_COLOR, linestyle='-', label='Moon Interference')
-        handles.append(moon_line)
-    
-    # Add legend entry for insufficient time objects if any
-    if insufficient_objects:
-        insuf_line = plt.Line2D([0], [0], color='gray', linestyle='--', label='Insufficient Time')
-        handles.append(insuf_line)
-    
-    # Create the legend with all handles
-    finalize_plot_legend(ax)
-    plt.show()
-    plt.close(fig)  # Explicitly close the figure
+                                 color, existing_positions, schedule)
+        
+        # Plot trajectories for insufficient time objects if not excluded
+        if not EXCLUDE_INSUFFICIENT_TIME:
+            for obj in insufficient_objects:
+                plot_object_trajectory(ax, obj, start_time, end_time, 
+                                     'pink', existing_positions, schedule)
+        
+        # Use sunset date for the title to maintain consistency in the display
+        plt.title(f"Object Trajectories for Night of {sunset.date()}")
+        # Create custom legend
+        handles, labels = ax.get_legend_handles_labels()
+        
+        # Add a legend entry for moon interference if any object was near moon
+        if any(obj for obj in visible_objects + insufficient_objects if hasattr(obj, 'near_moon')):
+            moon_line = plt.Line2D([0], [0], color=MOON_INTERFERENCE_COLOR, linestyle='-', label='Moon Interference')
+            handles.append(moon_line)
+        
+        # Add legend entry for insufficient time objects if any
+        if insufficient_objects:
+            insuf_line = plt.Line2D([0], [0], color='gray', linestyle='--', label='Insufficient Time')
+            handles.append(insuf_line)
+        
+        # Create the legend with all handles
+        finalize_plot_legend(ax)
+        plt.show()
+        plt.close(fig)  # Explicitly close the figure
     
     # Create visibility chart for the observation period
     if not EXCLUDE_INSUFFICIENT_TIME:
