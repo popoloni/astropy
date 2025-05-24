@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from datetime import datetime, timedelta, timezone
+import os
 
 import pytz
 import re
@@ -27,10 +28,14 @@ class SchedulingStrategy(Enum):
     OPTIMAL_SNR = "optimal_snr"           # Best imaging conditions
     MINIMAL_MOSAIC = "minimal_mosaic"     # Fewer panels needed
     DIFFICULTY_BALANCED = "difficulty_balanced"  # Mix of easy and challenging
+    MOSAIC_GROUPS = "mosaic_groups"       # Prioritize mosaic groups over individual objects
 
 # Load configuration from file
 def load_config():
-    with open('config.json', 'r') as f:
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(script_dir, 'config.json')
+    with open(config_path, 'r') as f:
         return json.load(f)
 
 def get_default_location(config):
@@ -106,6 +111,26 @@ MOON_MARKER_COLOR = CONFIG['moon']['marker_color']
 MOON_LINE_WIDTH = CONFIG['moon']['line_width']
 MOON_MARKER_SIZE = CONFIG['moon']['marker_size']
 MOON_INTERFERENCE_COLOR = CONFIG['moon']['interference_color']
+
+# Mosaic Configuration
+MOSAIC_FOV_WIDTH = CONFIG['imaging']['scope']['mosaic_fov_width']
+MOSAIC_FOV_HEIGHT = CONFIG['imaging']['scope']['mosaic_fov_height']
+SCOPE_NAME = CONFIG['imaging']['scope']['name']
+
+# Mosaic analysis functions will be imported dynamically to avoid circular imports
+MOSAIC_ANALYSIS_AVAILABLE = True
+
+def _import_mosaic_functions():
+    """Dynamically import mosaic analysis functions to avoid circular imports"""
+    try:
+        from utilities.analyze_mosaic_groups import (
+            analyze_object_groups, calculate_angular_separation, 
+            can_fit_in_mosaic, objects_visible_simultaneously
+        )
+        return analyze_object_groups, calculate_angular_separation, can_fit_in_mosaic, objects_visible_simultaneously
+    except ImportError as e:
+        print(f"Warning: Mosaic analysis module not available: {e}")
+        return None, None, None, None
 
 # ============ DEEP SKY CATALOG FUNCTIONS =============
 
@@ -1117,6 +1142,66 @@ class CelestialObject:
         self.total_area = calculate_total_area(fov) if fov else 0
         self.required_exposure = None  # Will be calculated later
 
+class MosaicGroup:
+    """Class to represent a mosaic group of celestial objects that behaves like a single CelestialObject"""
+    def __init__(self, objects, overlap_periods, group_id=None):
+        self.objects = objects
+        self.overlap_periods = overlap_periods
+        self.group_id = group_id or f"Group_{len(objects)}_objects"
+        
+        # Create composite properties
+        self.name = self._create_group_name()
+        self.ra, self.dec = self._calculate_center_coordinates()
+        self.magnitude = self._calculate_composite_magnitude()
+        self.fov = f"{MOSAIC_FOV_WIDTH:.1f}'x{MOSAIC_FOV_HEIGHT:.1f}'"
+        self.total_area = MOSAIC_FOV_WIDTH * MOSAIC_FOV_HEIGHT / (60 * 60)  # Convert to square degrees
+        self.required_exposure = None  # Will be calculated later
+        
+        # Mosaic-specific properties
+        self.is_mosaic_group = True
+        self.object_count = len(objects)
+        self.visibility_periods = overlap_periods
+        
+    def _create_group_name(self):
+        """Create a descriptive name for the group"""
+        object_names = [get_abbreviated_name(obj.name) for obj in self.objects]
+        if len(object_names) <= 3:
+            return f"Mosaic: {', '.join(object_names)}"
+        else:
+            return f"Mosaic: {', '.join(object_names[:2])} + {len(object_names)-2} more"
+    
+    def _calculate_center_coordinates(self):
+        """Calculate the center RA/Dec of the group"""
+        ra_coords = [obj.ra for obj in self.objects]
+        dec_coords = [obj.dec for obj in self.objects]
+        
+        # Handle RA wraparound (0h/24h boundary)
+        ra_mean = sum(ra_coords) / len(ra_coords)
+        dec_mean = sum(dec_coords) / len(dec_coords)
+        
+        return ra_mean, dec_mean
+    
+    def _calculate_composite_magnitude(self):
+        """Calculate composite magnitude of the group (average of brightest objects)"""
+        valid_magnitudes = [obj.magnitude for obj in self.objects if obj.magnitude is not None]
+        if not valid_magnitudes:
+            return 10.0  # Default magnitude if none available
+        
+        # Use average of the two brightest objects (or just one if only one available)
+        valid_magnitudes.sort()
+        if len(valid_magnitudes) == 1:
+            return valid_magnitudes[0]
+        else:
+            return sum(valid_magnitudes[:2]) / 2
+    
+    def get_individual_objects(self):
+        """Return the individual objects in this group"""
+        return self.objects
+        
+    def calculate_total_overlap_duration(self):
+        """Calculate total overlap duration for this group"""
+        return sum((end - start).total_seconds() / 3600 for start, end in self.overlap_periods)
+
 class ReportGenerator:
     """Class to handle report generation and formatting"""
     def __init__(self, date, location_data):
@@ -1237,9 +1322,15 @@ class ReportGenerator:
         # Sort by visibility start time
         sorted_objects = []
         for obj in objects:
-            periods = find_visibility_window(obj, start_time, end_time)
-            if periods:
-                sorted_objects.append((obj, periods[0][0]))
+            # Handle both individual objects and mosaic groups
+            if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+                # For mosaic groups, use the overlap periods
+                if obj.overlap_periods:
+                    sorted_objects.append((obj, obj.overlap_periods[0][0]))
+            else:
+                periods = find_visibility_window(obj, start_time, end_time)
+                if periods:
+                    sorted_objects.append((obj, periods[0][0]))
         
         sorted_objects.sort(key=lambda x: x[1])
         sorted_objects = [x[0] for x in sorted_objects]
@@ -1248,64 +1339,90 @@ class ReportGenerator:
         content = f"{header}\n\n"
         
         for obj in sorted_objects:
-            # Get visibility periods
-            periods = find_visibility_window(obj, start_time, end_time)
-            if not periods:
-                continue
+            # Handle mosaic groups differently
+            if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+                # Format mosaic group
+                content += f"🎯 {obj.name}\n"
+                content += f"Objects in group: {obj.object_count}\n"
                 
-            visibility_start = periods[0][0]
-            duration = calculate_visibility_duration(periods)
-            visibility_end = periods[-1][1]
-            
-            # Get moon status
-            moon_status = ""
-            if hasattr(obj, 'near_moon') and obj.near_moon:
-                moon_phase = calculate_moon_phase(visibility_start)
-                moon_icon, _ = get_moon_phase_icon(moon_phase)
+                # List individual objects
+                object_names = [get_abbreviated_name(o.name) for o in obj.objects]
+                content += f"Components: {', '.join(object_names)}\n"
                 
-                # Find when moon rises if it's not already risen at the start of visibility
-                moon_alt_at_start, _ = calculate_moon_position(visibility_start)
-                if moon_alt_at_start < 0:
-                    # Moon hasn't risen yet, find rise time
-                    check_time = visibility_start
-                    moon_rise_time = None
-                    while check_time <= visibility_end:
-                        moon_alt, _ = calculate_moon_position(check_time)
-                        prev_moon_alt, _ = calculate_moon_position(check_time - timedelta(minutes=1))
-                        if prev_moon_alt < 0 and moon_alt >= 0:
-                            moon_rise_time = check_time
-                            break
-                        check_time += timedelta(minutes=1)
-                    
-                    if moon_rise_time:
-                        moon_status = f"{moon_icon} Moon interference after {format_time(moon_rise_time)}"
-                    else:
-                        moon_status = "✨ Clear from moon"
-                else:
-                    # Moon is already risen
-                    moon_status = f"{moon_icon} Moon interference"
+                # Total overlap duration
+                total_overlap = obj.calculate_total_overlap_duration()
+                content += f"Total overlap time: {total_overlap:.1f} hours\n"
+                
+                # Overlap periods
+                content += "Overlap periods:\n"
+                for period_start, period_end in obj.overlap_periods:
+                    period_duration = (period_end - period_start).total_seconds() / 3600
+                    content += f"  {format_time(period_start)} - {format_time(period_end)} ({period_duration:.1f}h)\n"
+                
+                content += f"Composite magnitude: {obj.magnitude:.1f}\n"
+                content += f"Mosaic FOV: {obj.fov}\n"
+                content += "Type: Mosaic Group\n"
+                
             else:
-                moon_status = "✨ Clear from moon"
-            
-            # Format the line
-            content += f"{obj.name}\n"
-            content += f"{moon_status}\n"
-            content += f"Visibility: {format_time(visibility_start)} - {format_time(visibility_end)} ({duration:.1f} hours)\n"
-            
-            if hasattr(obj, 'magnitude') and obj.magnitude is not None:
-                content += f"Magnitude: {obj.magnitude}\n"
-            
-            if obj.fov:
-                content += f"Field of view: {obj.fov}\n"
-                # Calculate panels needed
-                panels = calculate_required_panels(obj.fov)
-                if panels > 1:
-                    mosaic_size = math.ceil(math.sqrt(panels))
-                    content += f"Mosaic: {mosaic_size}x{mosaic_size} panels\n"
-            
-            if hasattr(obj, 'type') and obj.type:
-                content += f"Type: {obj.type}\n"
+                # Format individual object
+                # Get visibility periods
+                periods = find_visibility_window(obj, start_time, end_time)
+                if not periods:
+                    continue
+                    
+                visibility_start = periods[0][0]
+                duration = calculate_visibility_duration(periods)
+                visibility_end = periods[-1][1]
                 
+                # Get moon status
+                moon_status = ""
+                if hasattr(obj, 'near_moon') and obj.near_moon:
+                    moon_phase = calculate_moon_phase(visibility_start)
+                    moon_icon, _ = get_moon_phase_icon(moon_phase)
+                    
+                    # Find when moon rises if it's not already risen at the start of visibility
+                    moon_alt_at_start, _ = calculate_moon_position(visibility_start)
+                    if moon_alt_at_start < 0:
+                        # Moon hasn't risen yet, find rise time
+                        check_time = visibility_start
+                        moon_rise_time = None
+                        while check_time <= visibility_end:
+                            moon_alt, _ = calculate_moon_position(check_time)
+                            prev_moon_alt, _ = calculate_moon_position(check_time - timedelta(minutes=1))
+                            if prev_moon_alt < 0 and moon_alt >= 0:
+                                moon_rise_time = check_time
+                                break
+                            check_time += timedelta(minutes=1)
+                        
+                        if moon_rise_time:
+                            moon_status = f"{moon_icon} Moon interference after {format_time(moon_rise_time)}"
+                        else:
+                            moon_status = "✨ Clear from moon"
+                    else:
+                        # Moon is already risen
+                        moon_status = f"{moon_icon} Moon interference"
+                else:
+                    moon_status = "✨ Clear from moon"
+                
+                # Format the line
+                content += f"{obj.name}\n"
+                content += f"{moon_status}\n"
+                content += f"Visibility: {format_time(visibility_start)} - {format_time(visibility_end)} ({duration:.1f} hours)\n"
+                
+                if hasattr(obj, 'magnitude') and obj.magnitude is not None:
+                    content += f"Magnitude: {obj.magnitude}\n"
+                
+                if obj.fov:
+                    content += f"Field of view: {obj.fov}\n"
+                    # Calculate panels needed
+                    panels = calculate_required_panels(obj.fov)
+                    if panels > 1:
+                        mosaic_size = math.ceil(math.sqrt(panels))
+                        content += f"Mosaic: {mosaic_size}x{mosaic_size} panels\n"
+                
+                if hasattr(obj, 'type') and obj.type:
+                    content += f"Type: {obj.type}\n"
+                    
             content += "\n"
         
         return content
@@ -2467,14 +2584,27 @@ def _add_moon_interference_legend_items(handles, labels):
 def calculate_object_score(obj, periods, strategy=SCHEDULING_STRATEGY):
     """Calculate object score based on scheduling strategy"""
     duration = calculate_visibility_duration(periods)
-    exposure_time, frames, panels = calculate_required_exposure(
-        obj.magnitude, BORTLE_INDEX, obj.fov)
+    
+    # Handle mosaic groups differently
+    if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+        if strategy == SchedulingStrategy.MOSAIC_GROUPS:
+            # For mosaic groups, prioritize by number of objects and total duration
+            return obj.object_count * duration * 10  # High multiplier for mosaic groups
+        else:
+            # For other strategies, treat as composite object
+            exposure_time = duration / 2  # Estimate based on group complexity
+            panels = 1  # Mosaic groups are already pre-paneled
+    else:
+        exposure_time, frames, panels = calculate_required_exposure(
+            obj.magnitude, BORTLE_INDEX, obj.fov)
     
     if strategy == SchedulingStrategy.LONGEST_DURATION:
         return duration
     
     elif strategy == SchedulingStrategy.MAX_OBJECTS:
         # Prefer objects that need just enough time
+        if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+            return obj.object_count * duration  # Favor mosaic groups with more objects
         return 1.0 / abs(duration - exposure_time)
     
     elif strategy == SchedulingStrategy.OPTIMAL_SNR:
@@ -2493,6 +2623,13 @@ def calculate_object_score(obj, periods, strategy=SCHEDULING_STRATEGY):
         feasibility = duration / exposure_time
         return feasibility / difficulty
     
+    elif strategy == SchedulingStrategy.MOSAIC_GROUPS:
+        # Prioritize mosaic groups over individual objects
+        if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+            return obj.object_count * duration * 10  # High score for mosaic groups
+        else:
+            return duration * 0.1  # Lower score for individual objects
+    
     return duration
 
 def calculate_max_altitude(obj, start_time, end_time):
@@ -2504,6 +2641,52 @@ def calculate_max_altitude(obj, start_time, end_time):
         max_alt = max(max_alt, alt)
         current_time += timedelta(minutes=TRAJECTORY_INTERVAL_MINUTES)
     return max_alt
+
+def create_mosaic_groups(objects, start_time, end_time):
+    """Create MosaicGroup objects from visible objects using mosaic analysis"""
+    if not MOSAIC_ANALYSIS_AVAILABLE:
+        print("Mosaic analysis not available. Returning empty list.")
+        return []
+    
+    # Import mosaic functions dynamically
+    analyze_object_groups, _, _, _ = _import_mosaic_functions()
+    if analyze_object_groups is None:
+        print("Mosaic analysis functions not available. Returning empty list.")
+        return []
+    
+    # Find mosaic groups using the analysis function
+    groups_data = analyze_object_groups(objects, start_time, end_time)
+    
+    # Convert to MosaicGroup objects
+    mosaic_groups = []
+    for i, (group_objects, overlap_periods) in enumerate(groups_data):
+        group_id = f"Group_{i+1}"
+        mosaic_group = MosaicGroup(group_objects, overlap_periods, group_id)
+        mosaic_groups.append(mosaic_group)
+    
+    return mosaic_groups
+
+def combine_objects_and_groups(individual_objects, mosaic_groups, strategy=SCHEDULING_STRATEGY):
+    """Combine individual objects and mosaic groups based on strategy"""
+    if strategy == SchedulingStrategy.MOSAIC_GROUPS:
+        # Prioritize mosaic groups, add individual objects only if they don't conflict
+        combined = list(mosaic_groups)
+        
+        # Find objects that are not in any mosaic group
+        grouped_object_names = set()
+        for group in mosaic_groups:
+            for obj in group.objects:
+                grouped_object_names.add(obj.name)
+        
+        # Add ungrouped individual objects
+        for obj in individual_objects:
+            if obj.name not in grouped_object_names:
+                combined.append(obj)
+        
+        return combined
+    else:
+        # For other strategies, prioritize individual objects
+        return individual_objects + mosaic_groups
 
 def generate_observation_schedule(objects, start_time, end_time, 
                                 strategy=SCHEDULING_STRATEGY,
@@ -3221,6 +3404,290 @@ def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, exist
                    zorder=15)
         existing_positions.append(label_pos)
 
+# ============= MOSAIC PLOTTING FUNCTIONS =============
+
+def plot_mosaic_fov_indicator(ax, center_alt, center_az, fov_width, fov_height, color='red', alpha=0.3):
+    """Plot a field of view indicator on the trajectory plot."""
+    from matplotlib.patches import Ellipse
+    
+    # Create an ellipse to represent the FOV
+    fov_patch = Ellipse((center_az, center_alt), fov_width, fov_height,
+                       facecolor=color, edgecolor=color, alpha=alpha,
+                       linestyle='--', linewidth=2)
+    ax.add_patch(fov_patch)
+    
+    # Add FOV label
+    ax.text(center_az, center_alt, f'Mosaic\nFOV\n{fov_width:.1f}°×{fov_height:.1f}°',
+           ha='center', va='center', fontsize=8, fontweight='bold',
+           bbox=dict(boxstyle="round,pad=0.3", facecolor='white', alpha=0.8))
+
+def calculate_group_center_position(group, time):
+    """Calculate the center position of a group at a given time."""
+    altitudes = []
+    azimuths = []
+    
+    # Handle both MosaicGroup and list of objects
+    objects = group.objects if hasattr(group, 'objects') else group
+    
+    for obj in objects:
+        alt, az = calculate_altaz(obj, time)
+        if is_visible(alt, az, use_margins=True):
+            altitudes.append(alt)
+            azimuths.append(az)
+    
+    if altitudes and azimuths:
+        return sum(altitudes) / len(altitudes), sum(azimuths) / len(azimuths)
+    return None, None
+
+def plot_mosaic_group_trajectory(ax, group, start_time, end_time, group_color, group_number, show_labels=True):
+    """Plot trajectory for a mosaic group with special visual indicators."""
+    import matplotlib.pyplot as plt
+    
+    # Handle both MosaicGroup and list of objects
+    objects = group.objects if hasattr(group, 'objects') else group
+    overlap_periods = group.overlap_periods if hasattr(group, 'overlap_periods') else []
+    
+    # Plot individual object trajectories
+    existing_positions = []
+    
+    for i, obj in enumerate(objects):
+        times = []
+        alts = []
+        azs = []
+        hour_times = []
+        hour_alts = []
+        hour_azs = []
+        
+        # Ensure times are in UTC for calculations
+        if start_time.tzinfo != pytz.UTC:
+            start_time = start_time.astimezone(pytz.UTC)
+        if end_time.tzinfo != pytz.UTC:
+            end_time = end_time.astimezone(pytz.UTC)
+        
+        current_time = start_time
+        while current_time <= end_time:
+            alt, az = calculate_altaz(obj, current_time)
+            
+            # Extended visibility check for trajectory plotting (±5 degrees)
+            if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and 
+                MIN_AZ - 5 <= az <= MAX_AZ + 5):
+                times.append(current_time)
+                alts.append(alt)
+                azs.append(az)
+                
+                # Convert to local time for display
+                local_time = utc_to_local(current_time)
+                if local_time.minute == 0:
+                    hour_times.append(local_time)
+                    hour_alts.append(alt)
+                    hour_azs.append(az)
+                    
+            current_time += timedelta(minutes=1)
+        
+        if azs:
+            # Use different line styles for objects in the same group
+            line_styles = ['-', '--', '-.', ':']
+            line_style = line_styles[i % len(line_styles)]
+            
+            # Plot trajectory
+            label = f'Group {group_number}: {get_abbreviated_name(obj.name)}' if show_labels else None
+            ax.plot(azs, alts, line_style, color=group_color, linewidth=2, 
+                   alpha=0.8, label=label)
+            
+            # Add hour markers (reduce frequency for smaller plots)
+            marker_freq = 2 if not show_labels else 1  # Every 2 hours for small plots
+            for j, (t, az, alt) in enumerate(zip(hour_times, hour_azs, hour_alts)):
+                if j % marker_freq == 0:
+                    ax.plot(az, alt, 'o', color=group_color, markersize=4 if not show_labels else 6, zorder=3)
+                    if show_labels:
+                        ax.annotate(f'{t.hour:02d}h', 
+                                   (az, alt),
+                                   xytext=(5, 5),
+                                   textcoords='offset points',
+                                   fontsize=8,
+                                   color=group_color,
+                                   zorder=3)
+            
+            # Add object label
+            if len(azs) > 10 and show_labels:  # Only if we have enough points and showing labels
+                mid_idx = len(azs) // 2
+                label_pos = (azs[mid_idx], alts[mid_idx])
+                
+                abbreviated_name = get_abbreviated_name(obj.name)
+                offset_x, offset_y = calculate_label_offset(label_pos[0], label_pos[1], mid_idx, azs, alts)
+                
+                # Use group-specific background color
+                ax.annotate(abbreviated_name, 
+                           label_pos,
+                           xytext=(offset_x, offset_y),
+                           textcoords='offset points',
+                           color=group_color,
+                           fontweight='bold',
+                           fontsize=10,
+                           bbox=dict(boxstyle="round,pad=0.3", facecolor=group_color, alpha=0.3),
+                           zorder=15)
+                existing_positions.append(label_pos)
+    
+    return existing_positions
+
+def plot_mosaic_fov_at_optimal_time(ax, group, overlap_periods, group_color, small_plot=False):
+    """Plot the mosaic field of view at the optimal observation time."""
+    from matplotlib.patches import Ellipse
+    
+    if not overlap_periods:
+        return
+    
+    # Find the middle of the longest overlap period
+    longest_period = max(overlap_periods, key=lambda p: (p[1] - p[0]).total_seconds())
+    mid_time = longest_period[0] + (longest_period[1] - longest_period[0]) / 2
+    
+    # Calculate the center position of the group at this time
+    center_alt, center_az = calculate_group_center_position(group, mid_time)
+    
+    if center_alt is not None and center_az is not None:
+        # Plot the mosaic FOV indicator
+        if small_plot:
+            # Simplified FOV indicator for small plots
+            fov_patch = Ellipse((center_az, center_alt), MOSAIC_FOV_WIDTH, MOSAIC_FOV_HEIGHT,
+                               facecolor=group_color, edgecolor=group_color, alpha=0.15,
+                               linestyle='--', linewidth=1)
+            ax.add_patch(fov_patch)
+        else:
+            plot_mosaic_fov_indicator(ax, center_alt, center_az, 
+                                    MOSAIC_FOV_WIDTH, MOSAIC_FOV_HEIGHT, 
+                                    color=group_color, alpha=0.2)
+
+def create_mosaic_trajectory_plot(groups, start_time, end_time):
+    """Create a trajectory plot specifically for mosaic groups."""
+    import matplotlib.pyplot as plt
+    
+    # Setup the plot
+    fig, ax = setup_altaz_plot()
+    
+    # Plot moon trajectory
+    plot_moon_trajectory(ax, start_time, end_time)
+    
+    # Define colors for different groups
+    colors = ['red', 'blue', 'green', 'purple', 'orange', 'brown', 'pink', 'olive']
+    
+    # Plot each mosaic group
+    for i, group in enumerate(groups):
+        group_color = colors[i % len(colors)]
+        group_number = i + 1
+        
+        print(f"Plotting Mosaic Group {group_number} ({len(group.objects) if hasattr(group, 'objects') else len(group)} objects)...")
+        
+        # Get overlap periods
+        overlap_periods = group.overlap_periods if hasattr(group, 'overlap_periods') else []
+        
+        # Plot trajectories for this group
+        plot_mosaic_group_trajectory(ax, group, start_time, end_time, 
+                                    group_color, group_number, show_labels=True)
+        
+        # Plot FOV indicator at optimal time
+        plot_mosaic_fov_at_optimal_time(ax, group, overlap_periods, group_color, small_plot=False)
+    
+    # Customize the plot
+    night_date = start_time.date()
+    plt.title(f'Mosaic Group Trajectories - {night_date}\n{SCOPE_NAME} (Mosaic FOV: {MOSAIC_FOV_WIDTH}° × {MOSAIC_FOV_HEIGHT}°)', 
+              fontsize=14, fontweight='bold')
+    
+    # Create custom legend
+    handles, labels = ax.get_legend_handles_labels()
+    
+    # Sort legend by group number
+    sorted_items = sorted(zip(handles, labels), key=lambda x: x[1])
+    sorted_handles, sorted_labels = zip(*sorted_items) if sorted_items else ([], [])
+    
+    # Add legend
+    ax.legend(sorted_handles, sorted_labels,
+             bbox_to_anchor=(1.02, 1),
+             loc='upper left',
+             borderaxespad=0,
+             title='Mosaic Groups')
+    
+    return fig, ax
+
+def create_mosaic_grid_plot(groups, start_time, end_time):
+    """Create a grid of individual mosaic plots without legends to maximize space."""
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    n_groups = len(groups)
+    if n_groups == 0:
+        return None, None
+    
+    # Calculate grid dimensions
+    cols = min(3, n_groups)  # Maximum 3 columns
+    rows = math.ceil(n_groups / cols)
+    
+    # Create subplot grid
+    fig, axes = plt.subplots(rows, cols, figsize=(16, 6*rows))
+    if n_groups == 1:
+        axes = [axes]
+    elif rows == 1:
+        axes = axes if isinstance(axes, (list, np.ndarray)) else [axes]
+    else:
+        axes = axes.flatten()
+    
+    # Colors for different groups
+    colors = ['red', 'blue', 'green', 'purple', 'orange', 'brown', 'pink', 'olive']
+    
+    for i, group in enumerate(groups):
+        ax = axes[i]
+        group_color = colors[i % len(colors)]
+        group_number = i + 1
+        
+        # Setup this subplot
+        ax.set_xlim(MIN_AZ, MAX_AZ)
+        ax.set_ylim(MIN_ALT, MAX_ALT)
+        ax.set_xlabel('Azimuth (degrees)', fontsize=10)
+        ax.set_ylabel('Altitude (degrees)', fontsize=10)
+        ax.grid(True, alpha=GRID_ALPHA)
+        ax.tick_params(labelsize=9)
+        
+        # Plot moon trajectory (simplified)
+        plot_moon_trajectory_no_legend(ax, start_time, end_time)
+        
+        # Get overlap periods and objects
+        overlap_periods = group.overlap_periods if hasattr(group, 'overlap_periods') else []
+        objects = group.objects if hasattr(group, 'objects') else group
+        
+        # Plot this group
+        plot_mosaic_group_trajectory(ax, group, start_time, end_time, 
+                                    group_color, group_number, show_labels=False)
+        
+        # Plot FOV indicator
+        plot_mosaic_fov_at_optimal_time(ax, group, overlap_periods, group_color, small_plot=True)
+        
+        # Add group title and info
+        group_names = [get_abbreviated_name(obj.name) for obj in objects]
+        total_time = sum((p[1] - p[0]).total_seconds() / 3600 for p in overlap_periods)
+        
+        title = f"Group {group_number}: {', '.join(group_names)}\n{total_time:.1f}h overlap"
+        ax.set_title(title, fontsize=10, fontweight='bold', pad=10)
+        
+        # Add timing text in corner
+        timing_text = ""
+        for period_start, period_end in overlap_periods:
+            timing_text += f"{period_start.strftime('%H:%M')}-{period_end.strftime('%H:%M')} "
+        
+        if timing_text:
+            ax.text(0.02, 0.98, timing_text.strip(), transform=ax.transAxes,
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", alpha=0.8),
+                    verticalalignment='top', fontsize=8)
+    
+    # Hide unused subplots
+    for i in range(n_groups, len(axes)):
+        axes[i].set_visible(False)
+    
+    # Overall title
+    fig.suptitle(f'Mosaic Groups Detail - {start_time.date()}\n{SCOPE_NAME} Mosaic FOV: {MOSAIC_FOV_WIDTH}° × {MOSAIC_FOV_HEIGHT}°', 
+                fontsize=16, fontweight='bold')
+    
+    plt.tight_layout()
+    return fig, axes
+
 # ============= MAIN PROGRAM =============
 
 def main():
@@ -3231,16 +3698,31 @@ def main():
     parser.add_argument('--object', type=str, default=None, help='Specific object to display')
     parser.add_argument('--type', type=str, default=None, help='Filter by object type')
     parser.add_argument('--report-only', action='store_true', help='Show only the text report')
-    parser.add_argument('--schedule', choices=['longest', 'max_objects', 'optimal_snr'], 
-                      default='longest', help='Scheduling strategy')
+    parser.add_argument('--schedule', choices=['longest_duration', 'max_objects', 'optimal_snr', 'minimal_mosaic', 'difficulty_balanced', 'mosaic_groups'], 
+                      default='longest_duration', help='Scheduling strategy')
     parser.add_argument('--no-margins', action='store_true', 
                       help='Do not use extended margins for visibility chart')
     parser.add_argument('--simulate-time', type=str, default=None, 
                       help='Simulate running at a specific time (format: HH:MM or HH:MM:SS)')
     parser.add_argument('--quarters', action='store_true',
                       help='Use 4-quarter trajectory plots instead of single plot')
+    parser.add_argument('--mosaic', action='store_true',
+                      help='Enable mosaic group analysis and specialized plots')
+    parser.add_argument('--mosaic-only', action='store_true',
+                      help='Show only mosaic groups (implies --mosaic)')
     
     args = parser.parse_args()
+    
+    # Map command line schedule argument to SchedulingStrategy
+    strategy_mapping = {
+        'longest_duration': SchedulingStrategy.LONGEST_DURATION,
+        'max_objects': SchedulingStrategy.MAX_OBJECTS,
+        'optimal_snr': SchedulingStrategy.OPTIMAL_SNR,
+        'minimal_mosaic': SchedulingStrategy.MINIMAL_MOSAIC,
+        'difficulty_balanced': SchedulingStrategy.DIFFICULTY_BALANCED,
+        'mosaic_groups': SchedulingStrategy.MOSAIC_GROUPS
+    }
+    selected_strategy = strategy_mapping[args.schedule]
     
     # Set up time simulation if requested
     if args.simulate_time:
@@ -3384,11 +3866,51 @@ def main():
     report_gen.generate_moon_conditions(moon_phase, moon_affected)
     report_gen.generate_object_sections(visible_objects, insufficient_objects)
     
+    # Mosaic group analysis and integration
+    mosaic_groups = []
+    combined_objects = visible_objects
+    
+    if args.mosaic or args.mosaic_only or args.schedule == 'mosaic_groups':
+        print("\nAnalyzing mosaic groups...")
+        mosaic_groups = create_mosaic_groups(visible_objects, start_time, end_time)
+        
+        if mosaic_groups:
+            print(f"Found {len(mosaic_groups)} mosaic groups.")
+            
+            # Use the selected strategy for mosaic analysis
+            scheduling_strategy = selected_strategy
+            
+            # Combine objects and groups based on strategy
+            combined_objects = combine_objects_and_groups(visible_objects, mosaic_groups, scheduling_strategy)
+            
+            # Add mosaic groups to report
+            if mosaic_groups:
+                mosaic_content = "Mosaic groups found:\n\n"
+                for i, group in enumerate(mosaic_groups):
+                    mosaic_content += f"Group {i+1}: {group.name}\n"
+                    mosaic_content += f"  Objects: {', '.join([get_abbreviated_name(obj.name) for obj in group.objects])}\n"
+                    mosaic_content += f"  Total overlap time: {group.calculate_total_overlap_duration():.1f} hours\n"
+                    mosaic_content += f"  Composite magnitude: {group.magnitude:.1f}\n\n"
+                
+                report_gen.add_section("MOSAIC GROUPS", mosaic_content)
+        else:
+            print("No mosaic groups found with current criteria.")
+            if args.mosaic_only:
+                print("No plots will be generated as no mosaic groups were found.")
+    
+    # Filter objects if mosaic-only mode
+    if args.mosaic_only:
+        if mosaic_groups:
+            combined_objects = mosaic_groups
+        else:
+            print("No mosaic groups found. Exiting.")
+            return
+    
     # Generate schedules for different strategies for the observation period
     schedules = {}
     for strategy in SchedulingStrategy:
         schedule = generate_observation_schedule(
-            visible_objects, start_time, end_time,
+            combined_objects, start_time, end_time,
             strategy=strategy)
         schedules[strategy] = schedule
         report_gen.generate_schedule_section(schedule, strategy)
@@ -3401,15 +3923,60 @@ def main():
         return
         
     # Use selected strategy for visualization
-    schedule = schedules[SCHEDULING_STRATEGY]
+    schedule = schedules[selected_strategy]
     
     # Choose plotting method based on arguments
-    if args.quarters:
+    if args.mosaic and mosaic_groups:
+        # Create mosaic-specific plots
+        print("\nGenerating mosaic trajectory plots...")
+        
+        # 1. Combined mosaic trajectory plot
+        fig_combined, ax_combined = create_mosaic_trajectory_plot(mosaic_groups, start_time, end_time)
+        plt.tight_layout()
+        plt.show()
+        plt.close(fig_combined)
+        
+        # 2. Grid of individual mosaic plots
+        print("Generating mosaic groups detail grid...")
+        fig_grid, axes_grid = create_mosaic_grid_plot(mosaic_groups, start_time, end_time)
+        if fig_grid:
+            plt.show()
+            plt.close(fig_grid)
+        
+        # If not mosaic-only, also show regular plots with combined objects
+        if not args.mosaic_only:
+            print("Generating combined trajectory plot...")
+            fig, ax = setup_altaz_plot()
+            
+            # Generate colors for combined objects
+            colormap = plt.get_cmap(COLOR_MAP) 
+            colors = colormap(np.linspace(0, 1, len(combined_objects)))
+            
+            # Plot moon trajectory first
+            plot_moon_trajectory(ax, start_time, end_time)
+            
+            existing_positions = []
+            # Plot trajectories for combined objects
+            for obj, color in zip(combined_objects, colors):
+                if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+                    # Plot mosaic group differently
+                    plot_mosaic_group_trajectory(ax, obj, start_time, end_time, 
+                                                color, len(existing_positions)+1, show_labels=True)
+                else:
+                    plot_object_trajectory(ax, obj, start_time, end_time, 
+                                         color, existing_positions, schedule)
+            
+            plt.title(f"Combined Objects and Mosaic Groups - {sunset.date()}")
+            finalize_plot_legend(ax)
+            plt.show()
+            plt.close(fig)
+            
+    elif args.quarters:
         # Create 4-quarter trajectory plots
         if not EXCLUDE_INSUFFICIENT_TIME:
-            all_visible = visible_objects + insufficient_objects
+            all_visible = combined_objects + insufficient_objects
         else:
-            all_visible = visible_objects
+            all_visible = combined_objects
         
         fig = plot_quarterly_trajectories(all_visible, start_time, end_time, schedule)
         plt.show()
@@ -3421,7 +3988,7 @@ def main():
         
         # Generate colors 
         colormap = plt.get_cmap(COLOR_MAP) 
-        colors = colormap(np.linspace(0, 1, len(visible_objects)))
+        colors = colormap(np.linspace(0, 1, len(combined_objects)))
         
         # Initialize empty legend to avoid NoneType errors
         ax.legend()
@@ -3430,29 +3997,39 @@ def main():
         plot_moon_trajectory(ax, start_time, end_time)
         
         existing_positions = []
-        # Plot trajectories for visible objects
-        for obj, color in zip(visible_objects, colors):
-            plot_object_trajectory(ax, obj, start_time, end_time, 
-                                 color, existing_positions, schedule)
+        # Plot trajectories for combined objects
+        for obj, color in zip(combined_objects, colors):
+            if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+                # Plot mosaic group
+                plot_mosaic_group_trajectory(ax, obj, start_time, end_time, 
+                                            color, len(existing_positions)+1, show_labels=True)
+            else:
+                plot_object_trajectory(ax, obj, start_time, end_time, 
+                                     color, existing_positions, schedule)
         
         # Plot trajectories for insufficient time objects if not excluded
-        if not EXCLUDE_INSUFFICIENT_TIME:
+        if not EXCLUDE_INSUFFICIENT_TIME and not args.mosaic_only:
             for obj in insufficient_objects:
                 plot_object_trajectory(ax, obj, start_time, end_time, 
                                      'pink', existing_positions, schedule)
         
         # Use sunset date for the title to maintain consistency in the display
-        plt.title(f"Object Trajectories for Night of {sunset.date()}")
+        title = f"Object Trajectories for Night of {sunset.date()}"
+        if mosaic_groups and not args.mosaic_only:
+            title += f" (including {len(mosaic_groups)} mosaic groups)"
+        plt.title(title)
+        
         # Create custom legend
         handles, labels = ax.get_legend_handles_labels()
         
         # Add a legend entry for moon interference if any object was near moon
-        if any(obj for obj in visible_objects + insufficient_objects if hasattr(obj, 'near_moon')):
+        all_check_objects = combined_objects + (insufficient_objects if not args.mosaic_only else [])
+        if any(obj for obj in all_check_objects if hasattr(obj, 'near_moon')):
             moon_line = plt.Line2D([0], [0], color=MOON_INTERFERENCE_COLOR, linestyle='-', label='Moon Interference')
             handles.append(moon_line)
         
         # Add legend entry for insufficient time objects if any
-        if insufficient_objects:
+        if insufficient_objects and not args.mosaic_only:
             insuf_line = plt.Line2D([0], [0], color='gray', linestyle='--', label='Insufficient Time')
             handles.append(insuf_line)
         
@@ -3462,10 +4039,16 @@ def main():
         plt.close(fig)  # Explicitly close the figure
     
     # Create visibility chart for the observation period
-    if not EXCLUDE_INSUFFICIENT_TIME:
-        visible_objects.extend(insufficient_objects)
-    fig, ax = plot_visibility_chart(visible_objects, start_time, 
-                                  end_time, schedule, use_margins=False)
+    chart_objects = combined_objects.copy()
+    if not EXCLUDE_INSUFFICIENT_TIME and not args.mosaic_only:
+        chart_objects.extend(insufficient_objects)
+    
+    chart_title = "Object Visibility"
+    if mosaic_groups:
+        chart_title += f" (including {len(mosaic_groups)} mosaic groups)"
+    
+    fig, ax = plot_visibility_chart(chart_objects, start_time, 
+                                  end_time, schedule, title=chart_title, use_margins=False)
     plt.show()
     plt.close(fig)  # Explicitly close the figure
 

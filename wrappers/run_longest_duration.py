@@ -26,7 +26,7 @@ def main():
         
         # Set up arguments for longest duration mode
         original_argv = sys.argv.copy()
-        sys.argv = ['astropy.py', '--schedule', 'longest']
+        sys.argv = ['astropy.py', '--schedule', 'longest_duration']
         
         # Run the main astropy function
         astropy.main()

@@ -850,6 +850,17 @@ Available options:
 - **Plotting Errors**: Make sure matplotlib is properly installed
 - **Timezone Errors**: Confirm your timezone is a valid IANA timezone string (e.g., "America/New_York")
 
+## 📚 Documentation
+
+For comprehensive documentation, visit the **[docs/](docs/)** directory:
+
+- **[Quick Start Guide](docs/QUICK_START.md)** - Get up and running in minutes ⚡
+- **[Documentation Index](docs/README.md)** - Complete guide to all documentation
+- **[Pythonista (iPad) Guide](docs/user-guides/README_PYTHONISTA.md)** - Running AstroPy on iPad
+- **[Mosaic Photography Guide](docs/user-guides/MOSAIC_FEATURES_SUMMARY.md)** - Specialized astrophotography features
+- **[Wrapper Scripts Guide](docs/user-guides/WRAPPERS_GUIDE.md)** - Convenient script access
+- **[Development Documentation](docs/development/)** - Technical implementation details
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
