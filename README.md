@@ -46,6 +46,65 @@ A Python-based astronomical observation planning tool that helps astronomers and
 
 ## Recent Updates
 
+### 🆕 Weekly Trajectory Analysis Improvements (January 2025)
+
+Major enhancements and bug fixes have been implemented for the comprehensive weekly astrophotography analysis system:
+
+**🔧 Critical Bug Fixes**
+- **Year Support Updated**: Fixed hardcoded 2024 references to properly use current year (2025)
+- **Week Ordering Corrected**: Best weeks are now properly sorted in chronological order (e.g., "2, 6, 10, 12" instead of "10, 6, 2, 3")
+- **Complete Object Display**: Removed arbitrary limits that were hiding objects from analysis summaries
+- **Moon Phase Calculations**: Updated moon phase reference date to January 13, 2025 for accurate calculations
+
+**📊 Enhanced Analysis Features**
+- **Full Year Coverage**: Analyzes all 52 weeks of the current year with proper date calculations
+- **Comprehensive Reporting**: Shows all observable objects without artificial cutoffs
+- **Improved Monthly Distribution**: Objects now properly distributed across all months (Jan-Dec) instead of limited range
+- **Accurate Scoring**: Week scoring system now uses correct year for consistent analysis
+
+**🔍 Analysis Capabilities**
+The `utilities/trajectory_analysis.py` script provides:
+- Weekly visibility analysis for all catalog objects (175+ objects)
+- Moon interference detection and optimal observation windows
+- Mosaic photography planning with FOV-based grouping
+- Exposure time calculations based on Bortle scale and object magnitude
+- Best observation periods for each object throughout the year
+
+**📈 Output Improvements**
+- **Complete Object Lists**: All objects meeting criteria are displayed (previously limited to 15-20)
+- **Properly Sorted Weeks**: Best observation weeks shown in chronological order
+- **Realistic Monthly Distribution**: Objects spread across all months with peak periods in December (35 objects), May/June/August (11 each)
+- **Current Year Dates**: All analysis uses 2025 dates with proper week-to-date mapping
+
+**🚀 Usage Examples**
+```bash
+# Full year analysis (default)
+python utilities/trajectory_analysis.py
+
+# Specific time periods
+python utilities/trajectory_analysis.py --quarter Q4
+python utilities/trajectory_analysis.py --month 5
+python utilities/trajectory_analysis.py --half H2
+
+# Skip plots for faster analysis
+python utilities/trajectory_analysis.py --no-plots
+```
+
+**📊 Analysis Output Sections**
+1. **Weekly Summary**: Best weeks for astrophotography with scores and moon conditions
+2. **Object Optimization**: When each object is best photographed throughout the year
+3. **Mosaic Analysis**: Objects requiring individual mosaics vs. group opportunities
+4. **Monthly Statistics**: Distribution of optimal observation periods
+
+**🔧 Technical Improvements**
+- Dynamic year detection using `datetime.now().year`
+- Proper parameter passing throughout analysis pipeline
+- Fixed moon phase calculations with current year reference
+- Consistent configuration window compliance checking
+- Enhanced week-to-date mapping for accurate scheduling
+
+The system now provides reliable, comprehensive planning for the entire 2025 observation season with accurate timing and complete object coverage.
+
 ### 🆕 Configuration-Based Mosaic Settings (May 2025)
 
 **Centralized Configuration Management**
