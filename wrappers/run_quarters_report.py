@@ -9,8 +9,8 @@ Mobile-friendly without plots.
 import sys
 import os
 
-# Add current directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def main():
     """Run quarters text report analysis."""

@@ -46,9 +46,61 @@ A Python-based astronomical observation planning tool that helps astronomers and
 
 ## Recent Updates
 
+### 🆕 Configuration-Based Mosaic Settings (May 2025)
+
+**Centralized Configuration Management**
+- **Removed Hardcoded Values**: All mosaic FOV dimensions and scope names are now read from `config.json`
+- **Configurable Scope Settings**: Mosaic FOV width/height and scope name are fully configurable
+- **Consistent Configuration**: All utilities and plotting scripts use the same configuration source
+- **Easy Customization**: Change telescope specifications by editing the configuration file
+
+**Updated Configuration Structure**
+```json
+{
+    "imaging": {
+        "scope": {
+            "name": "Vaonis Vespera Passenger",
+            "fov_width": 2.4,
+            "fov_height": 1.8,
+            "mosaic_fov_width": 4.7,
+            "mosaic_fov_height": 3.5,
+            "native_resolution_mp": 6.2,
+            "mosaic_resolution_mp": 24
+        }
+    }
+}
+```
+
+**Directory Structure Reorganization**
+The project has been reorganized for better maintainability:
+```
+astropy/
+├── README.md                    # Main documentation
+├── config.json                  # Configuration file
+├── astropy.py                   # Main application
+├── plot_mosaic_trajectories.py  # Mosaic plotting
+├── astropy_legacy.py           # Legacy version
+├── catalogs/                   # Object catalogs
+│   ├── objects.csv
+│   ├── objects.json
+│   └── *.txt, *.numbers
+├── utilities/                  # Utility scripts
+│   ├── analyze_mosaic_groups.py
+│   ├── convert_json.py
+│   ├── trajectory_analysis.py
+│   ├── time_sim.py
+│   └── test_yellow_labels.py
+├── wrappers/                   # Pythonista wrappers
+│   ├── run_report_only.py
+│   ├── run_mosaic_plots.py
+│   └── run_*.py
+└── docs/                       # Documentation
+    └── *.md
+```
+
 ### 🆕 Mosaic Photography Features (January 2025)
 
-A comprehensive mosaic photography planning system has been added specifically for the Vaonis Vespera Passenger smart telescope:
+A comprehensive mosaic photography planning system has been added with full configuration support:
 
 **New Analysis Capabilities**
 - **Mosaic Group Detection**: Automatically identifies objects that can be photographed together within the 4.7° × 3.5° mosaic field of view
@@ -81,13 +133,13 @@ A comprehensive mosaic photography planning system has been added specifically f
 **Example Usage**
 ```bash
 # Analyze mosaic groups
-python3 analyze_mosaic_groups.py
+python3 utilities/analyze_mosaic_groups.py
 
 # Create all three chart types
 python3 plot_mosaic_trajectories.py
 
 # Pythonista (iPad) - just tap
-run_mosaic_plots.py
+wrappers/run_mosaic_plots.py
 ```
 
 The system typically finds 6-8 mosaic groups per night, each containing 2-4 objects that can be photographed together, providing 8-15 hours of total observation opportunities.
@@ -338,8 +390,14 @@ The `config.json` file is organized into the following sections:
     },
     "imaging": {
         "scope": {
+            "name": "Vaonis Vespera Passenger",
             "fov_width": 2.4,
             "fov_height": 1.8,
+            "mosaic_fov_width": 4.7,
+            "mosaic_fov_height": 3.5,
+            "native_resolution_mp": 6.2,
+            "mosaic_resolution_mp": 24,
+            "sensor": "Sony IMX585",
             "single_exposure": 10,
             "min_snr": 20,
             "gain": 800,
@@ -378,7 +436,7 @@ The `config.json` file is organized into the following sections:
 
 2. **Catalog**: Configure catalog sources:
    - `use_csv_catalog`: Whether to use a custom CSV catalog
-   - `catalog_name`: Path to your CSV catalog file
+   - `catalog_name`: Path to your CSV catalog file (now in `catalogs/` directory)
    - `merge`: Whether to combine CSV catalog with built-in objects
 
 3. **Visibility**: Set observation parameters:
@@ -392,9 +450,12 @@ The `config.json` file is organized into the following sections:
    - Whether to exclude objects with insufficient visibility time
 
 5. **Imaging**: Telescope and camera specifications:
-   - Field of view dimensions
+   - Scope name and identification
+   - Single-shot field of view dimensions
+   - Mosaic field of view dimensions
+   - Resolution specifications (native and mosaic)
+   - Sensor information
    - Exposure settings
-   - Sensor characteristics
    - Optical specifications
 
 6. **Plotting**: Visualization settings:
@@ -572,21 +633,37 @@ To select a strategy, set the `"strategy"` field in your config.json file to one
 
 ## Project Files
 
-### Core Files
+### Core Files (Root Directory)
 - `astropy.py` - Main planning tool with all features including moon tracking
 - `astropy_legacy.py` - Legacy version without moon tracking features
+- `plot_mosaic_trajectories.py` - Mosaic trajectory plotting with three-chart system
+- `config.json` - Configuration file with all settings
 
-### Data Files
+### Catalogs Directory (`catalogs/`)
 - `objects.csv` - Default catalog file with object information
-- `catalog_fixed.csv` - Alternative catalog with corrected coordinates
 - `objects.json` - JSON format of the object catalog
 - `Sac72.csv` - SAC catalog data
 - `catalog_fixed_names.txt` - Additional object names for enhancement
 - `objects_names.txt` - Extended object names database
+- `*.numbers` - Additional catalog files
 
-### Utility Scripts
+### Utilities Directory (`utilities/`)
+- `analyze_mosaic_groups.py` - Core mosaic group analysis engine
 - `convert_json.py` - Converts between different catalog formats (CSV/JSON)
-- `export_api_key.py` - Helper script for managing API keys for external services
+- `trajectory_analysis.py` - Advanced trajectory analysis tools
+- `time_sim.py` - Time simulation module for testing
+- `test_yellow_labels.py` - Label positioning testing utility
+- `export_api_key.py` - Helper script for managing API keys
+
+### Wrappers Directory (`wrappers/`)
+- `run_report_only.py` - Pythonista wrapper for text-only reports
+- `run_mosaic_plots.py` - Pythonista wrapper for mosaic plotting
+- `run_with_plots.py` - Pythonista wrapper for full plotting
+- `run_max_objects.py` - Pythonista wrapper for maximum objects strategy
+- Additional wrapper scripts for various use cases
+
+### Documentation Directory (`docs/`)
+- Additional documentation files (*.md)
 
 ## Built-in Deep Sky Object Catalog
 
@@ -671,12 +748,12 @@ NGC 7000,20.968,44.533,"120'x100'",4.0
 ```
 
 ### Converting JSON to CSV
-The tool includes a `convert_json.py` script that can convert the `objects.json` catalog to CSV format. To convert:
+The tool includes a `utilities/convert_json.py` script that can convert the `catalogs/objects.json` catalog to CSV format. To convert:
 
-1. Ensure you have both `objects.json` and `convert_json.py` in your directory
+1. Ensure you have the catalog files in the `catalogs/` directory
 2. Run:
 ```bash
-python convert_json.py
+python utilities/convert_json.py
 ```
 
 The script will:

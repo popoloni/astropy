@@ -18,8 +18,8 @@ from enum import Enum
 import argparse
 
 # Import time simulation module
-import time_sim
-from time_sim import get_current_datetime, get_simulated_datetime, SIMULATED_DATETIME
+import utilities.time_sim as time_sim
+from utilities.time_sim import get_current_datetime, get_simulated_datetime, SIMULATED_DATETIME
 
 class SchedulingStrategy(Enum):
     LONGEST_DURATION = "longest_duration"  # Current strategy: prioritize longest visibility

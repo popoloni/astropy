@@ -27,14 +27,18 @@ from astropy import (
     setup_altaz_plot, plot_moon_trajectory, utc_to_local,
     is_visible, MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ, GRID_ALPHA,
     get_abbreviated_name, find_optimal_label_position,
-    calculate_label_offset, pytz
+    calculate_label_offset, pytz, CONFIG
 )
 
 # Import mosaic analysis functions
-from analyze_mosaic_groups import (
-    analyze_object_groups, MOSAIC_FOV_WIDTH, MOSAIC_FOV_HEIGHT,
-    calculate_angular_separation, can_fit_in_mosaic, objects_visible_simultaneously
+from utilities.analyze_mosaic_groups import (
+    analyze_object_groups, calculate_angular_separation, can_fit_in_mosaic, objects_visible_simultaneously
 )
+
+# Get mosaic FOV from configuration
+MOSAIC_FOV_WIDTH = CONFIG['imaging']['scope']['mosaic_fov_width']
+MOSAIC_FOV_HEIGHT = CONFIG['imaging']['scope']['mosaic_fov_height']
+SCOPE_NAME = CONFIG['imaging']['scope']['name']
 
 def plot_mosaic_fov_indicator(ax, center_alt, center_az, fov_width, fov_height, color='red', alpha=0.3):
     """
@@ -233,10 +237,10 @@ def create_mosaic_trajectory_plot(groups, start_time, end_time):
         # Plot FOV indicator at optimal time
         plot_mosaic_fov_at_optimal_time(ax, group, overlap_periods, group_color, small_plot=False)
     
-    # Customize the plot
+            # Customize the plot
     night_date = start_time.date()
-    plt.title(f'Mosaic Group Trajectories - {night_date}\nVaonis Vespera Passenger (Mosaic FOV: {MOSAIC_FOV_WIDTH}° × {MOSAIC_FOV_HEIGHT}°)', 
-             fontsize=14, fontweight='bold')
+    plt.title(f'Mosaic Group Trajectories - {night_date}\n{SCOPE_NAME} (Mosaic FOV: {MOSAIC_FOV_WIDTH}° × {MOSAIC_FOV_HEIGHT}°)', 
+              fontsize=14, fontweight='bold')
     
     # Create custom legend
     handles, labels = ax.get_legend_handles_labels()
@@ -323,7 +327,7 @@ def create_mosaic_grid_plot(groups, start_time, end_time):
         axes[i].set_visible(False)
     
     # Overall title
-    fig.suptitle(f'Mosaic Groups Detail - {start_time.date()}\nVespera Passenger Mosaic FOV: {MOSAIC_FOV_WIDTH}° × {MOSAIC_FOV_HEIGHT}°', 
+    fig.suptitle(f'Mosaic Groups Detail - {start_time.date()}\n{SCOPE_NAME} Mosaic FOV: {MOSAIC_FOV_WIDTH}° × {MOSAIC_FOV_HEIGHT}°', 
                 fontsize=16, fontweight='bold')
     
     plt.tight_layout()
@@ -425,7 +429,7 @@ def create_mosaic_visibility_chart(groups, start_time, end_time):
     night_date = start_time.date()
     ax.set_title(f'Mosaic Groups Visibility Chart - {night_date}\n'
                 f'{total_groups} groups, {total_overlap_time:.1f}h total observation time\n'
-                f'Vespera Passenger Mosaic FOV: {MOSAIC_FOV_WIDTH}° × {MOSAIC_FOV_HEIGHT}°', 
+                f'{SCOPE_NAME} Mosaic FOV: {MOSAIC_FOV_WIDTH}° × {MOSAIC_FOV_HEIGHT}°', 
                 fontsize=14, fontweight='bold', pad=20)
     
     plt.tight_layout()

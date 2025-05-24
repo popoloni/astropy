@@ -11,20 +11,21 @@ import sys
 import os
 from datetime import datetime, timedelta
 
-# Add current directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add parent directory to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import astropy functions
 from astropy import (
     get_combined_catalog, get_objects_from_csv, USE_CSV_CATALOG,
     calculate_altaz, get_local_timezone, get_current_datetime,
     find_astronomical_twilight, find_visibility_window,
-    calculate_visibility_duration, MIN_VISIBILITY_HOURS
+    calculate_visibility_duration, MIN_VISIBILITY_HOURS,
+    CONFIG
 )
 
-# Vespera Passenger specifications
-MOSAIC_FOV_WIDTH = 4.7  # degrees
-MOSAIC_FOV_HEIGHT = 3.5  # degrees
+# Get mosaic FOV from configuration
+MOSAIC_FOV_WIDTH = CONFIG['imaging']['scope']['mosaic_fov_width']
+MOSAIC_FOV_HEIGHT = CONFIG['imaging']['scope']['mosaic_fov_height']
 
 def calculate_angular_separation(obj1, obj2):
     """

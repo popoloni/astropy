@@ -12,8 +12,8 @@ from datetime import datetime, timedelta
 import pandas as pd
 from collections import defaultdict
 
-# Add current directory to path to import astropy module
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add parent directory to path to import astropy module
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import from the main astropy module
 from astropy import (

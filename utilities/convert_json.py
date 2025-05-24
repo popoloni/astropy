@@ -95,8 +95,24 @@ def format_magnitude(magnitude):
         return '99.9'
 
 def main():
+    import os
+    import shutil
+    
+    # Get the directory paths
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(script_dir)
+    catalogs_dir = os.path.join(parent_dir, 'catalogs')
+    
+    # Safety check: backup existing CSV if it exists
+    csv_path = os.path.join(catalogs_dir, 'objects.csv')
+    if os.path.exists(csv_path):
+        backup_path = csv_path + '.backup'
+        shutil.copy2(csv_path, backup_path)
+        print(f"Created backup: {backup_path}")
+    
     # Load JSON files
-    with open('objects.json', 'r', encoding='utf-8') as f:
+    json_path = os.path.join(catalogs_dir, 'objects.json')
+    with open(json_path, 'r', encoding='utf-8') as f:
         objects = json.load(f)
 
     # Create CSV header
@@ -147,8 +163,10 @@ def main():
         csv_lines.append(';'.join(str(x) for x in csv_line))
     
     # Write CSV file
-    with open('objects.csv', 'w', encoding='utf-8') as f:
+    with open(csv_path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(csv_lines))
+    
+    print(f"Successfully converted {len(csv_lines)-1} objects to {csv_path}")
 
 if __name__ == '__main__':
     main()
