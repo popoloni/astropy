@@ -272,7 +272,7 @@ def main():
     is_night_time = (current_date >= twilight_evening and current_date <= twilight_morning)
     
     if is_night_time:
-        start_time = current_date
+        start_time = twilight_evening #current_date  # EP 24/05/2025 - reverted back
         end_time = twilight_morning
     else:
         start_time = twilight_evening

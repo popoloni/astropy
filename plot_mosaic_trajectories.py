@@ -182,6 +182,30 @@ def plot_mosaic_fov_at_optimal_time(ax, group, overlap_periods, group_color, sma
                                     MOSAIC_FOV_WIDTH, MOSAIC_FOV_HEIGHT, 
                                     color=group_color, alpha=0.2)
 
+def sort_groups_by_timing(groups):
+    """
+    Sort groups by start time (ascending), then by end time (ascending) as tiebreaker.
+    
+    Args:
+        groups: List of tuples (group, overlap_periods)
+        
+    Returns:
+        Sorted list of groups
+    """
+    def get_group_timing(group_tuple):
+        group, overlap_periods = group_tuple
+        if not overlap_periods:
+            return (float('inf'), float('inf'))  # Put groups with no overlap at the end
+        
+        # Find earliest start time across all overlap periods
+        earliest_start = min(period[0] for period in overlap_periods)
+        # Find earliest end time across all overlap periods
+        earliest_end = min(period[1] for period in overlap_periods)
+        
+        return (earliest_start, earliest_end)
+    
+    return sorted(groups, key=get_group_timing)
+
 def create_mosaic_trajectory_plot(groups, start_time, end_time):
     """
     Create a trajectory plot specifically for mosaic groups.
@@ -332,9 +356,10 @@ def create_mosaic_visibility_chart(groups, start_time, end_time):
     y_position = 0
     group_labels = []
     
-    for i, (group, overlap_periods) in enumerate(groups):
-        group_color = colors[i % len(colors)]
-        group_number = i + 1
+    # Plot groups in reverse order so earliest starting group appears at top
+    for i, (group, overlap_periods) in enumerate(reversed(groups)):
+        group_color = colors[(len(groups) - 1 - i) % len(colors)]  # Keep original color assignment
+        group_number = len(groups) - i  # Keep original group numbering
         
         # Create group label
         group_names = [get_abbreviated_name(obj.name) for obj in group]
@@ -361,6 +386,14 @@ def create_mosaic_visibility_chart(groups, start_time, end_time):
     # Customize the chart
     ax.set_xlim(0, (end_time - start_time).total_seconds() / 3600)
     ax.set_ylim(-0.5, len(groups) - 0.5)
+    
+    # Add vertical line for current time if it's within the plot range
+    local_tz = get_local_timezone()
+    current_time = get_current_datetime(local_tz)
+    if start_time <= current_time <= end_time:
+        current_hour = (current_time - start_time).total_seconds() / 3600
+        ax.axvline(x=current_hour, color='red', linestyle='-', linewidth=2,
+                   label='Current Time', alpha=0.8)
     
     # Time axis labels
     hour_ticks = list(range(0, int((end_time - start_time).total_seconds() / 3600) + 1))
@@ -395,17 +428,6 @@ def create_mosaic_visibility_chart(groups, start_time, end_time):
                 f'Vespera Passenger Mosaic FOV: {MOSAIC_FOV_WIDTH}° × {MOSAIC_FOV_HEIGHT}°', 
                 fontsize=14, fontweight='bold', pad=20)
     
-    # Add legend
-    legend_elements = []
-    for i, (group, _) in enumerate(groups):
-        group_color = colors[i % len(colors)]
-        group_number = i + 1
-        legend_elements.append(plt.Rectangle((0, 0), 1, 1, facecolor=group_color, alpha=0.7, 
-                                           label=f'Group {group_number}'))
-    
-    ax.legend(handles=legend_elements, bbox_to_anchor=(1.02, 1), loc='upper left', 
-             borderaxespad=0, title='Mosaic Groups')
-    
     plt.tight_layout()
     return fig, ax
 
@@ -434,7 +456,7 @@ def main():
     is_night_time = (current_date >= twilight_evening and current_date <= twilight_morning)
     
     if is_night_time:
-        start_time = current_date
+        start_time = twilight_evening #current_date # EP 24/05/2025 - reverted back
         end_time = twilight_morning
     else:
         start_time = twilight_evening
@@ -476,21 +498,24 @@ def main():
     
     print(f"Found {len(groups)} mosaic groups. Creating trajectory plots...")
     
+    # Sort groups by timing
+    sorted_groups = sort_groups_by_timing(groups)
+    
     # 1. Create combined plot with all groups and legend
     print("\n1. Creating combined mosaic trajectory plot...")
-    fig_combined, ax_combined = create_mosaic_trajectory_plot(groups, start_time, end_time)
+    fig_combined, ax_combined = create_mosaic_trajectory_plot(sorted_groups, start_time, end_time)
     plt.tight_layout()
     plt.show()
     
     # 2. Create grid of individual plots without legends
     print("\n2. Creating mosaic groups detail grid...")
-    fig_grid, axes_grid = create_mosaic_grid_plot(groups, start_time, end_time)
+    fig_grid, axes_grid = create_mosaic_grid_plot(sorted_groups, start_time, end_time)
     if fig_grid:
         plt.show()
     
     # 3. Create visibility chart for mosaic groups
     print("\n3. Creating mosaic groups visibility chart...")
-    fig_visibility, ax_visibility = create_mosaic_visibility_chart(groups, start_time, end_time)
+    fig_visibility, ax_visibility = create_mosaic_visibility_chart(sorted_groups, start_time, end_time)
     if fig_visibility:
         plt.show()
     

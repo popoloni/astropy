@@ -1154,6 +1154,12 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
                        fontsize=8,
                        fontweight='bold' if is_recommended else 'normal')
     
+    # Add vertical line for current time if it's within the plot range
+    current_time = datetime.now(milan_tz)
+    if start_time <= current_time <= end_time:
+        ax.plot([current_time, current_time], [-0.5, len(sorted_objects)-0.5],
+                color='red', linestyle='-', linewidth=2)
+    
     # Customize plot
     ax.set_yticks(range(len(sorted_objects)))
     ax.set_yticklabels([obj.name for obj in sorted_objects])

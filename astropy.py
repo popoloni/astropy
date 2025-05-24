@@ -1142,13 +1142,8 @@ class ReportGenerator:
         """Generate quick summary section"""
         moon_icon, phase_name = get_moon_phase_icon(moon_phase)
         
-        # Determine if we're showing the entire night or just a portion
-        is_partial_night = start_time > twilight_evening if 'twilight_evening' in globals() else False
-        
-        # Create the appropriate label for the observation window
+        # Always show as full observation window (reverted from partial night filtering)
         observation_window_label = "Observation Window"
-        if is_partial_night:
-            observation_window_label = "Remaining Observation Window"
         
         content = (
             f"Date: {self.date.date()}\n"
@@ -3280,10 +3275,10 @@ def main():
     # (i.e., during astronomical night)
     is_night_time = (current_date >= twilight_evening and current_date <= twilight_morning)
 
-    # If we're already in the night, only show objects visible for the rest of the night
+    # If we're already in the night, only show objects visible for the rest of the night - reverted back EP 24/05/2025
     if is_night_time:
         # Only calculate visibility from current time until morning twilight
-        start_time = current_date
+        start_time = twilight_evening #current_date
         end_time = twilight_morning
     else:
         # We're in daytime, calculate for the entire upcoming night
