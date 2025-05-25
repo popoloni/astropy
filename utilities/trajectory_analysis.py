@@ -312,7 +312,7 @@ def get_fov_config():
     """Get FOV configuration from config file"""
     try:
         import json
-        with open('config.json', 'r') as f:
+        with open('../config.json', 'r') as f:
             config = json.load(f)
         
         scope_config = config.get('imaging', {}).get('scope', {})
