@@ -5,6 +5,9 @@ Mosaic Trajectory Plot Wrapper for Pythonista
 Simple wrapper to run mosaic trajectory plotting with your Vespera Passenger.
 Shows only objects that can be photographed together in mosaic groups.
 Uses the integrated mosaic functionality in astropy.py.
+
+The --no-duplicates flag can be used to exclude individual objects that are
+already part of mosaic groups from standalone display.
 """
 
 import sys
@@ -19,6 +22,7 @@ def main():
     print("=" * 40)
     print("Creating trajectory plots for mosaic groups...")
     print("Using integrated astropy mosaic functionality...")
+    print("📄 Note: Use --no-duplicates to hide individual objects that are part of mosaic groups")
     print()
     
     try:
@@ -32,9 +36,9 @@ def main():
         print(f"{scope_name} Mosaic FOV: {mosaic_fov_w}° × {mosaic_fov_h}°")
         print()
         
-        # Set up arguments for mosaic plotting
+        # Set up arguments for mosaic plotting with no duplicates
         original_argv = sys.argv.copy()
-        sys.argv = ['astropy.py', '--mosaic']
+        sys.argv = ['astropy.py', '--mosaic', '--no-duplicates']
         
         # Run the main astropy function with mosaic plotting
         astropy.main()
@@ -44,6 +48,7 @@ def main():
         
         print("\n✅ Mosaic plots completed successfully!")
         print("📊 Check the generated plots for mosaic group trajectories!")
+        print("🎯 Individual objects in mosaic groups were filtered out to avoid duplicates!")
         
     except Exception as e:
         print(f"\n❌ Error: {e}")

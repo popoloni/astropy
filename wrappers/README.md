@@ -34,7 +34,10 @@ All wrapper scripts are designed to work seamlessly in iOS Pythonista without su
   - Individual group trajectory plots
   - Combined trajectory overview
   - Full observation report with mosaic details
-- **Usage**: Quick mosaic plotting and analysis
+  - **🆕 Clean duplicate filtering**: Automatically uses `--no-duplicates` flag to show only mosaic groups
+  - **🆕 Enhanced labels**: Displays abbreviated names of constituent objects in mosaic groups
+  - **🆕 Improved visuals**: Legend positioned to avoid overlap with visibility bars
+- **Usage**: Quick mosaic plotting and analysis with clean, focused output
 
 #### `run_mosaic_analysis.py` ⭐ **NEW**
 - **Purpose**: Comprehensive mosaic analysis and planning tool
@@ -77,8 +80,14 @@ All wrapper scripts are designed to work seamlessly in iOS Pythonista without su
 
 ### Standard Python Environment:
 ```bash
-# Quick mosaic analysis
-python3 wrappers/run_mosaic_analysis.py
+# Quick mosaic analysis (clean output with no duplicates)
+python3 wrappers/run_mosaic_plots.py
+
+# Standard mosaic analysis (shows individuals + groups)
+python3 astropy.py --mosaic
+
+# Clean mosaic analysis (groups only, no individual duplicates)
+python3 astropy.py --mosaic --no-duplicates
 
 # Longest duration strategy
 python3 wrappers/run_longest_duration.py

@@ -6,6 +6,7 @@ Welcome to the comprehensive documentation for the AstroPy Observation Planner. 
 
 ### 🎯 Quick Start
 - **[Quick Start Guide](QUICK_START.md)** - Get up and running in minutes ⚡
+- **[Recent Updates](RECENT_UPDATES.md)** - Latest features and improvements ✨
 - **[Main README](../README.md)** - Complete project overview, features, and basic usage
 - **[Configuration Guide](../README.md#configuration)** - Setting up your location and telescope
 - **[Installation](../README.md#installation)** - Getting started with the application
@@ -98,6 +99,7 @@ Files created during development for reference:
 | I want to... | Go to... |
 |--------------|----------|
 | Get started quickly | [Quick Start Guide](QUICK_START.md) ⚡ |
+| See what's new | [Recent Updates](RECENT_UPDATES.md) ✨ |
 | Get started with AstroPy | [Main README](../README.md) |
 | Use AstroPy on iPad | [Pythonista Guide](user-guides/README_PYTHONISTA.md) |
 | Do mosaic astrophotography | [Mosaic Guide](user-guides/MOSAIC_FEATURES_SUMMARY.md) |

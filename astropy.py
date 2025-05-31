@@ -2242,7 +2242,21 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
 
     # Customize plot axes
     ax.set_yticks(range(len(sorted_objects)))
-    ax.set_yticklabels([obj.name for obj in sorted_objects])
+    # Use custom display names that handle mosaic groups specially
+    display_names = []
+    for obj in sorted_objects:
+        if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+            # For mosaic groups, show abbreviated names of individual objects
+            abbreviated_names = [get_abbreviated_name(individual_obj.name) for individual_obj in obj.objects]
+            if len(abbreviated_names) <= 3:
+                display_names.append(', '.join(abbreviated_names))
+            else:
+                display_names.append(f"{', '.join(abbreviated_names[:2])} +{len(abbreviated_names)-2}")
+        else:
+            # For individual objects, use the standard abbreviated name
+            display_names.append(get_abbreviated_name(obj.name))
+    
+    ax.set_yticklabels(display_names)
     ax.grid(True, axis='x', alpha=GRID_ALPHA)
     
     # Add a simple legend for moon interference, scheduled observations, and insufficient time
@@ -2266,7 +2280,7 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     
     # Add the legend
     if legend_handles:
-        ax.legend(handles=legend_handles, loc='lower right')
+        ax.legend(handles=legend_handles, loc='lower left')
     
     # Use full figure width
     fig.tight_layout()
@@ -2343,144 +2357,18 @@ def _plot_object_visibility_bars_no_legend(ax, index, obj, start_time, end_time,
         # Position text AT the bar start, aligned left
         # Plot text label only for the first segment
         if period_start == periods[0][0] and plot_start < plot_end:
-             abbreviated_name = get_abbreviated_name(obj.name)
-             text_pos_x = plot_start # Align with the actual start of the plotted bar segment
-             ax.text(text_pos_x + timedelta(minutes=1), index, # Small offset from the exact start
-                     f" {abbreviated_name}", # Add space for padding
-                     va='center', ha='left', # Align left
-                     fontsize=7, # Smaller font size for text on chart
-                     color='black', # Ensure visibility
-                     fontweight='bold', # Make text bold for better visibility
-                     bbox=dict(facecolor='white', alpha=0.7, pad=1, edgecolor='none'), # Add white background
-                     zorder=15) # Very high zorder to ensure it's above everything else
-
-def _create_visibility_chart_figure(objects):
-    """Create figure with appropriate size for visibility chart"""
-    fig = plt.figure(figsize=(15, max(10, len(objects)*0.3 + 4)))
-    
-    # Use GridSpec for better control over spacing
-    gs = fig.add_gridspec(1, 1)
-    # Adjust margins to accommodate labels and legend
-    gs.update(left=0.25, right=0.95, top=0.95, bottom=0.1)
-    
-    ax = fig.add_subplot(gs[0, 0])
-    return fig, ax
-
-def _get_sorted_objects_for_chart(objects, start_time, end_time, use_margins):
-    """Get objects sorted by visibility start time for chart display"""
-    milan_tz = get_local_timezone()
-    object_periods = []
-    
-    for obj in objects:
-        periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins)
-        if periods:
-            # Convert periods to local time
-            local_periods = [(p[0].astimezone(milan_tz), p[1].astimezone(milan_tz)) 
-                           for p in periods]
-            duration = calculate_visibility_duration(periods)
-            object_periods.append((obj, local_periods[0][0], duration))
-    
-    # Sort by start time
-    object_periods.sort(key=lambda x: x[1], reverse=True)
-    return [item[0] for item in object_periods]
-
-def _setup_visibility_chart_axes(ax, title, start_time, end_time, tz):
-    """Setup axes for visibility chart"""
-    ax.set_title(title)
-    ax.set_xlabel('Local Time')
-    ax.set_ylabel('Objects')
-    ax.set_xlim(start_time, end_time)
-    
-    # Use local time formatter
-    ax.xaxis.set_major_formatter(DateFormatter('%H:%M', tz=tz))
-
-def _plot_object_visibility_bars(ax, index, obj, start_time, end_time, recommended_objects, use_margins):
-    """Plot visibility bars for a single object (BASE LAYER). Returns handles/labels for legend."""
-    milan_tz = get_local_timezone()
-    periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins)
-
-    is_recommended = obj in recommended_objects
-    has_sufficient_time = getattr(obj, 'sufficient_time', True)
-    
-    # Always use the regular color as the base color regardless of moon interference
-    if not has_sufficient_time:
-        color = 'darkmagenta' if is_recommended else 'pink'
-    else:
-        color = 'green' if is_recommended else 'gray'
-    alpha = 0.8 if is_recommended else 0.4
-    
-    base_zorder = 5
-
-    # Collect handles/labels created within this function for the main object entry
-    local_handles = []
-    local_labels = []
-    label_added = False # Track if the main legend label for this object has been added
-
-    # Ensure periods is not None before iterating
-    if periods is None:
-        periods = []
-
-    for period_start, period_end in periods:
-        local_start = period_start.astimezone(milan_tz)
-        local_end = period_end.astimezone(milan_tz)
-
-        plot_start = max(local_start, start_time)
-        plot_end = min(local_end, end_time)
-
-        if plot_start >= plot_end: continue
-
-        # If object has moon influence periods, draw the base bar in normal color
-        # and overlay moon-affected segments separately
-        if hasattr(obj, 'moon_influence_periods') and obj.moon_influence_periods:
-            # First, draw the entire bar in normal color
-            ax.barh(index, plot_end - plot_start, left=plot_start, height=0.3,
-                   alpha=alpha, color=color, zorder=base_zorder, label='_nolegend_')
-                   
-            # Then overlay the moon interference segments
-            for start_idx, end_idx in obj.moon_influence_periods:
-                moon_start = period_start + timedelta(minutes=start_idx)
-                moon_end = period_start + timedelta(minutes=end_idx)
-                
-                # Convert to local timezone
-                moon_start_local = moon_start.astimezone(milan_tz)
-                moon_end_local = moon_end.astimezone(milan_tz)
-                
-                # Check if this segment overlaps with the current visibility period
-                if moon_end_local > plot_start and moon_start_local < plot_end:
-                    # Calculate the overlapping segment
-                    segment_start = max(moon_start_local, plot_start)
-                    segment_end = min(moon_end_local, plot_end)
-                    
-                    # Draw the moon interference segment
-                    moon_color = '#DAA520' if is_recommended else '#F0E68C'  # Goldenrod/Khaki
-                    ax.barh(index, 
-                           segment_end - segment_start, 
-                           left=segment_start, 
-                           height=0.3,
-                           alpha=alpha,
-                           color=moon_color,
-                           zorder=base_zorder+1,  # Slightly higher zorder
-                           label='_nolegend_')  # Don't include in legend
-        else:
-            # Plot normal visibility bar
-            ax.barh(index, plot_end - plot_start, left=plot_start, height=0.3,
-                   alpha=alpha, color=color, zorder=base_zorder, label='_nolegend_')
-
-        # Add the *main* legend entry using a hidden bar ONCE per object
-        # Use the first valid segment to create the handle
-        if not label_added and plot_start < plot_end:
-            # Use a representative color/alpha for the legend swatch (non-moon version)
-            handle = Patch(facecolor=color, alpha=alpha, # Use Patch for better legend swatch
-                           label=obj.name) # Use full name for legend clarity
-            local_handles.append(handle)
-            local_labels.append(obj.name)
-            label_added = True
-
-        # Add abbreviated name text annotation near the bar start (once per object ideally)
-        # Position text AT the bar start, aligned left
-        # Plot text label only for the first segment
-        if period_start == periods[0][0] and plot_start < plot_end:
-             abbreviated_name = get_abbreviated_name(obj.name)
+             # Use custom display name that handles mosaic groups specially
+             if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+                 # For mosaic groups, show abbreviated names of individual objects
+                 abbreviated_names = [get_abbreviated_name(individual_obj.name) for individual_obj in obj.objects]
+                 if len(abbreviated_names) <= 3:
+                     abbreviated_name = ', '.join(abbreviated_names)
+                 else:
+                     abbreviated_name = f"{', '.join(abbreviated_names[:2])} +{len(abbreviated_names)-2}"
+             else:
+                 # For individual objects, use the standard abbreviated name
+                 abbreviated_name = get_abbreviated_name(obj.name)
+             
              text_pos_x = plot_start # Align with the actual start of the plotted bar segment
              ax.text(text_pos_x + timedelta(minutes=1), index, # Small offset from the exact start
                      f" {abbreviated_name}", # Add space for padding
@@ -2490,7 +2378,7 @@ def _plot_object_visibility_bars(ax, index, obj, start_time, end_time, recommend
                      zorder=base_zorder+1) # Above the bar
 
     # *** Ensure the function always returns a tuple ***
-    return local_handles, local_labels
+    return [], []
 
 def _get_object_visibility_color(near_moon, is_recommended, has_sufficient_time):
     """Determine color and alpha for object visibility bars"""
@@ -2581,6 +2469,34 @@ def _add_moon_interference_legend_items(handles, labels):
 
 # ============= SCHEDULE GENERATION =============
 
+def _get_sorted_objects_for_chart(objects, start_time, end_time, use_margins):
+    """Get objects sorted by visibility start time for chart display"""
+    milan_tz = get_local_timezone()
+    object_periods = []
+    
+    for obj in objects:
+        periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins)
+        if periods:
+            # Convert periods to local time
+            local_periods = [(p[0].astimezone(milan_tz), p[1].astimezone(milan_tz)) 
+                           for p in periods]
+            duration = calculate_visibility_duration(periods)
+            object_periods.append((obj, local_periods[0][0], duration))
+    
+    # Sort by start time
+    object_periods.sort(key=lambda x: x[1], reverse=True)
+    return [item[0] for item in object_periods]
+
+def _setup_visibility_chart_axes(ax, title, start_time, end_time, tz):
+    """Setup axes for visibility chart"""
+    ax.set_title(title)
+    ax.set_xlabel('Local Time')
+    ax.set_ylabel('Objects')
+    ax.set_xlim(start_time, end_time)
+    
+    # Use local time formatter
+    ax.xaxis.set_major_formatter(DateFormatter('%H:%M', tz=tz))
+
 def calculate_object_score(obj, periods, strategy=SCHEDULING_STRATEGY):
     """Calculate object score based on scheduling strategy"""
     duration = calculate_visibility_duration(periods)
@@ -2666,26 +2582,29 @@ def create_mosaic_groups(objects, start_time, end_time):
     
     return mosaic_groups
 
-def combine_objects_and_groups(individual_objects, mosaic_groups, strategy=SCHEDULING_STRATEGY):
+def combine_objects_and_groups(individual_objects, mosaic_groups, strategy=SCHEDULING_STRATEGY, no_duplicates=False):
     """Combine individual objects and mosaic groups based on strategy"""
-    if strategy == SchedulingStrategy.MOSAIC_GROUPS:
+    # Find objects that are in mosaic groups
+    grouped_object_names = set()
+    for group in mosaic_groups:
+        for obj in group.objects:
+            grouped_object_names.add(obj.name)
+    
+    if strategy == SchedulingStrategy.MOSAIC_GROUPS or no_duplicates:
         # Prioritize mosaic groups, add individual objects only if they don't conflict
         combined = list(mosaic_groups)
         
-        # Find objects that are not in any mosaic group
-        grouped_object_names = set()
-        for group in mosaic_groups:
-            for obj in group.objects:
-                grouped_object_names.add(obj.name)
-        
-        # Add ungrouped individual objects
+        # Add ungrouped individual objects only
+        filtered_objects = []
         for obj in individual_objects:
             if obj.name not in grouped_object_names:
-                combined.append(obj)
+                filtered_objects.append(obj)
+        
+        combined.extend(filtered_objects)
         
         return combined
     else:
-        # For other strategies, prioritize individual objects
+        # For other strategies without no_duplicates, include all objects and groups
         return individual_objects + mosaic_groups
 
 def generate_observation_schedule(objects, start_time, end_time, 
@@ -3710,6 +3629,8 @@ def main():
                       help='Enable mosaic group analysis and specialized plots')
     parser.add_argument('--mosaic-only', action='store_true',
                       help='Show only mosaic groups (implies --mosaic)')
+    parser.add_argument('--no-duplicates', action='store_true',
+                      help='When used with --mosaic, exclude individual objects that are already part of mosaic groups from standalone display')
     
     args = parser.parse_args()
     
@@ -3857,14 +3778,13 @@ def main():
             obj.near_moon = True
             moon_affected.append(obj)
     
-    # Generate report sections for the observation period
+    # Generate initial report sections for the observation period
     report_gen.generate_quick_summary(visible_objects, moon_affected, 
                                     start_time, end_time, moon_phase)
     report_gen.generate_timing_section(sunset, next_sunrise, 
                                      twilight_evening, twilight_morning,
                                      moon_rise, moon_set)
     report_gen.generate_moon_conditions(moon_phase, moon_affected)
-    report_gen.generate_object_sections(visible_objects, insufficient_objects)
     
     # Mosaic group analysis and integration
     mosaic_groups = []
@@ -3881,7 +3801,7 @@ def main():
             scheduling_strategy = selected_strategy
             
             # Combine objects and groups based on strategy
-            combined_objects = combine_objects_and_groups(visible_objects, mosaic_groups, scheduling_strategy)
+            combined_objects = combine_objects_and_groups(visible_objects, mosaic_groups, scheduling_strategy, args.no_duplicates)
             
             # Add mosaic groups to report
             if mosaic_groups:
@@ -3905,6 +3825,15 @@ def main():
         else:
             print("No mosaic groups found. Exiting.")
             return
+    
+    # Generate object sections using the filtered objects when --no-duplicates is used
+    if args.no_duplicates and mosaic_groups:
+        # Extract individual objects from combined_objects (excluding mosaic groups)
+        individual_filtered_objects = [obj for obj in combined_objects if not hasattr(obj, 'is_mosaic_group')]
+        report_gen.generate_object_sections(individual_filtered_objects, insufficient_objects)
+    else:
+        # Use original visible objects for report
+        report_gen.generate_object_sections(visible_objects, insufficient_objects)
     
     # Generate schedules for different strategies for the observation period
     schedules = {}

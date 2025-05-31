@@ -46,6 +46,38 @@ A Python-based astronomical observation planning tool that helps astronomers and
 
 ## Recent Updates
 
+### 🆕 Mosaic Analysis Improvements (January 2025)
+
+**Enhanced Mosaic Functionality with Duplicate Filtering**
+- **New `--no-duplicates` Flag**: When used with `--mosaic`, individual objects that are already part of mosaic groups are excluded from standalone display in reports and charts
+- **Smart Object Filtering**: Objects appear only in their mosaic groups, avoiding duplicate listings in observation plans
+- **Cleaner Scheduling**: Mosaic groups are treated as unified observation targets, streamlining the observation workflow
+
+**Visual Chart Improvements**
+- **Legend Position Fix**: Moved legend from bottom-right to bottom-left in visibility charts to avoid overlap with visibility bars
+- **Enhanced Mosaic Labels**: Mosaic groups now display abbreviated names of constituent objects instead of generic "Mosaic" labels
+  - Groups with ≤3 objects show all names (e.g., "M8, M20, IC4685")
+  - Larger groups show first two plus count (e.g., "M8, M20 +1")
+- **Improved Chart Readability**: Better label positioning and reduced visual clutter in mosaic displays
+
+**Usage Examples**
+```bash
+# Standard mosaic analysis (shows individual objects + mosaic groups)
+python astropy.py --mosaic
+
+# Clean mosaic analysis (shows only mosaic groups, no individual duplicates)
+python astropy.py --mosaic --no-duplicates
+
+# Wrapper script with improved functionality
+python wrappers/run_mosaic_plots.py
+```
+
+**Technical Enhancements**
+- Modified `combine_objects_and_groups()` function to support duplicate filtering
+- Updated visibility chart generation to use filtered object lists
+- Enhanced y-axis labels and text annotations for mosaic group display
+- Improved report generation workflow to use combined object lists
+
 ### 🆕 Weekly Trajectory Analysis Improvements (January 2025)
 
 Major enhancements and bug fixes have been implemented for the comprehensive weekly astrophotography analysis system:
@@ -553,28 +585,32 @@ To modify settings:
 1. Open `config.json` in any text editor
 2. Make your changes while maintaining the JSON structure
 
-## Command-Line Arguments
+## Command Line Options
 
-The application supports various command-line arguments to customize its behavior:
-
-```
-usage: astropy.py [-h] [--date DATE] [--object OBJECT] [--type TYPE] [--report-only]
-                 [--schedule {longest,max_objects,optimal_snr}] [--no-margins]
-                 [--simulate-time SIMULATE_TIME] [--quarters]
+The tool supports several command line options:
+```bash
+python astropy.py [options]
 ```
 
-### Available Arguments
+Available options:
+- `--date YYYY-MM-DD`: Specify a date for calculations (default: today)
+- `--location NAME`: Use a specific location from your config file
+- `--strategy NAME`: Override the scheduling strategy
+- `--csv FILENAME`: Use a specific CSV catalog file
+- `--no-plot`: Run without generating plots
+- `--mosaic`: Enable mosaic group analysis and specialized plots
+- `--mosaic-only`: Show only mosaic groups (implies --mosaic)
+- `--no-duplicates`: When used with --mosaic, exclude individual objects that are already part of mosaic groups from standalone display
+- `--simulate-time HH:MM`: Run simulation as if it were a different time of day
+- `--report-only`: Generate text reports without plotting charts
+- `--quarters`: Generate 4-quarter trajectory plots for cleaner visualization
+- `--no-margins`: Use exact altitude/azimuth limits without safety margins
+- `--help`: Show all available options
 
-| Argument | Description |
-|----------|-------------|
-| `--date DATE` | Specify a date for calculations (format: YYYY-MM-DD) |
-| `--object OBJECT` | Display information for a specific celestial object |
-| `--type TYPE` | Filter objects by type (galaxy, nebula, cluster, etc.) |
-| `--report-only` | Show only text report without generating plots |
-| `--schedule {longest,max_objects,optimal_snr}` | Specify the scheduling strategy |
-| `--no-margins` | Do not use extended margins for visibility calculations |
-| `--simulate-time SIMULATE_TIME` | Simulate running at a specific time (format: HH:MM) |
-| `--quarters` | Use 4-quarter trajectory plots instead of single plot |
+### Mosaic-Specific Options
+- `--mosaic --no-duplicates`: Clean mosaic analysis showing only mosaic groups
+- `--mosaic-only`: Shorthand for mosaic-focused analysis
+- `--mosaic`: Standard mosaic analysis (shows both individual objects and mosaic groups)
 
 ### Examples
 
@@ -860,7 +896,19 @@ Available options:
 - `--strategy NAME`: Override the scheduling strategy
 - `--csv FILENAME`: Use a specific CSV catalog file
 - `--no-plot`: Run without generating plots
+- `--mosaic`: Enable mosaic group analysis and specialized plots
+- `--mosaic-only`: Show only mosaic groups (implies --mosaic)
+- `--no-duplicates`: When used with --mosaic, exclude individual objects that are already part of mosaic groups from standalone display
+- `--simulate-time HH:MM`: Run simulation as if it were a different time of day
+- `--report-only`: Generate text reports without plotting charts
+- `--quarters`: Generate 4-quarter trajectory plots for cleaner visualization
+- `--no-margins`: Use exact altitude/azimuth limits without safety margins
 - `--help`: Show all available options
+
+### Mosaic-Specific Options
+- `--mosaic --no-duplicates`: Clean mosaic analysis showing only mosaic groups
+- `--mosaic-only`: Shorthand for mosaic-focused analysis
+- `--mosaic`: Standard mosaic analysis (shows both individual objects and mosaic groups)
 
 ## Configuration Examples
 
