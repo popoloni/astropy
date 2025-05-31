@@ -16,7 +16,7 @@
         "lozio": {
             "name": "Lozio",
             "latitude": 45.9928841,
-            "longitude": 10.2299690,
+            "longitude": 10.229969,
             "timezone": "Europe/Rome",
             "min_altitude": 15,
             "max_altitude": 80,
@@ -73,9 +73,39 @@
     },
     "plotting": {
         "max_objects_optimal": 5,
-        "figure_size": [12, 10],
+        "figure_size": [
+            12,
+            10
+        ],
         "color_map": "tab20",
         "grid_alpha": 0.3,
         "visible_region_alpha": 0.1
+    },
+    "observation": {
+        "min_altitude": 15,
+        "max_altitude": 75,
+        "min_azimuth": 65,
+        "max_azimuth": 165,
+        "bortle_index": 9,
+        "single_exposure_minutes": 5,
+        "min_visibility_hours": 1.5,
+        "max_overlap_minutes": 30,
+        "exclude_insufficient_time": true
+    },
+    "precision": {
+        "use_high_precision": false,
+        "atmospheric_refraction": true,
+        "parallax_correction": false,
+        "cache_calculations": true
+    },
+    "ios": {
+        "memory_optimization": true,
+        "matplotlib_backend": "Agg",
+        "numpy_optimization": true,
+        "file_paths": {
+            "config": "config.json",
+            "catalog": "catalog.csv",
+            "output": "output/"
+        }
     }
-} 
+}
