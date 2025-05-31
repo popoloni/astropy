@@ -14,14 +14,18 @@ from datetime import datetime, timedelta
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import astropy functions
-from astropy import (
-    get_combined_catalog, get_objects_from_csv, USE_CSV_CATALOG,
-    calculate_altaz, get_local_timezone, get_current_datetime,
+# Import from specific modules to avoid circular imports
+from astronomy import (
+    calculate_altaz, get_local_timezone,
     find_astronomical_twilight, find_visibility_window,
-    calculate_visibility_duration, MIN_VISIBILITY_HOURS,
-    CONFIG
+    calculate_visibility_duration
 )
+from catalogs import get_combined_catalog, get_objects_from_csv
+from config.settings import load_config, MIN_VISIBILITY_HOURS, USE_CSV_CATALOG
+from utilities.time_sim import get_current_datetime
+
+# Load configuration
+CONFIG = load_config()
 
 # Get mosaic FOV from configuration
 MOSAIC_FOV_WIDTH = CONFIG['imaging']['scope']['mosaic_fov_width']

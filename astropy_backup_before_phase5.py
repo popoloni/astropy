@@ -37,15 +37,14 @@ from astronomy import (
     calculate_moon_interference_radius, is_near_moon, get_moon_phase_icon,
     is_visible, find_visibility_window, calculate_visibility_duration,
     find_sunset_sunrise, find_astronomical_twilight,
-    calculate_required_panels, calculate_required_exposure, is_object_imageable,
-    filter_visible_objects
+    calculate_required_panels, calculate_required_exposure, is_object_imageable
 )
 from analysis import (
     calculate_object_score, calculate_max_altitude, find_best_objects,
-    filter_objects_by_criteria, generate_observation_schedule, 
+    filter_visible_objects, filter_objects_by_criteria, generate_observation_schedule, 
     combine_objects_and_groups, create_mosaic_groups, analyze_mosaic_compatibility,
     print_schedule_strategy_report, generate_schedule_section_content,
-    print_combined_report, print_objects_by_type, ReportGenerator
+    print_combined_report, print_objects_by_type
 )
 from utilities.time_sim import get_current_datetime, get_simulated_datetime
 from utilities import time_sim
@@ -72,6 +71,367 @@ else:
 # Object filtering functions have been moved to analysis.filtering module
 
 # ============= REPORTING =============
+
+class ReportGenerator:
+    """Class to handle report generation and formatting"""
+    def __init__(self, date, location_data):
+        self.date = date
+        self.location = location_data
+        self.sections = []
+        
+    def add_section(self, title, content):
+        """Add a section to the report"""
+        self.sections.append({
+            'title': title,
+            'content': content
+        })
+    
+    def format_section(self, section):
+        """Format a single section"""
+        output = f"\n{section['title']}\n"
+        output += "=" * len(section['title']) + "\n"
+        output += section['content']
+        return output
+    
+    def generate_quick_summary(self, visible_objects, moon_affected_objects, start_time, end_time, moon_phase):
+        """Generate quick summary section"""
+        moon_icon, phase_name = get_moon_phase_icon(moon_phase)
+        
+        # Always show as full observation window (reverted from partial night filtering)
+        observation_window_label = "Observation Window"
+        
+        content = (
+            f"Date: {self.date.date()}\n"
+            f"Location: {self.location['name']} ({LATITUDE:.2f}°N, {LONGITUDE:.2f}°E)\n\n"
+            f"Observable Objects: {len(visible_objects)} total ({len(moon_affected_objects)} affected by moon)\n"
+            f"{observation_window_label}: {format_time(start_time)} - {format_time(end_time)}\n"
+            f"Moon Phase: {moon_icon} {phase_name} ({moon_phase:.1%})\n"
+            f"Seeing Conditions: Bortle {BORTLE_INDEX}\n"
+        )
+        self.add_section("QUICK SUMMARY", content)
+    
+    def generate_timing_section(self, sunset, sunrise, twilight_evening, twilight_morning, moon_rise, moon_set):
+        """Generate timing information section"""
+        content = (
+            f"Sunset: {format_time(sunset)}\n"
+            f"Astronomical Twilight Begins: {format_time(twilight_evening)}\n"
+        )
+        if moon_rise:
+            content += f"Moon Rise: {format_time(moon_rise)}\n"
+        if moon_set:
+            content += f"Moon Set: {format_time(moon_set)}\n"
+        content += (
+            f"Astronomical Twilight Ends: {format_time(twilight_morning)}\n"
+            f"Sunrise: {format_time(sunrise)}\n"
+        )
+        self.add_section("TIMING INFORMATION", content)
+    
+    def generate_moon_conditions(self, moon_phase, moon_affected_objects):
+        """Generate moon conditions section"""
+        moon_icon, phase_name = get_moon_phase_icon(moon_phase)
+        content = (
+            f"Current Phase: {moon_icon} {phase_name} ({moon_phase:.1%})\n"
+            f"Objects affected by moon: {len(moon_affected_objects)}\n\n"
+        )
+        if moon_affected_objects:
+            content += "Affected objects:\n"
+            for obj in moon_affected_objects:
+                periods = getattr(obj, 'moon_influence_periods', [])
+                
+                # Calculate total minutes properly from timedelta objects
+                total_minutes = sum(
+                    int((end - start).total_seconds() / 60)
+                    for start, end in periods
+                )
+                
+                # Get the actual time ranges for interference
+                if periods:
+                    interference_times = []
+                    for start, end in periods:
+                        # Convert to local time for display
+                        local_start = utc_to_local(start)
+                        local_end = utc_to_local(end)
+                        interference_times.append(f"{format_time(local_start)}-{format_time(local_end)}")
+                    
+                    interference_str = ", ".join(interference_times)
+                    content += f"- {obj.name} ({total_minutes} minutes of interference, during: {interference_str})\n"
+                else:
+                    content += f"- {obj.name} ({total_minutes} minutes of interference)\n"
+        else:
+            content += "No objects are significantly affected by moon proximity.\n"
+        self.add_section("MOON CONDITIONS", content)
+    
+    def generate_object_sections(self, visible_objects, insufficient_objects):
+        """Generate sections for different object categories"""
+        # Prime targets (sufficient time & good conditions)
+        prime_targets = [obj for obj in visible_objects 
+                        if not getattr(obj, 'near_moon', False)]
+        if prime_targets:
+            content = self._format_object_list("Prime observation targets:", prime_targets)
+            self.add_section("PRIME TARGETS", content)
+        
+        # Moon-affected targets
+        moon_affected = [obj for obj in visible_objects 
+                        if getattr(obj, 'near_moon', False)]
+        if moon_affected:
+            content = self._format_object_list("Objects affected by moon:", moon_affected)
+            self.add_section("MOON-AFFECTED TARGETS", content)
+        
+        # Time-limited targets
+        if insufficient_objects:
+            content = self._format_object_list("Objects with insufficient visibility time:", insufficient_objects)
+            self.add_section("TIME-LIMITED TARGETS", content)
+    
+    def _format_object_list(self, header, objects):
+        """Format a list of objects with their details"""
+        # Time variables made available from outer scope
+        start_time = self.date
+        # Get end of day
+        end_time = self.date.replace(hour=23, minute=59, second=59)
+        
+        # Sort by visibility start time
+        sorted_objects = []
+        for obj in objects:
+            # Handle both individual objects and mosaic groups
+            if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+                # For mosaic groups, use the overlap periods
+                if obj.overlap_periods:
+                    sorted_objects.append((obj, obj.overlap_periods[0][0]))
+            else:
+                periods = find_visibility_window(obj, start_time, end_time)
+                if periods:
+                    sorted_objects.append((obj, periods[0][0]))
+        
+        sorted_objects.sort(key=lambda x: x[1])
+        sorted_objects = [x[0] for x in sorted_objects]
+        
+        # Format output
+        content = f"{header}\n\n"
+        
+        for obj in sorted_objects:
+            # Handle mosaic groups differently
+            if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+                # Format mosaic group
+                content += f"🎯 {obj.name}\n"
+                content += f"Objects in group: {obj.object_count}\n"
+                
+                # List individual objects
+                object_names = [get_abbreviated_name(o.name) for o in obj.objects]
+                content += f"Components: {', '.join(object_names)}\n"
+                
+                # Total overlap duration
+                total_overlap = obj.calculate_total_overlap_duration()
+                content += f"Total overlap time: {total_overlap:.1f} hours\n"
+                
+                # Overlap periods
+                content += "Overlap periods:\n"
+                for period_start, period_end in obj.overlap_periods:
+                    period_duration = (period_end - period_start).total_seconds() / 3600
+                    content += f"  {format_time(period_start)} - {format_time(period_end)} ({period_duration:.1f}h)\n"
+                
+                content += f"Composite magnitude: {obj.magnitude:.1f}\n"
+                content += f"Mosaic FOV: {obj.fov}\n"
+                content += "Type: Mosaic Group\n"
+                
+            else:
+                # Format individual object
+                # Get visibility periods
+                periods = find_visibility_window(obj, start_time, end_time)
+                if not periods:
+                    continue
+                    
+                visibility_start = periods[0][0]
+                duration = calculate_visibility_duration(periods)
+                visibility_end = periods[-1][1]
+                
+                # Get moon status
+                moon_status = ""
+                if hasattr(obj, 'near_moon') and obj.near_moon:
+                    moon_phase = calculate_moon_phase(visibility_start)
+                    moon_icon, _ = get_moon_phase_icon(moon_phase)
+                    
+                    # Find when moon rises if it's not already risen at the start of visibility
+                    moon_alt_at_start, _ = calculate_moon_position(visibility_start)
+                    if moon_alt_at_start < 0:
+                        # Moon hasn't risen yet, find rise time
+                        check_time = visibility_start
+                        moon_rise_time = None
+                        while check_time <= visibility_end:
+                            moon_alt, _ = calculate_moon_position(check_time)
+                            prev_moon_alt, _ = calculate_moon_position(check_time - timedelta(minutes=1))
+                            if prev_moon_alt < 0 and moon_alt >= 0:
+                                moon_rise_time = check_time
+                                break
+                            check_time += timedelta(minutes=1)
+                        
+                        if moon_rise_time:
+                            moon_status = f"{moon_icon} Moon interference after {format_time(moon_rise_time)}"
+                        else:
+                            moon_status = "✨ Clear from moon"
+                    else:
+                        # Moon is already risen
+                        moon_status = f"{moon_icon} Moon interference"
+                else:
+                    moon_status = "✨ Clear from moon"
+                
+                # Format the line
+                content += f"{obj.name}\n"
+                content += f"{moon_status}\n"
+                content += f"Visibility: {format_time(visibility_start)} - {format_time(visibility_end)} ({duration:.1f} hours)\n"
+                
+                if hasattr(obj, 'magnitude') and obj.magnitude is not None:
+                    content += f"Magnitude: {obj.magnitude}\n"
+                
+                if obj.fov:
+                    content += f"Field of view: {obj.fov}\n"
+                    # Calculate panels needed
+                    panels = calculate_required_panels(obj.fov)
+                    if panels > 1:
+                        content += f"Mosaic panels needed: {panels}\n"
+                
+                # Calculate exposure requirements
+                if hasattr(obj, 'magnitude') and obj.magnitude is not None:
+                    exposure_time, frames, panels = calculate_required_exposure(obj.magnitude, BORTLE_INDEX, obj.fov)
+                    content += f"Recommended exposure: {exposure_time:.1f}h ({frames} frames of {SINGLE_EXPOSURE}s)\n"
+                
+                if hasattr(obj, 'object_type') and obj.object_type:
+                    content += f"Type: {obj.object_type}\n"
+                
+                content += "\n"
+        
+        return content
+    
+    def generate_schedule_section(self, schedule, strategy):
+        """Generate schedule section using the reporting module"""
+        content = generate_schedule_section_content(schedule, strategy)
+        self.add_section("RECOMMENDED SCHEDULE", content)
+    
+    def generate_report(self):
+        """Generate the complete report"""
+        output = "NIGHT OBSERVATION REPORT\n"
+        output += "=" * 23 + "\n"
+        
+        for section in self.sections:
+            output += self.format_section(section)
+            
+        return output
+
+# ============= VISIBILITY FUNCTIONS =============
+
+def is_visible(alt, az, use_margins=True):
+    """Check if object is within visibility limits"""
+    if use_margins:
+        # Use 5-degree margins as in trajectory plotting
+        return ((MIN_ALT - 5 <= alt <= MAX_ALT + 5) and 
+                (MIN_AZ - 5 <= az <= MAX_AZ + 5))
+    else:
+        return (MIN_AZ <= az <= MAX_AZ) and (MIN_ALT <= alt <= MAX_ALT)
+
+def find_visibility_window(obj, start_time, end_time, use_margins=True):
+    """Find visibility window for an object, considering sun position"""
+    current_time = start_time
+    visibility_periods = []
+    start_visible = None
+    last_visible = False
+    
+    # Use 1-minute intervals for better precision, matching trajectory plotting
+    interval = timedelta(minutes=1)
+    
+    while current_time <= end_time:
+        # Check object's position
+        alt, az = calculate_altaz(obj, current_time)
+        
+        # Check sun's position
+        sun_alt, _ = calculate_sun_position(current_time)
+        
+        # Object is visible if:
+        # 1. It's within visibility limits
+        # 2. The sun is below the horizon (altitude < -5)
+        is_currently_visible = is_visible(alt, az, use_margins) and sun_alt < -5
+        
+        # Object becomes visible
+        if is_currently_visible and not last_visible:
+            start_visible = current_time
+        # Object becomes invisible
+        elif not is_currently_visible and last_visible and start_visible is not None:
+            visibility_periods.append((start_visible, current_time))
+            start_visible = None
+            
+        last_visible = is_currently_visible
+        current_time += interval
+    
+    # If object is still visible at the end, add the final period
+    if start_visible is not None and last_visible:
+        visibility_periods.append((start_visible, end_time))
+    
+    return visibility_periods
+
+def calculate_visibility_duration(visibility_periods):
+    """Calculate total visibility duration in hours"""
+    total_seconds = sum(
+        (end - start).total_seconds() 
+        for start, end in visibility_periods
+    )
+    return total_seconds / 3600
+
+# ============= TWILIGHT AND NIGHT FUNCTIONS =============
+
+def find_sunset_sunrise(date):
+    """Find sunset and sunrise times"""
+    milan_tz = get_local_timezone()
+    
+    if date.tzinfo is not None:
+        date = date.replace(tzinfo=None)
+    
+    noon = date.replace(hour=12, minute=0, second=0, microsecond=0)
+    noon = milan_tz.localize(noon)
+    noon_utc = local_to_utc(noon)
+    
+    current_time = noon_utc
+    alt, _ = calculate_sun_position(current_time)
+    
+    while alt > 0:
+        current_time += timedelta(minutes=SEARCH_INTERVAL_MINUTES)
+        alt, _ = calculate_sun_position(current_time)
+    sunset = current_time
+    
+    while alt <= 0:
+        current_time += timedelta(minutes=SEARCH_INTERVAL_MINUTES)
+        alt, _ = calculate_sun_position(current_time)
+    sunrise = current_time
+    
+    return utc_to_local(sunset), utc_to_local(sunrise)
+
+def find_astronomical_twilight(date):
+    """Find astronomical twilight times"""
+    milan_tz = get_local_timezone()
+    
+    if date.tzinfo is not None:
+        date = date.replace(tzinfo=None)
+    
+    noon = date.replace(hour=12, minute=0, second=0, microsecond=0)
+    noon = milan_tz.localize(noon)
+    noon_utc = local_to_utc(noon)
+    
+    current_time = noon_utc
+    alt, _ = calculate_sun_position(current_time)
+    
+    while alt > -18:
+        current_time += timedelta(minutes=SEARCH_INTERVAL_MINUTES)
+        alt, _ = calculate_sun_position(current_time)
+    twilight_evening = current_time
+    
+    while alt <= -18:
+        current_time += timedelta(minutes=SEARCH_INTERVAL_MINUTES)
+        alt, _ = calculate_sun_position(current_time)
+    twilight_morning = current_time
+    
+    return utc_to_local(twilight_evening), utc_to_local(twilight_morning)
+
+# ============= OBJECT SELECTION FUNCTIONS =============
+# Object selection functions have been moved to analysis.object_selection module
+
+# ============= PLOTTING FUNCTIONS =============
 
 def plot_moon_trajectory(ax, start_time, end_time):
     """Plot moon trajectory and add it to the legend"""
@@ -122,6 +482,33 @@ def plot_moon_trajectory(ax, start_time, end_time):
                        color=MOON_MARKER_COLOR,
                        zorder=3)
                        
+def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=EXCLUDE_INSUFFICIENT_TIME, use_margins=True):
+    """Filter objects based on visibility and exposure requirements"""
+    filtered_objects = []
+    insufficient_objects = []
+    
+    for obj in objects:
+        periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins) # Added use_margins=True
+        if periods:
+            duration = calculate_visibility_duration(periods)
+            if hasattr(obj, 'magnitude') and obj.magnitude is not None:
+                # Calculate required exposure time and store it in the object
+                obj.required_exposure = calculate_required_exposure(
+                    obj.magnitude, BORTLE_INDEX, obj.fov)
+                
+                if duration >= MIN_VISIBILITY_HOURS:
+                    obj.sufficient_time = duration >= obj.required_exposure[0]
+                    if exclude_insufficient:
+                        if obj.sufficient_time:
+                            filtered_objects.append(obj)
+                        else:
+                            insufficient_objects.append(obj)
+                    else:
+                        filtered_objects.append(obj)
+    
+    return filtered_objects, insufficient_objects
+
+
 def setup_altaz_plot():
     """Setup basic altitude-azimuth plot"""
     # Create figure with appropriate size
@@ -932,14 +1319,474 @@ def _setup_visibility_chart_axes(ax, title, start_time, end_time, tz):
     # Use local time formatter
     ax.xaxis.set_major_formatter(DateFormatter('%H:%M', tz=tz))
 
-# calculate_object_score has been moved to analysis modules
-# calculate_max_altitude has been moved to analysis modules
-# create_mosaic_groups has been moved to analysis modules
-# combine_objects_and_groups has been moved to analysis modules
-# generate_observation_schedule has been moved to analysis modules
-# print_combined_report has been moved to analysis modules
-# print_schedule_strategy_report has been moved to analysis modules
-# print_objects_by_type has been moved to analysis modules
+def calculate_object_score(obj, periods, strategy=SCHEDULING_STRATEGY):
+    """Calculate object score based on scheduling strategy"""
+    duration = calculate_visibility_duration(periods)
+    
+    # Handle mosaic groups differently
+    if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+        if strategy == SchedulingStrategy.MOSAIC_GROUPS:
+            # For mosaic groups, prioritize by number of objects and total duration
+            return obj.object_count * duration * 10  # High multiplier for mosaic groups
+        else:
+            # For other strategies, treat as composite object
+            exposure_time = duration / 2  # Estimate based on group complexity
+            panels = 1  # Mosaic groups are already pre-paneled
+    else:
+        exposure_time, frames, panels = calculate_required_exposure(
+            obj.magnitude, BORTLE_INDEX, obj.fov)
+    
+    if strategy == SchedulingStrategy.LONGEST_DURATION:
+        return duration
+    
+    elif strategy == SchedulingStrategy.MAX_OBJECTS:
+        # Prefer objects that need just enough time
+        if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+            return obj.object_count * duration  # Favor mosaic groups with more objects
+        return 1.0 / abs(duration - exposure_time)
+    
+    elif strategy == SchedulingStrategy.OPTIMAL_SNR:
+        # Consider magnitude and sky position
+        alt_score = max(calculate_max_altitude(obj, periods[0][0], periods[-1][1]), 30) / 90
+        mag_score = (20 - obj.magnitude) / 20  # Brighter objects score higher
+        return alt_score * mag_score
+    
+    elif strategy == SchedulingStrategy.MINIMAL_MOSAIC:
+        # Prefer objects requiring fewer panels
+        return 1.0 / panels
+    
+    elif strategy == SchedulingStrategy.DIFFICULTY_BALANCED:
+        # Balance between difficulty and feasibility
+        difficulty = obj.magnitude / 20 + panels / 10
+        feasibility = duration / exposure_time
+        return feasibility / difficulty
+    
+    elif strategy == SchedulingStrategy.MOSAIC_GROUPS:
+        # Prioritize mosaic groups over individual objects
+        if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
+            return obj.object_count * duration * 10  # High score for mosaic groups
+        else:
+            return duration * 0.1  # Lower score for individual objects
+    
+    return duration
+
+def calculate_max_altitude(obj, start_time, end_time):
+    """Calculate maximum altitude during visibility period"""
+    max_alt = 0
+    current_time = start_time
+    while current_time <= end_time:
+        alt, _ = calculate_altaz(obj, current_time)
+        max_alt = max(max_alt, alt)
+        current_time += timedelta(minutes=TRAJECTORY_INTERVAL_MINUTES)
+    return max_alt
+
+def create_mosaic_groups(objects, start_time, end_time):
+    """Create MosaicGroup objects from visible objects using mosaic analysis"""
+    if not MOSAIC_ANALYSIS_AVAILABLE:
+        print("Mosaic analysis not available. Returning empty list.")
+        return []
+    
+    # Import mosaic functions dynamically
+    analyze_object_groups, _, _, _ = _import_mosaic_functions()
+    if analyze_object_groups is None:
+        print("Mosaic analysis functions not available. Returning empty list.")
+        return []
+    
+    # Find mosaic groups using the analysis function
+    groups_data = analyze_object_groups(objects, start_time, end_time)
+    
+    # Convert to MosaicGroup objects
+    mosaic_groups = []
+    for i, (group_objects, overlap_periods) in enumerate(groups_data):
+        group_id = f"Group_{i+1}"
+        mosaic_group = MosaicGroup(group_objects, overlap_periods, group_id)
+        mosaic_groups.append(mosaic_group)
+    
+    return mosaic_groups
+
+def combine_objects_and_groups(individual_objects, mosaic_groups, strategy=SCHEDULING_STRATEGY, no_duplicates=False):
+    """Combine individual objects and mosaic groups based on strategy"""
+    # Find objects that are in mosaic groups
+    grouped_object_names = set()
+    for group in mosaic_groups:
+        for obj in group.objects:
+            grouped_object_names.add(obj.name)
+    
+    if strategy == SchedulingStrategy.MOSAIC_GROUPS or no_duplicates:
+        # Prioritize mosaic groups, add individual objects only if they don't conflict
+        combined = list(mosaic_groups)
+        
+        # Add ungrouped individual objects only
+        filtered_objects = []
+        for obj in individual_objects:
+            if obj.name not in grouped_object_names:
+                filtered_objects.append(obj)
+        
+        combined.extend(filtered_objects)
+        
+        return combined
+    else:
+        # For other strategies without no_duplicates, include all objects and groups
+        return individual_objects + mosaic_groups
+
+def generate_observation_schedule(objects, start_time, end_time, 
+                                strategy=SCHEDULING_STRATEGY,
+                                min_duration=MIN_VISIBILITY_HOURS,
+                                max_overlap=MAX_OVERLAP_MINUTES):
+    """Generate optimal observation schedule based on selected strategy"""
+    schedule = []
+
+    # Filter out objects affected by the moon, but only if we have alternatives
+    objects_no_moon = [obj for obj in objects if not getattr(obj, 'near_moon', False)]
+    
+    # If we have no objects clear from the moon, use all objects
+    if not objects_no_moon:
+        objects_no_moon = objects
+
+    # Filter objects based on sufficient time if needed (applied after moon filter)
+    if EXCLUDE_INSUFFICIENT_TIME:
+        objects_filtered = [obj for obj in objects_no_moon if getattr(obj, 'sufficient_time', True)]
+    else:
+        objects_filtered = objects_no_moon
+
+    # Calculate scores and periods for all remaining objects
+    object_data = []
+    for obj in objects_filtered:
+        # *** IMPORTANT: Skip objects without magnitude EARLY to prevent errors ***
+        if obj.magnitude is None:
+            print(f"Skipping {obj.name} for scheduling due to missing magnitude.")
+            continue # Skip objects without magnitude for scheduling
+
+        periods = find_visibility_window(obj, start_time, end_time, use_margins=True)
+        if periods:
+            duration = calculate_visibility_duration(periods)
+            if duration >= min_duration:
+                exposure_time, frames, panels = calculate_required_exposure(
+                    obj.magnitude, BORTLE_INDEX, obj.fov)
+
+                # Check if we need to exclude based on insufficient time again,
+                # even if EXCLUDE_INSUFFICIENT_TIME is False, MAX_OBJECTS needs this check.
+                has_enough_time_for_exposure = (duration >= exposure_time)
+
+                # Only add if it meets basic duration and potentially exposure time criteria
+                if not EXCLUDE_INSUFFICIENT_TIME or has_enough_time_for_exposure:
+                    # Now it's safe to calculate the score
+                    score = calculate_object_score(obj, periods, strategy)
+                    # Store exposure_time needed, especially for MAX_OBJECTS strategy
+                    object_data.append((obj, periods, duration, score, exposure_time))
+
+    # Sort by score according to strategy
+    object_data.sort(key=lambda x: x[3], reverse=True)
+
+    # Schedule observations based on strategy
+    scheduled_times = [] # This will store tuples of (start_time, end_time, object)
+
+    if strategy == SchedulingStrategy.MAX_OBJECTS:
+        # --- Greedy Algorithm for MAX_OBJECTS with Multiple Potential Slots --- 
+        
+        # Configure sampling interval for potential slots (minutes)
+        sampling_interval_minutes = 15
+        sampling_interval = timedelta(minutes=sampling_interval_minutes)
+        
+        # Max allowable idle time between observations
+        max_idle_time = timedelta(minutes=15)
+
+        # 1. Generate Multiple Potential Slots throughout visibility periods
+        potential_slots = []
+        for obj, periods, duration, score, exposure_time in object_data:
+            # Basic validity checks
+            if duration < exposure_time or exposure_time <= 0:
+                continue
+            if not isinstance(exposure_time, (int, float)) or math.isinf(exposure_time) or math.isnan(exposure_time):
+                continue
+                
+            try:
+                needed_duration = timedelta(hours=exposure_time)
+            except OverflowError:
+                continue
+                
+            # For each visibility period, generate multiple potential start times
+            for period_start, period_end in periods:
+                # Calculate the latest possible start time that allows full observation
+                latest_start = period_end - needed_duration
+                
+                # If the period isn't long enough for the needed duration, skip it
+                if latest_start < period_start:
+                    continue
+                    
+                # Generate potential slots at regular intervals throughout the period
+                current_start = period_start
+                while current_start <= latest_start:
+                    potential_end = current_start + needed_duration
+                    
+                    # Add this potential slot
+                    potential_slots.append({
+                        'start': current_start,
+                        'end': potential_end,
+                        'obj': obj,
+                        'duration': needed_duration,
+                        'score': score  # Keep track of the original score
+                    })
+                    
+                    # Move to the next potential start time
+                    current_start += sampling_interval
+
+        # 2. Sort Potential Slots 
+        # First by finish time (primary), then by score (secondary)
+        potential_slots.sort(key=lambda x: (x['end'], -x['score']))
+        
+        # 3. Modified Greedy Selection with ZERO tolerance for overlaps
+        scheduled_times = []
+        scheduled_objects = set()
+        
+        for slot in potential_slots:
+            s_start = slot['start']
+            s_end = slot['end']
+            s_obj = slot['obj']
+            
+            # Skip if object already scheduled
+            if s_obj in scheduled_objects:
+                continue
+                
+            # Check for ANY conflicts with existing schedule
+            is_conflicting = False
+            for sched_start, sched_end, _ in scheduled_times:
+                # Check if there's any overlap at all (strict check)
+                if (s_start < sched_end and s_end > sched_start):
+                    is_conflicting = True
+                    break
+            
+            # If no conflict, add this slot
+            if not is_conflicting:
+                scheduled_times.append((s_start, s_end, s_obj))
+                scheduled_objects.add(s_obj)
+        
+        # 4. Sort the schedule by start time
+        scheduled_times.sort(key=lambda x: x[0])
+        
+        # 5. Try to minimize gaps by adjusting start times (post-processing)
+        if len(scheduled_times) > 1:
+            optimized_schedule = [scheduled_times[0]]  # Keep the first item as is
+            
+            for i in range(1, len(scheduled_times)):
+                prev_end = optimized_schedule[-1][1]
+                curr_start, curr_end, curr_obj = scheduled_times[i]
+                curr_duration = curr_end - curr_start
+                
+                # Calculate the gap
+                gap = curr_start - prev_end
+                
+                # If gap is larger than max_idle_time, try to move the current observation earlier
+                if gap > max_idle_time:
+                    # The earliest we can start is immediately after the previous observation ends
+                    earliest_possible_start = prev_end
+                    
+                    # Calculate how much we can shift this observation earlier
+                    shift_amount = min(gap, curr_start - earliest_possible_start)
+                    
+                    if shift_amount > timedelta(0):
+                        # Adjust the start and end times
+                        adjusted_start = curr_start - shift_amount
+                        adjusted_end = adjusted_start + curr_duration  # Preserve duration
+                        
+                        # Verify no conflicts with any earlier observations
+                        has_conflict = False
+                        for idx in range(len(optimized_schedule)):
+                            prev_start, prev_end, _ = optimized_schedule[idx]
+                            # Check for any overlap (strict check)
+                            if (adjusted_start < prev_end and adjusted_end > prev_start):
+                                has_conflict = True
+                                break
+                        
+                        if not has_conflict:
+                            # Add the adjusted observation to the schedule
+                            optimized_schedule.append((adjusted_start, adjusted_end, curr_obj))
+                        else:
+                            # Conflict found, use original times
+                            optimized_schedule.append((curr_start, curr_end, curr_obj))
+                    else:
+                        # Can't shift, use original times
+                        optimized_schedule.append((curr_start, curr_end, curr_obj))
+                else:
+                    # Gap is acceptable, use original times
+                    optimized_schedule.append((curr_start, curr_end, curr_obj))
+            
+            # Replace the original schedule with the optimized one
+            scheduled_times = optimized_schedule
+            
+        # 6. Final validation to ensure NO overlaps in the final schedule
+        if len(scheduled_times) > 1:
+            # Sort again to ensure proper ordering
+            scheduled_times.sort(key=lambda x: x[0])
+            
+            # Check for any remaining overlaps and fix if needed
+            validated_schedule = [scheduled_times[0]]
+            
+            for i in range(1, len(scheduled_times)):
+                curr_slot = scheduled_times[i]
+                curr_start, curr_end, curr_obj = curr_slot
+                
+                # Check for conflict with all previous validated slots
+                has_conflict = False
+                for prev_start, prev_end, _ in validated_schedule:
+                    # If there's ANY overlap, it's a conflict
+                    if (curr_start < prev_end and curr_end > prev_start):
+                        has_conflict = True
+                        break
+                
+                # Only add if no conflict
+                if not has_conflict:
+                    validated_schedule.append(curr_slot)
+            
+            # Use the final validated schedule
+            scheduled_times = validated_schedule
+    
+    # For strategies other than MAX_OBJECTS, implement similar but simpler logic
+    else:
+        # Sort objects by score for this strategy
+        object_data.sort(key=lambda x: x[3], reverse=True)
+        
+        # Greedily schedule objects without overlap
+        for obj, periods, duration, score, exposure_time in object_data:
+            # Skip invalid exposure times
+            if not isinstance(exposure_time, (int, float)) or math.isinf(exposure_time) or math.isnan(exposure_time):
+                continue
+                
+            try:
+                needed_duration = timedelta(hours=exposure_time)
+            except OverflowError:
+                continue
+                
+            # Find best visibility period
+            best_period = None
+            for period_start, period_end in periods:
+                period_duration = period_end - period_start
+                if period_duration >= needed_duration:
+                    # This period can fit the object
+                    best_period = (period_start, period_end)
+                    break
+            
+            if not best_period:
+                continue
+                
+            # Check if object overlaps with existing schedule
+            start_time = best_period[0]
+            end_time = start_time + needed_duration
+            
+            # Check for overlap
+            has_overlap = False
+            for sched_start, sched_end, _ in scheduled_times:
+                if end_time > sched_start and start_time < sched_end:
+                    has_overlap = True
+                    break
+            
+            if not has_overlap:
+                scheduled_times.append((start_time, end_time, obj))
+    
+    # Return the final schedule
+    return scheduled_times
+
+def print_combined_report(objects, start_time, end_time, bortle_index):
+    """Print a combined report including visibility and imaging information."""
+    print("\nNIGHT OBSERVATION REPORT")
+    print(f"Date: {start_time.date()}")
+    print(f"Location: Milano, Italy")
+    print("-" * 50)
+    
+    # Sort objects by visibility duration for the entire night
+    sorted_objects = []
+    for obj in objects:
+        visibility_periods = find_visibility_window(obj, start_time, end_time, use_margins=True)  # Added use_margins=True
+        if visibility_periods:
+            duration = calculate_visibility_duration(visibility_periods)
+            # Store the visibility periods with the object for later use
+            obj.visibility_periods = visibility_periods
+            sorted_objects.append((obj, duration))
+    
+    # Sort by duration in descending order
+    sorted_objects.sort(key=lambda x: x[1], reverse=True)
+    
+    # Print visibility information for each object
+    for obj, duration in sorted_objects:
+        # Get the first and last visibility periods
+        first_period = obj.visibility_periods[0]
+        last_period = obj.visibility_periods[-1]
+        
+        # Calculate total visibility duration in hours
+        hours = duration.total_seconds() / 3600
+        
+        # Get imaging requirements
+        required_panels = calculate_required_panels(obj.fov) if obj.fov else None
+        required_exposure = calculate_required_exposure(obj.magnitude, bortle_index, obj.fov) if obj.magnitude and obj.fov else None
+        
+        print(f"\n{obj.name}:")
+        print(f"Visibility: {format_time(first_period[0])} - {format_time(last_period[1])} ({hours:.1f} hours)")
+        
+        if required_panels is not None:
+            print(f"Required panels: {required_panels}")
+        if required_exposure is not None:
+            print(f"Required exposure: {required_exposure[0]:.1f} hours")  # Fixed to use first element of tuple
+        
+        # Check if object is near moon during any visibility period
+        if hasattr(obj, 'near_moon') and obj.near_moon:
+            print("WARNING: Object will be near the moon during some visibility periods")
+        
+        # Check if object has sufficient time for imaging
+        if required_exposure is not None:
+            if hours >= required_exposure[0]:  # Fixed to use first element of tuple
+                print("✓ Sufficient time for imaging")
+            else:
+                print("✗ Insufficient time for imaging")
+    
+    print("\n" + "-" * 50)
+
+def print_schedule_strategy_report(schedule, strategy):
+    """Print schedule details based on strategy"""
+    print(f"\nObservation Schedule ({strategy.value})")
+    print("=" * 50)
+    
+    total_objects = len(schedule)
+    total_time = sum((end - start).total_seconds() / 3600 
+                     for start, end, _ in schedule)
+    
+    print(f"Total objects: {total_objects}")
+    print(f"Total observation time: {total_time:.1f} hours")
+    
+    for start, end, obj in schedule:
+        duration = (end - start).total_seconds() / 3600
+        exposure_time, frames, panels = calculate_required_exposure(
+            obj.magnitude, BORTLE_INDEX, obj.fov)
+        
+        print(f"\n{obj.name}")
+        print(f"Start: {format_time(start)}")
+        print(f"End: {format_time(end)}")
+        print(f"Duration: {duration:.1f} hours")
+        print(f"Required exposure: {exposure_time:.1f} hours")
+        print(f"Panels: {panels}")
+        if panels > 1:
+            print(f"Mosaic: {math.ceil(math.sqrt(panels))}x{math.ceil(math.sqrt(panels))}")
+
+def print_objects_by_type(objects, abbreviate=False):
+    """Print objects organized by type"""
+    objects_by_type = {}
+    for obj in objects:
+        obj_type = getattr(obj, 'type', 'unknown')
+        if obj_type not in objects_by_type:
+            objects_by_type[obj_type] = []
+        objects_by_type[obj_type].append(obj)
+    
+    print("\nObjects by type:")
+    print("=" * 50)
+    for obj_type, obj_list in objects_by_type.items():
+        print(f"\n{obj_type.replace('_', ' ').title()} ({len(obj_list)}):")
+        for obj in obj_list:
+            print(f"  {obj.name}")
+            if not abbreviate:
+                if hasattr(obj, 'fov') and obj.fov:
+                    print(f"    FOV: {obj.fov}")
+                if hasattr(obj, 'comments') and obj.comments:
+                    print(f"    Comments: {obj.comments}")
+
 def plot_quarterly_trajectories(objects, start_time, end_time, schedule=None):
     """Create 4-quarter trajectory plots to reduce visual clutter"""
     
