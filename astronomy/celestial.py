@@ -77,7 +77,7 @@ def _calculate_standard_lst(dt, observer_lon: float) -> float:
     return lst % (2 * math.pi)
 
 
-def calculate_sun_position(dt, precision_mode: Optional[str] = None) -> Union[tuple, Dict[str, float]]:
+def calculate_sun_position(dt, precision_mode: Optional[str] = None) -> tuple:
     """
     Calculate Sun's position with configurable precision
     
@@ -86,19 +86,56 @@ def calculate_sun_position(dt, precision_mode: Optional[str] = None) -> Union[tu
         precision_mode: Override precision mode ('standard', 'high', 'auto', None)
         
     Returns:
-        For standard mode: (altitude, azimuth) tuple in degrees
-        For high-precision mode: Dictionary with 'ra', 'dec', 'distance' keys
+        (altitude, azimuth) tuple in degrees
     """
     # Try high-precision calculation if available and enabled
     if PRECISION_AVAILABLE and should_use_high_precision(precision_mode):
         try:
-            return calculate_high_precision_sun_position(dt)
+            # Get high-precision RA/Dec coordinates
+            sun_coords = calculate_high_precision_sun_position(dt)
+            # Convert to alt/az for backward compatibility
+            return _convert_radec_to_altaz(sun_coords['ra'], sun_coords['dec'], dt)
         except Exception as e:
             if PRECISION_AVAILABLE:
                 log_precision_fallback('sun_position', e)
     
     # Standard implementation (original code)
     return _calculate_standard_sun_position(dt)
+
+def _convert_radec_to_altaz(ra_deg: float, dec_deg: float, dt) -> tuple:
+    """Convert RA/Dec coordinates to altitude/azimuth"""
+    # Import here to avoid circular imports
+    from config.settings import OBSERVER
+    
+    # Convert to radians
+    ra_rad = math.radians(ra_deg)
+    dec_rad = math.radians(dec_deg)
+    
+    # Get local sidereal time
+    lst = calculate_lst(dt, OBSERVER.lon)
+    
+    # Calculate hour angle
+    ha = lst - ra_rad
+    
+    # Convert to local horizontal coordinates
+    lat_rad = OBSERVER.lat
+    
+    # Calculate altitude
+    sin_alt = (math.sin(dec_rad) * math.sin(lat_rad) + 
+               math.cos(dec_rad) * math.cos(lat_rad) * math.cos(ha))
+    alt = math.asin(sin_alt)
+    
+    # Calculate azimuth
+    cos_az = (math.sin(dec_rad) - math.sin(alt) * math.sin(lat_rad)) / (
+              math.cos(alt) * math.cos(lat_rad))
+    cos_az = min(1, max(-1, cos_az))  # Clamp to valid range
+    az = math.acos(cos_az)
+    
+    # Adjust azimuth for correct quadrant
+    if math.sin(ha) > 0:
+        az = 2 * math.pi - az
+    
+    return math.degrees(alt), math.degrees(az)
 
 def _calculate_standard_sun_position(dt) -> tuple:
     """Standard sun position calculation (original implementation)"""
@@ -428,7 +465,7 @@ def get_moon_phase_icon(phase):
 
 # Phase 2: Enhanced coordinate transformation and twilight functions
 
-def calculate_altaz(dt, observer_lat, observer_lon, ra, dec, precision_mode=None, include_refraction=True):
+def calculate_altaz_precise(dt, observer_lat, observer_lon, ra, dec, precision_mode=None, include_refraction=True):
     """
     Calculate altitude and azimuth coordinates with optional high precision.
     
