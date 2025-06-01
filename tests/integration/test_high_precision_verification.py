@@ -6,7 +6,8 @@ in the main astropy.py application
 
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add the astropy root directory to path (two levels up from tests/integration/)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import subprocess
 import json
@@ -26,7 +27,12 @@ def test_precision_in_astropy():
     print("-" * 30)
     
     try:
-        with open('config.json', 'r') as f:
+        # Get path to config.json in astropy root
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        astropy_root = os.path.dirname(os.path.dirname(script_dir))
+        config_path = os.path.join(astropy_root, 'config.json')
+        
+        with open(config_path, 'r') as f:
             config = json.load(f)
         
         precision_section = config.get('precision', {})
@@ -96,12 +102,19 @@ def test_precision_in_astropy():
     
     try:
         # Run astropy.py with report-only to capture timing calculations
+        # Change to astropy root directory first
+        original_cwd = os.getcwd()
+        os.chdir(astropy_root)
+        
         result = subprocess.run(
             [sys.executable, "astropy.py", "--report-only", "--date", "2025-06-15"],
             capture_output=True,
             text=True,
             timeout=30
         )
+        
+        # Restore original directory
+        os.chdir(original_cwd)
         
         if result.returncode == 0:
             output = result.stdout

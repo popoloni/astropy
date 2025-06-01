@@ -6,7 +6,11 @@ import pytest
 import json
 import tempfile
 import os
+import sys
 from datetime import datetime
+
+# Add the astropy root directory to path (two levels up from tests/precision/)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from astronomy.precision.config import (
     set_precision_mode, get_precision_mode, precision_context,

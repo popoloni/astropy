@@ -5,7 +5,8 @@ Test script to verify high-precision integration is working correctly
 
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add astropy root directory to path (two levels up from tests/integration/)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from datetime import datetime
 import pytz

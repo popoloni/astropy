@@ -4,8 +4,13 @@ Tests for high-precision astronomical calculations
 
 import pytest
 import math
+import sys
+import os
 from datetime import datetime
 import pytz
+
+# Add the astropy root directory to path (two levels up from tests/precision/)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from astronomy.precision.high_precision import (
     calculate_high_precision_lst,

@@ -6,8 +6,8 @@ Test script for mosaic integration in astropy.py
 import sys
 import os
 
-# Add current directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add astropy root directory to path (two levels up from tests/legacy/)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from astropy import (
     get_combined_catalog, get_current_datetime, get_local_timezone,

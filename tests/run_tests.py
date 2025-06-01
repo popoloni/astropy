@@ -30,7 +30,7 @@ def main():
         try:
             result = subprocess.run([
                 sys.executable, 
-                'utilities/comprehensive_test.py'
+                'tests/integration/comprehensive_test.py'
             ], check=False)
             return result.returncode
         except Exception as e:
@@ -40,7 +40,7 @@ def main():
         print("📱 Running Pythonista-compatible test suite...")
         try:
             # Import and run the Pythonista version
-            sys.path.insert(0, 'utilities')
+            sys.path.insert(0, 'tests/integration')
             import comprehensive_test_pythonista
             return comprehensive_test_pythonista.main()
         except Exception as e:

@@ -10,7 +10,9 @@ Date: 2025-06-01
 """
 
 import sys
-sys.path.insert(0, '.')
+import os
+# Add the astropy root directory to path (two levels up from tests/unit/)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import math
 from datetime import datetime
