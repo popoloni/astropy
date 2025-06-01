@@ -25,7 +25,11 @@ from .high_precision import (
     calculate_high_precision_lst,
     calculate_high_precision_sun_position,
     calculate_high_precision_moon_position,
-    calculate_high_precision_moon_phase
+    calculate_high_precision_moon_phase,
+    calculate_precise_altaz,
+    find_precise_astronomical_twilight,
+    calculate_precise_parallax_correction,
+    calculate_precise_coordinate_transformation
 )
 
 from .atmospheric import (
@@ -62,6 +66,10 @@ __all__ = [
     'calculate_high_precision_sun_position',
     'calculate_high_precision_moon_position',
     'calculate_high_precision_moon_phase',
+    'calculate_precise_altaz',
+    'find_precise_astronomical_twilight',
+    'calculate_precise_parallax_correction',
+    'calculate_precise_coordinate_transformation',
     
     # Atmospheric corrections
     'apply_atmospheric_refraction',
