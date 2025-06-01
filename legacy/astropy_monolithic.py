@@ -11,6 +11,12 @@
 # IF YOU NEED TO ADD NEW FUNCTIONALITY, ADD IT TO THE APPROPRIATE FILE
 # USE THIS FILE AS A REFERENCE TO UNDERSTAND THE CODE AND COMPARE THE RESULTS
 
+import sys
+import os
+# Add root directory to path for imports
+root_dir = os.path.join(os.path.dirname(__file__), '..')
+sys.path.insert(0, root_dir)
+
 import math
 import numpy as np
 from datetime import datetime, timedelta, timezone

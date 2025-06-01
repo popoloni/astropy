@@ -17,7 +17,10 @@ Date: 2025-06-01
 """
 
 import sys
-sys.path.insert(0, '.')
+import os
+# Add root directory to path for imports
+root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
+sys.path.insert(0, root_dir)
 
 from datetime import datetime, timedelta
 import pytz

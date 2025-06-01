@@ -28,10 +28,17 @@ def main():
     if subprocess_available:
         print("📍 Running standard feature demonstration...")
         try:
+            # Change to root directory to run the demo
+            original_dir = os.getcwd()
+            root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
+            os.chdir(root_dir)
+            
             result = subprocess.run([
                 sys.executable, 
                 'utilities/feature_demonstration.py'
             ], check=False)
+            
+            os.chdir(original_dir)
             return result.returncode
         except Exception as e:
             print(f"❌ Error running standard demo: {e}")
@@ -39,8 +46,9 @@ def main():
     else:
         print("📱 Running Pythonista-compatible demonstration...")
         try:
-            # Import and run the Pythonista version
-            sys.path.insert(0, 'utilities')
+            # Add root directory to path for imports
+            root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
+            sys.path.insert(0, os.path.join(root_dir, 'utilities'))
             import feature_demonstration_pythonista
             return feature_demonstration_pythonista.main()
         except Exception as e:

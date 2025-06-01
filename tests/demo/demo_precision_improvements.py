@@ -11,8 +11,10 @@ import math
 from datetime import datetime, timedelta
 import pytz
 
-# Add current directory to path for imports
-sys.path.insert(0, '.')
+# Add root directory to path for imports
+import os
+root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
+sys.path.insert(0, root_dir)
 
 from astronomy.celestial import calculate_lst, calculate_sun_position
 from astronomy.precision.config import set_precision_mode, precision_context
