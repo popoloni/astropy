@@ -60,6 +60,13 @@ Welcome to the comprehensive documentation for the Astronomical Observation Plan
 - **[Documentation Reorganization](development/DOCUMENTATION_REORGANIZATION.md)** - Documentation structure evolution
 - **[Phase Reports](development/phases/)** - Detailed phase-by-phase documentation
 
+### Testing Infrastructure
+- **[Test Suite Organization](../tests/README.md)** - Comprehensive test structure documentation
+- **Integration Tests** - System-wide functionality verification
+- **Unit Tests** - Component-level testing
+- **Precision Tests** - High-precision calculation validation
+- **Legacy Tests** - Backward compatibility assurance
+
 ### Phase Documentation
 - **[Phase 3 Summary](development/phases/PHASE3_SUMMARY.md)** - Models and utilities extraction
 - **[Phase 3 Fix Summary](development/phases/PHASE3_FIX_SUMMARY.md)** - Issue resolution
@@ -126,6 +133,8 @@ Welcome to the comprehensive documentation for the Astronomical Observation Plan
 ## 🔄 Documentation Maintenance
 
 ### Recent Updates
+- **2025-06**: Test suite reorganization and comprehensive test documentation
+- **2025-06**: Documentation file organization (markdown files moved to appropriate directories)
 - **2025-06**: High-precision calculations documentation added
 - **2025-06**: Comprehensive parameter testing documentation
 - **2025-01**: Complete refactoring documentation

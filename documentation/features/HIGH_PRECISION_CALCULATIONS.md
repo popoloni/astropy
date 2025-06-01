@@ -166,13 +166,13 @@ The high-precision system includes comprehensive testing:
 
 ```bash
 # Test precision integration
-python test_precision_integration.py
+python tests/integration/test_precision_integration.py
 
 # Verify all parameter combinations work
-python test_astropy_params.py
+python tests/integration/test_astropy_params.py
 
 # Performance and accuracy verification
-python test_high_precision_verification.py
+python tests/integration/test_high_precision_verification.py
 ```
 
 ### Validation Results

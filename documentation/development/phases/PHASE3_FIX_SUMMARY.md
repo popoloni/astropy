@@ -49,7 +49,7 @@ for start, end, obj in schedule:
 python astropy.py --report-only --date 2024-01-01
 
 # Complete test suite
-python run_tests.py
+cd tests && python run_tests.py
 
 # Astronomical calculations test
 python -c "from astronomy import calculate_sun_position; print('Phase 3 working!')"

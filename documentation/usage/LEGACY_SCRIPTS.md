@@ -14,9 +14,9 @@ This folder contains scripts that are no longer actively used in the main astrop
 - **Status**: Functionality integrated into main astropy.py
 - **Use case**: Reference for the original mosaic-only approach
 
-### `test_mosaic_integration.py`
+### `tests/legacy/test_mosaic_integration.py`
 - **Purpose**: Early integration test script
-- **Status**: Superseded by comprehensive_test.py in utilities/
+- **Status**: Moved to tests/legacy/ directory
 - **Use case**: Historical reference for integration testing approach
 
 ## Migration Notes
