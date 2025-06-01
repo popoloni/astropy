@@ -1,14 +1,61 @@
 """
 Celestial body calculations (sun, moon) for astronomical observations.
+
+This module provides both standard and high-precision astronomical calculations
+with configurable precision modes and graceful fallback capabilities.
 """
 
 import math
 import pytz
+import logging
+from typing import Optional, Dict, Any, Union
 from .time_utils import calculate_julian_date
 
+# Import precision modules
+try:
+    from .precision.config import should_use_high_precision, log_precision_fallback
+    from .precision.high_precision import (
+        calculate_high_precision_lst,
+        calculate_high_precision_sun_position,
+        calculate_high_precision_moon_position,
+        calculate_high_precision_moon_phase
+    )
+    from .precision.atmospheric import apply_atmospheric_refraction
+    PRECISION_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"High-precision modules not available: {e}")
+    PRECISION_AVAILABLE = False
 
-def calculate_lst(dt, observer_lon):
-    """Calculate Local Sidereal Time in radians"""
+
+def calculate_lst(dt, observer_lon: float, precision_mode: Optional[str] = None) -> float:
+    """
+    Calculate Local Sidereal Time with configurable precision
+    
+    Args:
+        dt: Datetime object (UTC)
+        observer_lon: Observer longitude in radians
+        precision_mode: Override precision mode ('standard', 'high', 'auto', None)
+        
+    Returns:
+        Local Sidereal Time in radians
+    """
+    # Try high-precision calculation if available and enabled
+    if PRECISION_AVAILABLE and should_use_high_precision(precision_mode):
+        try:
+            # Convert longitude from radians to degrees for high-precision function
+            observer_lon_deg = math.degrees(observer_lon)
+            lst_hours = calculate_high_precision_lst(dt, observer_lon_deg)
+            # Convert from hours to radians
+            return (lst_hours * 15.0 * math.pi / 180.0) % (2 * math.pi)
+        except Exception as e:
+            if PRECISION_AVAILABLE:
+                log_precision_fallback('LST', e)
+    
+    # Standard implementation (original code)
+    return _calculate_standard_lst(dt, observer_lon)
+
+def _calculate_standard_lst(dt, observer_lon: float) -> float:
+    """Standard Local Sidereal Time calculation (original implementation)"""
     if dt.tzinfo is None:
         dt = pytz.UTC.localize(dt)
     elif dt.tzinfo != pytz.UTC:
@@ -24,8 +71,31 @@ def calculate_lst(dt, observer_lon):
     return lst % (2 * math.pi)
 
 
-def calculate_sun_position(dt):
-    """Calculate Sun's position (altitude, azimuth)"""
+def calculate_sun_position(dt, precision_mode: Optional[str] = None) -> Union[tuple, Dict[str, float]]:
+    """
+    Calculate Sun's position with configurable precision
+    
+    Args:
+        dt: Datetime object (UTC)
+        precision_mode: Override precision mode ('standard', 'high', 'auto', None)
+        
+    Returns:
+        For standard mode: (altitude, azimuth) tuple in degrees
+        For high-precision mode: Dictionary with 'ra', 'dec', 'distance' keys
+    """
+    # Try high-precision calculation if available and enabled
+    if PRECISION_AVAILABLE and should_use_high_precision(precision_mode):
+        try:
+            return calculate_high_precision_sun_position(dt)
+        except Exception as e:
+            if PRECISION_AVAILABLE:
+                log_precision_fallback('sun_position', e)
+    
+    # Standard implementation (original code)
+    return _calculate_standard_sun_position(dt)
+
+def _calculate_standard_sun_position(dt) -> tuple:
+    """Standard sun position calculation (original implementation)"""
     if dt.tzinfo is None:
         dt = pytz.UTC.localize(dt)
     elif dt.tzinfo != pytz.UTC:
