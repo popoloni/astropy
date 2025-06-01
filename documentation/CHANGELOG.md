@@ -28,6 +28,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Category-based test runner** for organized test execution
 - **Comprehensive test documentation** with usage guides
 
+### Added - Multi-Night Astrophotography Planner
+- **Trajectory analysis script** moved to root directory for prominence
+- **Strategic planning capabilities** across weeks, months, quarters, and years
+- **Moon phase integration** with automatic interference calculations
+- **Mosaic opportunity analysis** for complex imaging projects
+- **Quantitative scoring system** for optimal observation period ranking
+- **High-precision integration** ensuring accurate timing predictions
+- **Enhanced documentation** highlighting the importance of multi-night planning
+
 ### Added - Documentation Organization
 - **Organized documentation structure** with logical subdirectories
 - **Feature documentation** moved to documentation/features/
@@ -46,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation structure reorganized** into features/, user-guides/, development/
 - **Markdown files organized** from root to appropriate documentation subdirectories
 - **Test execution paths updated** to reflect new organized structure
+- **Trajectory analysis script relocated** from utilities/ to root directory for prominence
+- **Import paths updated** in trajectory analysis for direct astropy module access
+- **Configuration paths corrected** for new root directory location
 
 ### Performance
 - **Minimal performance overhead** (0.6x ratio - actually faster in some cases)

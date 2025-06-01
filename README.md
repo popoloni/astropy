@@ -69,6 +69,7 @@ The system has been fully refactored into a clean, modular architecture:
 
 ```
 astropy/
+├── 🌟 trajectory_analysis.py  # Multi-night astrophotography planner
 ├── 📁 astronomy/           # Core astronomical calculations
 │   ├── calculations.py     # Position calculations, coordinate transforms
 │   ├── time_utils.py      # Time handling and timezone management
@@ -173,6 +174,53 @@ The system uses `config.json` for all settings:
   }
 }
 ```
+
+---
+
+## 🌟 **Multi-Night Astrophotography Planner**
+
+The **trajectory analysis script** is a powerful standalone tool for strategic astrophotography planning across weeks, months, quarters, or entire years. This script helps you identify the optimal times to photograph celestial objects by analyzing:
+
+- **Visibility Windows**: When objects are optimally positioned
+- **Moon Conditions**: Lunar interference and dark sky periods  
+- **Mosaic Opportunities**: Complex imaging projects requiring multiple panels
+- **Seasonal Trends**: Best months for specific targets
+
+### **Key Features**
+- 🗓️ **Multi-timeframe Analysis**: Weekly, monthly, quarterly, or yearly planning
+- 🌙 **Moon Phase Integration**: Automatic moon interference calculations
+- 🧩 **Mosaic Planning**: Identifies objects requiring multi-panel imaging
+- 📊 **Scoring System**: Quantitative ranking of optimal observation periods
+- 📈 **Visual Analytics**: Comprehensive charts and trend analysis
+
+### **Quick Start**
+```bash
+# Analyze current month for optimal photography nights
+python trajectory_analysis.py --month $(date +%m)
+
+# Plan entire year for strategic scheduling
+python trajectory_analysis.py --year
+
+# Focus on specific season (e.g., summer targets)
+python trajectory_analysis.py --quarter Q3
+
+# Fast analysis without plots
+python trajectory_analysis.py --month 10 --no-plots
+```
+
+### **Understanding the Output**
+- **Weekly Scores**: Higher scores indicate better conditions (>200 = excellent)
+- **Moon-Free Objects**: Targets with minimal lunar interference (🌑)
+- **Mosaic Groups**: Objects requiring or benefiting from multi-panel imaging
+- **Best Week Identification**: Optimal periods highlighted with detailed recommendations
+
+### **Strategic Planning Workflow**
+1. **Annual Overview**: Run yearly analysis to identify seasonal patterns
+2. **Quarterly Focus**: Drill down into specific seasons for detailed planning
+3. **Monthly Execution**: Use monthly analysis for weekly session planning
+4. **Target Prioritization**: Focus on objects with limited opportunities first
+
+> 💡 **Pro Tip**: The trajectory analysis integrates seamlessly with the high-precision calculation system, ensuring accurate predictions for optimal astrophotography timing.
 
 ---
 
@@ -301,7 +349,7 @@ Comprehensive documentation is available in the `documentation/` folder:
 
 ### **Quick References**
 - **[Quick Start Guide](documentation/usage/QUICK_START.md)** - Get up and running fast
-- **[Trajectory Analysis](documentation/usage/trajectory_analysis_quick_reference.md)** - Understanding the plots
+- **🌟 [Trajectory Analysis Guide](documentation/user-guides/trajectory_analysis_quick_reference.md)** - Multi-night planning strategies
 - **[Configuration Guide](documentation/usage/README.md)** - Detailed setup instructions
 
 ---
