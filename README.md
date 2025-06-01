@@ -179,19 +179,29 @@ The system uses `config.json` for all settings:
 
 ## 🌟 **Multi-Night Astrophotography Planner**
 
-The **trajectory analysis script** is a powerful standalone tool for strategic astrophotography planning across weeks, months, quarters, or entire years. This script helps you identify the optimal times to photograph celestial objects by analyzing:
+The **trajectory analysis script** (`trajectory_analysis.py`) is the **flagship tool** for strategic astrophotography planning across weeks, months, quarters, or entire years. This comprehensive planner is essential for serious astrophotographers who want to maximize their imaging success by analyzing:
 
-- **Visibility Windows**: When objects are optimally positioned
-- **Moon Conditions**: Lunar interference and dark sky periods  
+- **Visibility Windows**: When objects are optimally positioned for imaging
+- **Moon Conditions**: Lunar interference and dark sky periods for deep-sky work
 - **Mosaic Opportunities**: Complex imaging projects requiring multiple panels
-- **Seasonal Trends**: Best months for specific targets
+- **Seasonal Trends**: Best months for specific targets throughout the year
+- **High-Precision Calculations**: Enhanced accuracy for critical timing decisions
+
+### **🎯 Why This Tool is Essential**
+- **Maximize Success Rate**: Identify optimal conditions before heading out
+- **Strategic Planning**: Plan entire seasons of astrophotography targets
+- **Time Efficiency**: Focus on the best nights for each object type
+- **Equipment Optimization**: Plan mosaic projects requiring multiple sessions
+- **Weather Backup**: Have multiple target options for any given night
 
 ### **Key Features**
 - 🗓️ **Multi-timeframe Analysis**: Weekly, monthly, quarterly, or yearly planning
-- 🌙 **Moon Phase Integration**: Automatic moon interference calculations
-- 🧩 **Mosaic Planning**: Identifies objects requiring multi-panel imaging
-- 📊 **Scoring System**: Quantitative ranking of optimal observation periods
-- 📈 **Visual Analytics**: Comprehensive charts and trend analysis
+- 🌙 **Moon Phase Integration**: Automatic moon interference calculations with precision timing
+- 🧩 **Advanced Mosaic Planning**: Identifies objects requiring multi-panel imaging with FOV optimization
+- 📊 **Intelligent Scoring System**: Quantitative ranking of optimal observation periods
+- 📈 **Visual Analytics**: Comprehensive charts and trend analysis with detailed statistics
+- ⚡ **High-Precision Mode**: Enhanced astronomical calculations for critical accuracy
+- 🎯 **Smart Recommendations**: Prioritized target lists with difficulty ratings
 
 ### **Quick Start**
 ```bash
@@ -203,6 +213,12 @@ python trajectory_analysis.py --year
 
 # Focus on specific season (e.g., summer targets)
 python trajectory_analysis.py --quarter Q3
+
+# Enable high-precision calculations for critical accuracy
+python trajectory_analysis.py --month 6 --high-precision
+
+# Check precision capabilities
+python trajectory_analysis.py --precision-info
 
 # Fast analysis without plots
 python trajectory_analysis.py --month 10 --no-plots

@@ -100,10 +100,7 @@ def calculate_moon_position(date, hour_offset=0):
         try:
             # Use high precision moon position calculation
             adjusted_date = date + timedelta(hours=hour_offset)
-            # Get location from config
-            observer_lat = DEFAULT_LOCATION.get('latitude', 40.7128)
-            observer_lon = DEFAULT_LOCATION.get('longitude', -74.0060)
-            moon_data = calculate_high_precision_moon_position(adjusted_date, observer_lat, observer_lon)
+            moon_data = calculate_high_precision_moon_position(adjusted_date)
             return moon_data['ra'], moon_data['dec']
         except Exception as e:
             print(f"High precision moon position failed, using standard: {e}")
@@ -417,9 +414,11 @@ def analyze_weekly_conditions(objects, week_date):
             # Get location from config
             observer_lat = DEFAULT_LOCATION.get('latitude', 40.7128)
             observer_lon = DEFAULT_LOCATION.get('longitude', -74.0060)
-            twilight_data = find_precise_astronomical_twilight(week_date, observer_lat, observer_lon)
-            twilight_evening = twilight_data['evening']
-            twilight_morning = twilight_data['morning']
+            # Calculate evening and morning twilight separately
+            twilight_evening = find_precise_astronomical_twilight(week_date, observer_lat, observer_lon, 'astronomical', 'sunset')
+            # For morning twilight, use next day
+            next_day = week_date + timedelta(days=1)
+            twilight_morning = find_precise_astronomical_twilight(next_day, observer_lat, observer_lon, 'astronomical', 'sunrise')
         except Exception as e:
             print(f"High precision twilight failed, using standard: {e}")
             twilight_evening, twilight_morning = find_astronomical_twilight(week_date)
