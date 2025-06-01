@@ -18,6 +18,7 @@ Welcome to the comprehensive documentation for the Astronomical Observation Plan
 - **[Comprehensive Trajectory Documentation](usage/trajectory_analysis_documentation.md)** - Complete trajectory analysis guide
 
 ### Feature Guides
+- **[High-Precision Calculations](HIGH_PRECISION_CALCULATIONS.md)** - Advanced astronomical calculation system
 - **[Recent Updates](usage/RECENT_UPDATES.md)** - Latest features and improvements
 - **[Documentation Reorganization](usage/DOCUMENTATION_REORGANIZATION.md)** - Documentation structure changes
 
@@ -73,6 +74,7 @@ Welcome to the comprehensive documentation for the Astronomical Observation Plan
 ## 🎯 Specialized Topics
 
 ### Advanced Features
+- **[High-Precision Calculations](HIGH_PRECISION_CALCULATIONS.md)** - VSOP87/ELP2000 implementation
 - **Mosaic Analysis** - Multi-object imaging planning
 - **Time Simulation** - Testing with simulated time
 - **Scheduling Strategies** - Optimization algorithms
@@ -110,15 +112,19 @@ Welcome to the comprehensive documentation for the Astronomical Observation Plan
 | Category | Documents | Status |
 |----------|-----------|--------|
 | **Usage Guides** | 6 | ✅ Complete |
+| **Feature Guides** | 3 | ✅ Complete |
 | **Architecture** | 1 | ✅ Complete |
 | **API Reference** | 7 modules | 🔄 In Progress |
 | **Development** | 7 | ✅ Complete |
 | **Phase Reports** | 6 | ✅ Complete |
-| **Total** | 27+ | 🎯 Comprehensive |
+| **High-Precision** | 1 | ✅ Complete |
+| **Total** | 31+ | 🎯 Comprehensive |
 
 ## 🔄 Documentation Maintenance
 
 ### Recent Updates
+- **2025-06**: High-precision calculations documentation added
+- **2025-06**: Comprehensive parameter testing documentation
 - **2025-01**: Complete refactoring documentation
 - **2025-01**: Architecture documentation created
 - **2025-01**: Documentation reorganization completed
