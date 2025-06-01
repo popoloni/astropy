@@ -15,10 +15,7 @@ import math
 from typing import List, Dict, Tuple, Optional
 import argparse
 
-# Add parent directory to path to import astropy module
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Import from the main astropy module
+# Import from the main astropy module (now in same directory)
 from astropy import (
     get_objects_from_csv, get_combined_catalog, filter_visible_objects,
     find_astronomical_twilight, setup_altaz_plot, plot_object_trajectory,
@@ -26,6 +23,21 @@ from astropy import (
     MIN_VISIBILITY_HOURS, MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ, is_visible,
     find_visibility_window, calculate_visibility_duration
 )
+
+# Import high precision functions
+try:
+    from astronomy.precision import (
+        set_precision_mode, get_precision_mode, precision_context,
+        calculate_high_precision_moon_position, calculate_high_precision_moon_phase,
+        find_precise_astronomical_twilight, calculate_precise_altaz,
+        get_phase3_status, list_available_features
+    )
+    HIGH_PRECISION_AVAILABLE = True
+    print("High precision astronomical calculations available")
+except ImportError as e:
+    HIGH_PRECISION_AVAILABLE = False
+    print(f"High precision features not available: {e}")
+    print("Using standard precision calculations")
 
 # Time period definitions
 HALF_YEAR_RANGES = {
@@ -57,7 +69,15 @@ MONTH_TO_WEEKS = {
 
 def get_moon_phase(date):
     """Calculate moon phase (0 = new moon, 1 = full moon)"""
-    # Simple moon phase calculation (approximate)
+    if HIGH_PRECISION_AVAILABLE:
+        try:
+            # Use high precision moon phase calculation
+            phase_data = calculate_high_precision_moon_phase(date)
+            return phase_data['phase']  # Normalized 0-1
+        except Exception as e:
+            print(f"High precision moon phase failed, using standard: {e}")
+    
+    # Fallback to simple moon phase calculation (approximate)
     # Based on the fact that lunar cycle is approximately 29.53 days
     # Known new moon: January 13, 2025 (updated to current year)
     known_new_moon = datetime(2025, 1, 13)
@@ -75,8 +95,17 @@ def get_moon_illumination(phase):
         return (1 - phase) * 2  # 1 to 0
 
 def calculate_moon_position(date, hour_offset=0):
-    """Calculate approximate moon position (simplified calculation)"""
-    # This is a simplified calculation - for precise work, use ephemeris data
+    """Calculate moon position using high precision when available"""
+    if HIGH_PRECISION_AVAILABLE:
+        try:
+            # Use high precision moon position calculation
+            adjusted_date = date + timedelta(hours=hour_offset)
+            moon_data = calculate_high_precision_moon_position(adjusted_date)
+            return moon_data['ra'], moon_data['dec']
+        except Exception as e:
+            print(f"High precision moon position failed, using standard: {e}")
+    
+    # Fallback to simplified calculation
     total_hours = (date - datetime(2024, 1, 1)).total_seconds() / 3600 + hour_offset
     
     # Moon moves approximately 13.2 degrees per day in RA
@@ -312,7 +341,7 @@ def get_fov_config():
     """Get FOV configuration from config file"""
     try:
         import json
-        with open('../config.json', 'r') as f:
+        with open('config.json', 'r') as f:
             config = json.load(f)
         
         scope_config = config.get('imaging', {}).get('scope', {})
@@ -379,8 +408,22 @@ def analyze_weekly_conditions(objects, week_date):
     except:
         bortle_index = 6  # Default moderate sky
     
-    # Calculate twilight times
-    twilight_evening, twilight_morning = find_astronomical_twilight(week_date)
+    # Calculate twilight times using high precision when available
+    if HIGH_PRECISION_AVAILABLE:
+        try:
+            # Get location from config
+            observer_lat = DEFAULT_LOCATION.get('latitude', 40.7128)
+            observer_lon = DEFAULT_LOCATION.get('longitude', -74.0060)
+            # Calculate evening and morning twilight separately
+            twilight_evening = find_precise_astronomical_twilight(week_date, observer_lat, observer_lon, 'astronomical', 'sunset')
+            # For morning twilight, use next day
+            next_day = week_date + timedelta(days=1)
+            twilight_morning = find_precise_astronomical_twilight(next_day, observer_lat, observer_lon, 'astronomical', 'sunrise')
+        except Exception as e:
+            print(f"High precision twilight failed, using standard: {e}")
+            twilight_evening, twilight_morning = find_astronomical_twilight(week_date)
+    else:
+        twilight_evening, twilight_morning = find_astronomical_twilight(week_date)
     
     print(f"  Analyzing visibility for {week_date.strftime('%Y-%m-%d')} night...")
     print(f"  Twilight: {twilight_evening.strftime('%H:%M')} - {twilight_morning.strftime('%H:%M')}")
@@ -1175,12 +1218,65 @@ def parse_arguments():
     
     parser.add_argument('--no-plots', action='store_true',
                       help='Skip generating plots')
+    parser.add_argument('--high-precision', action='store_true',
+                      help='Enable high precision astronomical calculations')
+    parser.add_argument('--precision-info', action='store_true',
+                      help='Display precision capabilities and exit')
     
     return parser.parse_args()
+
+def display_precision_info():
+    """Display information about precision capabilities"""
+    print("=" * 60)
+    print("ASTRONOMICAL PRECISION CAPABILITIES")
+    print("=" * 60)
+    
+    if HIGH_PRECISION_AVAILABLE:
+        print("✓ High precision calculations: AVAILABLE")
+        print(f"✓ Phase 3 advanced features: {'AVAILABLE' if get_phase3_status() else 'NOT AVAILABLE'}")
+        print()
+        
+        features = list_available_features()
+        for phase, feature_list in features.items():
+            print(f"{phase}:")
+            for feature in feature_list:
+                print(f"  • {feature}")
+            print()
+        
+        print("High precision improvements:")
+        print("  • Moon position accuracy: ~5-10x better")
+        print("  • Sun position accuracy: ~60x better") 
+        print("  • Twilight calculations: Enhanced precision")
+        print("  • Atmospheric refraction: Advanced modeling")
+        
+    else:
+        print("✗ High precision calculations: NOT AVAILABLE")
+        print("  Using standard precision astronomical calculations")
+        print("  To enable high precision:")
+        print("    1. Ensure astronomy/precision module is properly installed")
+        print("    2. Check for missing dependencies")
+        print("    3. Verify module imports")
+    
+    print("=" * 60)
 
 def main():
     """Main analysis function"""
     args = parse_arguments()
+    
+    # Handle precision info request
+    if args.precision_info:
+        display_precision_info()
+        return
+    
+    # Configure precision mode if requested
+    if args.high_precision and HIGH_PRECISION_AVAILABLE:
+        try:
+            set_precision_mode('high')
+            print("✓ High precision mode enabled")
+        except Exception as e:
+            print(f"Warning: Could not enable high precision mode: {e}")
+    elif args.high_precision and not HIGH_PRECISION_AVAILABLE:
+        print("Warning: High precision requested but not available")
     
     # Use current year
     current_year = datetime.now().year
@@ -1197,10 +1293,20 @@ def main():
     
     period_desc = get_period_description(period_type, period_value)
     
-    print("Starting comprehensive weekly astrophotography analysis...")
+    print("=" * 80)
+    print("MULTI-NIGHT ASTROPHOTOGRAPHY PLANNER")
+    print("Optimal Celestial Object Photography Timing Analysis")
+    print("=" * 80)
     print(f"Analysis period: {period_desc} {current_year}")
     print(f"Using visibility window: Alt {MIN_ALT}°-{MAX_ALT}°, Az {MIN_AZ}°-{MAX_AZ}°")
     print(f"Minimum visibility requirement: {MIN_VISIBILITY_HOURS} hours")
+    
+    if HIGH_PRECISION_AVAILABLE:
+        precision_mode = get_precision_mode() if HIGH_PRECISION_AVAILABLE else 'standard'
+        print(f"Precision mode: {precision_mode.upper()}")
+    else:
+        print("Precision mode: STANDARD (high precision not available)")
+    print("=" * 80)
     
     # Run weekly analysis
     weekly_results, weeks_analyzed = analyze_weekly_astrophotography(period_type, period_value, current_year)

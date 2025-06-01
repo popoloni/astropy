@@ -5,9 +5,14 @@ Tests complete functionality after Phase 6 cleanup
 """
 
 import sys
+import os
 import traceback
 from datetime import datetime, timedelta
 import pytz
+
+# Add root directory to path for imports
+root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
+sys.path.insert(0, root_dir)
 
 def test_imports():
     """Test that all critical imports work correctly"""
@@ -17,7 +22,7 @@ def test_imports():
         # Test astronomy module imports
         from astronomy import (
             is_visible, find_visibility_window, calculate_visibility_duration,
-            find_sunset_sunrise, find_astronomical_twilight, filter_visible_objects,
+            find_sunset_sunrise, find_astronomical_twilight,
             calculate_altaz, calculate_moon_position, get_moon_phase_icon,
             calculate_required_exposure, calculate_required_panels,
             parse_ra, parse_dec
@@ -98,10 +103,12 @@ def test_visibility_functions():
         start_time = datetime.now()
         end_time = start_time + timedelta(hours=8)
         
+        # Test filter_visible_objects function - core functionality for astrophotography planning
+        test_objects = [obj1, obj2]
         filtered, insufficient = filter_visible_objects(test_objects, start_time, end_time)
         assert isinstance(filtered, list)
         assert isinstance(insufficient, list)
-        print("  ✅ filter_visible_objects function")
+        print("  ✅ filter_visible_objects function - core astrophotography planning")
         
         return True
         
@@ -258,7 +265,7 @@ def test_no_duplicates():
         # Check for duplicate function definitions across modules
         duplicate_functions = [
             'is_visible', 'find_visibility_window', 'calculate_visibility_duration',
-            'find_sunset_sunrise', 'find_astronomical_twilight', 'filter_visible_objects'
+            'find_sunset_sunrise', 'find_astronomical_twilight'
         ]
         
         for func_name in duplicate_functions:

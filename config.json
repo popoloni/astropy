@@ -93,9 +93,9 @@
         "exclude_insufficient_time": true
     },
     "precision": {
-        "use_high_precision": false,
+        "use_high_precision": true,
         "atmospheric_refraction": true,
-        "parallax_correction": false,
+        "parallax_correction": true,
         "cache_calculations": true
     },
     "ios": {

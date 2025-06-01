@@ -1,14 +1,67 @@
 """
 Celestial body calculations (sun, moon) for astronomical observations.
+
+This module provides both standard and high-precision astronomical calculations
+with configurable precision modes and graceful fallback capabilities.
 """
 
 import math
 import pytz
+import logging
+from typing import Optional, Dict, Any, Union
 from .time_utils import calculate_julian_date
 
+# Import precision modules
+try:
+    from .precision.config import should_use_high_precision, log_precision_fallback
+    
+    def _get_effective_precision_mode(precision_mode):
+        """Get the effective precision mode based on configuration and request"""
+        if precision_mode == 'auto' or precision_mode is None:
+            return 'high' if should_use_high_precision() else 'standard'
+        return precision_mode
+    from .precision.high_precision import (
+        calculate_high_precision_lst,
+        calculate_high_precision_sun_position,
+        calculate_high_precision_moon_position,
+        calculate_high_precision_moon_phase
+    )
+    from .precision.atmospheric import apply_atmospheric_refraction
+    PRECISION_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"High-precision modules not available: {e}")
+    PRECISION_AVAILABLE = False
 
-def calculate_lst(dt, observer_lon):
-    """Calculate Local Sidereal Time in radians"""
+
+def calculate_lst(dt, observer_lon: float, precision_mode: Optional[str] = None) -> float:
+    """
+    Calculate Local Sidereal Time with configurable precision
+    
+    Args:
+        dt: Datetime object (UTC)
+        observer_lon: Observer longitude in radians
+        precision_mode: Override precision mode ('standard', 'high', 'auto', None)
+        
+    Returns:
+        Local Sidereal Time in radians
+    """
+    # Try high-precision calculation if available and enabled
+    if PRECISION_AVAILABLE and should_use_high_precision(precision_mode):
+        try:
+            # Convert longitude from radians to degrees for high-precision function
+            observer_lon_deg = math.degrees(observer_lon)
+            lst_hours = calculate_high_precision_lst(dt, observer_lon_deg)
+            # Convert from hours to radians
+            return (lst_hours * 15.0 * math.pi / 180.0) % (2 * math.pi)
+        except Exception as e:
+            if PRECISION_AVAILABLE:
+                log_precision_fallback('LST', e)
+    
+    # Standard implementation (original code)
+    return _calculate_standard_lst(dt, observer_lon)
+
+def _calculate_standard_lst(dt, observer_lon: float) -> float:
+    """Standard Local Sidereal Time calculation (original implementation)"""
     if dt.tzinfo is None:
         dt = pytz.UTC.localize(dt)
     elif dt.tzinfo != pytz.UTC:
@@ -24,8 +77,68 @@ def calculate_lst(dt, observer_lon):
     return lst % (2 * math.pi)
 
 
-def calculate_sun_position(dt):
-    """Calculate Sun's position (altitude, azimuth)"""
+def calculate_sun_position(dt, precision_mode: Optional[str] = None) -> tuple:
+    """
+    Calculate Sun's position with configurable precision
+    
+    Args:
+        dt: Datetime object (UTC)
+        precision_mode: Override precision mode ('standard', 'high', 'auto', None)
+        
+    Returns:
+        (altitude, azimuth) tuple in degrees
+    """
+    # Try high-precision calculation if available and enabled
+    if PRECISION_AVAILABLE and should_use_high_precision(precision_mode):
+        try:
+            # Get high-precision RA/Dec coordinates
+            sun_coords = calculate_high_precision_sun_position(dt)
+            # Convert to alt/az for backward compatibility
+            return _convert_radec_to_altaz(sun_coords['ra'], sun_coords['dec'], dt)
+        except Exception as e:
+            if PRECISION_AVAILABLE:
+                log_precision_fallback('sun_position', e)
+    
+    # Standard implementation (original code)
+    return _calculate_standard_sun_position(dt)
+
+def _convert_radec_to_altaz(ra_deg: float, dec_deg: float, dt) -> tuple:
+    """Convert RA/Dec coordinates to altitude/azimuth"""
+    # Import here to avoid circular imports
+    from config.settings import OBSERVER
+    
+    # Convert to radians
+    ra_rad = math.radians(ra_deg)
+    dec_rad = math.radians(dec_deg)
+    
+    # Get local sidereal time
+    lst = calculate_lst(dt, OBSERVER.lon)
+    
+    # Calculate hour angle
+    ha = lst - ra_rad
+    
+    # Convert to local horizontal coordinates
+    lat_rad = OBSERVER.lat
+    
+    # Calculate altitude
+    sin_alt = (math.sin(dec_rad) * math.sin(lat_rad) + 
+               math.cos(dec_rad) * math.cos(lat_rad) * math.cos(ha))
+    alt = math.asin(sin_alt)
+    
+    # Calculate azimuth
+    cos_az = (math.sin(dec_rad) - math.sin(alt) * math.sin(lat_rad)) / (
+              math.cos(alt) * math.cos(lat_rad))
+    cos_az = min(1, max(-1, cos_az))  # Clamp to valid range
+    az = math.acos(cos_az)
+    
+    # Adjust azimuth for correct quadrant
+    if math.sin(ha) > 0:
+        az = 2 * math.pi - az
+    
+    return math.degrees(alt), math.degrees(az)
+
+def _calculate_standard_sun_position(dt) -> tuple:
+    """Standard sun position calculation (original implementation)"""
     if dt.tzinfo is None:
         dt = pytz.UTC.localize(dt)
     elif dt.tzinfo != pytz.UTC:
@@ -347,4 +460,207 @@ def get_moon_phase_icon(phase):
     elif phase < 0.8125:
         return "🌗", "Last Quarter"
     else:
-        return "🌘", "Waning Crescent" 
+        return "🌘", "Waning Crescent"
+
+
+# Phase 2: Enhanced coordinate transformation and twilight functions
+
+def calculate_altaz_precise(dt, observer_lat, observer_lon, ra, dec, precision_mode=None, include_refraction=True):
+    """
+    Calculate altitude and azimuth coordinates with optional high precision.
+    
+    This function provides coordinate transformation from equatorial (RA/Dec) to 
+    horizontal (Alt/Az) coordinates with configurable precision and atmospheric corrections.
+    
+    Args:
+        dt: UTC datetime for the observation
+        observer_lat: Observer latitude in radians
+        observer_lon: Observer longitude in radians
+        ra: Right ascension in radians
+        dec: Declination in radians
+        precision_mode: Optional precision mode ('standard', 'high', 'auto')
+        include_refraction: Whether to apply atmospheric refraction corrections
+        
+    Returns:
+        Dictionary with altitude/azimuth coordinates or tuple for standard mode
+    """
+    # Determine effective precision mode
+    effective_mode = _get_effective_precision_mode(precision_mode)
+    
+    if effective_mode == 'high':
+        try:
+            from .precision.high_precision import calculate_precise_altaz
+            return calculate_precise_altaz(dt, observer_lat, observer_lon, ra, dec, include_refraction)
+        except ImportError as e:
+            logger.warning("High-precision modules not available: %s", e)
+            # Fall back to standard calculation
+    
+    # Standard calculation (simplified)
+    lst = calculate_lst(dt, observer_lon, precision_mode='standard')
+    hour_angle = lst - ra
+    
+    # Basic spherical trigonometry
+    sin_alt = (math.sin(dec) * math.sin(observer_lat) + 
+               math.cos(dec) * math.cos(observer_lat) * math.cos(hour_angle))
+    altitude = math.asin(max(-1.0, min(1.0, sin_alt)))
+    
+    cos_alt = math.cos(altitude)
+    if abs(cos_alt) < 1e-10:
+        azimuth = 0.0
+    else:
+        sin_az = -math.sin(hour_angle) * math.cos(dec) / cos_alt
+        cos_az = (math.sin(dec) - math.sin(altitude) * math.sin(observer_lat)) / (cos_alt * math.cos(observer_lat))
+        azimuth = math.atan2(sin_az, cos_az)
+        azimuth = azimuth % (2 * math.pi)
+    
+    # Apply basic atmospheric refraction if requested
+    if include_refraction and altitude > math.radians(-1.0):
+        # Simple refraction approximation
+        altitude_deg = math.degrees(altitude)
+        if altitude_deg > 5:
+            refraction_arcmin = 1.02 / math.tan(math.radians(altitude_deg + 10.3/(altitude_deg + 5.11)))
+            altitude += math.radians(refraction_arcmin / 60.0)
+    
+    return {
+        'altitude': altitude,
+        'azimuth': azimuth,
+        'altitude_geometric': altitude,
+        'hour_angle': hour_angle
+    }
+
+
+def find_twilight(dt, observer_lat, observer_lon, twilight_type='civil', event_type='sunset', precision_mode=None):
+    """
+    Find twilight times with optional high precision.
+    
+    This function calculates twilight times using either standard approximations
+    or high-precision Newton's method depending on the precision mode.
+    
+    Args:
+        dt: Date for twilight calculation (time component ignored)
+        observer_lat: Observer latitude in radians
+        observer_lon: Observer longitude in radians
+        twilight_type: Type of twilight ('civil', 'nautical', 'astronomical')
+        event_type: Type of event ('sunset', 'sunrise', 'dusk', 'dawn')
+        precision_mode: Optional precision mode ('standard', 'high', 'auto')
+        
+    Returns:
+        UTC datetime of the twilight event
+    """
+    # Determine effective precision mode
+    effective_mode = _get_effective_precision_mode(precision_mode)
+    
+    if effective_mode == 'high':
+        try:
+            from .precision.high_precision import find_precise_astronomical_twilight
+            return find_precise_astronomical_twilight(dt, observer_lat, observer_lon, twilight_type, event_type)
+        except ImportError as e:
+            logger.warning("High-precision modules not available: %s", e)
+            # Fall back to standard calculation
+    
+    # Standard twilight calculation (simplified approximation)
+    from datetime import timedelta
+    
+    twilight_angles = {
+        'civil': -6.0,
+        'nautical': -12.0,
+        'astronomical': -18.0
+    }
+    
+    if twilight_type not in twilight_angles:
+        raise ValueError(f"Invalid twilight type: {twilight_type}")
+    
+    # Simple approximation - this is much less accurate than the high-precision version
+    base_date = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    if event_type in ['sunset', 'dusk']:
+        # Approximate sunset time
+        approx_time = base_date.replace(hour=18)
+        # Add offset for twilight type
+        offset_hours = abs(twilight_angles[twilight_type]) / 15.0  # Rough approximation
+        return approx_time + timedelta(hours=offset_hours)
+    elif event_type in ['sunrise', 'dawn']:
+        # Approximate sunrise time
+        approx_time = base_date.replace(hour=6)
+        # Subtract offset for twilight type
+        offset_hours = abs(twilight_angles[twilight_type]) / 15.0  # Rough approximation
+        return approx_time - timedelta(hours=offset_hours)
+    else:
+        raise ValueError(f"Invalid event type: {event_type}")
+
+
+def transform_coordinates(dt, observer_lat, observer_lon, input_coords, input_system, output_system, 
+                         precision_mode=None, include_corrections=True):
+    """
+    Transform between different astronomical coordinate systems with optional high precision.
+    
+    This function provides coordinate transformations between equatorial, horizontal,
+    and other coordinate systems with configurable precision and corrections.
+    
+    Args:
+        dt: UTC datetime for the transformation
+        observer_lat: Observer latitude in radians
+        observer_lon: Observer longitude in radians
+        input_coords: Input coordinates dictionary
+        input_system: Input coordinate system ('equatorial', 'horizontal', 'ecliptic')
+        output_system: Output coordinate system ('equatorial', 'horizontal', 'ecliptic')
+        precision_mode: Optional precision mode ('standard', 'high', 'auto')
+        include_corrections: Whether to include atmospheric refraction and parallax
+        
+    Returns:
+        Dictionary with transformed coordinates
+    """
+    # Determine effective precision mode
+    effective_mode = _get_effective_precision_mode(precision_mode)
+    
+    if effective_mode == 'high':
+        try:
+            from .precision.high_precision import calculate_precise_coordinate_transformation
+            return calculate_precise_coordinate_transformation(
+                dt, observer_lat, observer_lon, input_coords, input_system, output_system, include_corrections
+            )
+        except ImportError as e:
+            logger.warning("High-precision modules not available: %s", e)
+            # Fall back to standard calculation
+    
+    # Standard coordinate transformation (basic implementation)
+    if input_system == output_system:
+        return input_coords.copy()
+    
+    if input_system == 'equatorial' and output_system == 'horizontal':
+        ra = input_coords['ra']
+        dec = input_coords['dec']
+        return calculate_altaz(dt, observer_lat, observer_lon, ra, dec, 
+                             precision_mode='standard', include_refraction=include_corrections)
+    
+    elif input_system == 'horizontal' and output_system == 'equatorial':
+        # Basic horizontal to equatorial transformation
+        altitude = input_coords['altitude']
+        azimuth = input_coords['azimuth']
+        
+        lst = calculate_lst(dt, observer_lon, precision_mode='standard')
+        
+        # Basic spherical trigonometry (reverse transformation)
+        sin_dec = (math.sin(altitude) * math.sin(observer_lat) + 
+                  math.cos(altitude) * math.cos(observer_lat) * math.cos(azimuth))
+        dec = math.asin(max(-1.0, min(1.0, sin_dec)))
+        
+        cos_dec = math.cos(dec)
+        if abs(cos_dec) < 1e-10:
+            hour_angle = 0.0
+        else:
+            sin_ha = -math.sin(azimuth) * math.cos(altitude) / cos_dec
+            cos_ha = (math.sin(altitude) - math.sin(dec) * math.sin(observer_lat)) / (cos_dec * math.cos(observer_lat))
+            hour_angle = math.atan2(sin_ha, cos_ha)
+        
+        ra = lst - hour_angle
+        ra = ra % (2 * math.pi)
+        
+        return {
+            'ra': ra,
+            'dec': dec,
+            'hour_angle': hour_angle
+        }
+    
+    else:
+        raise ValueError(f"Transformation from {input_system} to {output_system} not implemented in standard mode") 

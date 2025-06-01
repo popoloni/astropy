@@ -5,21 +5,24 @@ Welcome to the comprehensive documentation for the Astronomical Observation Plan
 ## 🚀 Quick Start
 
 **New to the system?** Start here:
-- **[Quick Start Guide](usage/QUICK_START.md)** - Get up and running in minutes
+- **[Quick Start Guide](user-guides/QUICK_START.md)** - Get up and running in minutes
 - **[Main README](../README.md)** - Project overview and features
 - **[Configuration Guide](usage/README.md)** - Setup and configuration
 
 ## 📖 User Documentation
 
-### Usage Guides
-- **[Quick Start Guide](usage/QUICK_START.md)** - Getting started quickly
+### User Guides
+- **[Quick Start Guide](user-guides/QUICK_START.md)** - Getting started quickly
 - **[Configuration Guide](usage/README.md)** - Detailed setup instructions
-- **[Trajectory Analysis Quick Reference](usage/trajectory_analysis_quick_reference.md)** - Understanding trajectory plots
-- **[Comprehensive Trajectory Documentation](usage/trajectory_analysis_documentation.md)** - Complete trajectory analysis guide
+- **[Trajectory Analysis Quick Reference](user-guides/trajectory_analysis_quick_reference.md)** - Understanding trajectory plots
+- **[Advanced Trajectory Documentation](user-guides/advanced/trajectory_analysis_documentation.md)** - Complete trajectory analysis guide
+- **[Mosaic Features Summary](user-guides/MOSAIC_FEATURES_SUMMARY.md)** - Mosaic imaging capabilities
+- **[Pythonista README](user-guides/README_PYTHONISTA.md)** - iOS/Pythonista compatibility
+- **[Wrappers Guide](user-guides/WRAPPERS_GUIDE.md)** - Using wrapper scripts
 
 ### Feature Guides
-- **[Recent Updates](usage/RECENT_UPDATES.md)** - Latest features and improvements
-- **[Documentation Reorganization](usage/DOCUMENTATION_REORGANIZATION.md)** - Documentation structure changes
+- **[High-Precision Calculations](features/HIGH_PRECISION_CALCULATIONS.md)** - Advanced astronomical calculation system
+- **[Recent Updates](features/RECENT_UPDATES.md)** - Latest features and improvements
 
 ## 🏗️ Architecture Documentation
 
@@ -54,7 +57,15 @@ Welcome to the comprehensive documentation for the Astronomical Observation Plan
 
 ### Refactoring History
 - **[Complete Refactoring Summary](development/REFACTORING_COMPLETE_SUMMARY.md)** - Comprehensive overview of all 6 phases
+- **[Documentation Reorganization](development/DOCUMENTATION_REORGANIZATION.md)** - Documentation structure evolution
 - **[Phase Reports](development/phases/)** - Detailed phase-by-phase documentation
+
+### Testing Infrastructure
+- **[Test Suite Organization](../tests/README.md)** - Comprehensive test structure documentation
+- **Integration Tests** - System-wide functionality verification
+- **Unit Tests** - Component-level testing
+- **Precision Tests** - High-precision calculation validation
+- **Legacy Tests** - Backward compatibility assurance
 
 ### Phase Documentation
 - **[Phase 3 Summary](development/phases/PHASE3_SUMMARY.md)** - Models and utilities extraction
@@ -73,6 +84,7 @@ Welcome to the comprehensive documentation for the Astronomical Observation Plan
 ## 🎯 Specialized Topics
 
 ### Advanced Features
+- **[High-Precision Calculations](features/HIGH_PRECISION_CALCULATIONS.md)** - VSOP87/ELP2000 implementation
 - **Mosaic Analysis** - Multi-object imaging planning
 - **Time Simulation** - Testing with simulated time
 - **Scheduling Strategies** - Optimization algorithms
@@ -110,15 +122,21 @@ Welcome to the comprehensive documentation for the Astronomical Observation Plan
 | Category | Documents | Status |
 |----------|-----------|--------|
 | **Usage Guides** | 6 | ✅ Complete |
+| **Feature Guides** | 3 | ✅ Complete |
 | **Architecture** | 1 | ✅ Complete |
 | **API Reference** | 7 modules | 🔄 In Progress |
 | **Development** | 7 | ✅ Complete |
 | **Phase Reports** | 6 | ✅ Complete |
-| **Total** | 27+ | 🎯 Comprehensive |
+| **High-Precision** | 1 | ✅ Complete |
+| **Total** | 31+ | 🎯 Comprehensive |
 
 ## 🔄 Documentation Maintenance
 
 ### Recent Updates
+- **2025-06**: Test suite reorganization and comprehensive test documentation
+- **2025-06**: Documentation file organization (markdown files moved to appropriate directories)
+- **2025-06**: High-precision calculations documentation added
+- **2025-06**: Comprehensive parameter testing documentation
 - **2025-01**: Complete refactoring documentation
 - **2025-01**: Architecture documentation created
 - **2025-01**: Documentation reorganization completed

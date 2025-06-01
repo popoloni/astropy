@@ -9,8 +9,8 @@ Shows clear examples of yellow vs white labels.
 import sys
 import os
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add astropy root directory to path (two levels up from tests/unit/)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 def main():
     """Test the yellow labels feature."""

@@ -156,7 +156,7 @@ Instead of remembering command-line options, use these:
 ### Text Reports
 - `run_report_only.py` - Quick text report
 - `run_quarters_report.py` - 4-quarter analysis (text only)
-- `run_test_simulation.py` - Test with simulated nighttime
+- `tests/integration/run_test_simulation.py` - Test with simulated nighttime
 
 ### With Plots
 - `run_with_plots.py` - Complete plots

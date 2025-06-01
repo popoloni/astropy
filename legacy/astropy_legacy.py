@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from datetime import datetime, timedelta, timezone
+import os
 
 import pytz
 import re
@@ -25,7 +26,11 @@ class SchedulingStrategy(Enum):
 
 # Load configuration from file
 def load_config():
-    with open('config.json', 'r') as f:
+    # Get the root directory (parent of legacy folder)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.dirname(script_dir)
+    config_path = os.path.join(root_dir, 'config.json')
+    with open(config_path, 'r') as f:
         return json.load(f)
 
 def get_default_location(config):

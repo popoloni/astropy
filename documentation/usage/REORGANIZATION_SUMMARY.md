@@ -150,7 +150,7 @@ astropy.main()
 ### Standard Environment (macOS/Linux/Windows):
 ```bash
 # Run all tests
-python3 run_tests.py
+cd tests && python3 run_tests.py
 
 # Run feature demonstration
 python3 run_demo.py

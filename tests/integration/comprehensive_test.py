@@ -19,8 +19,11 @@ def run_command(cmd, description):
         import os
         original_cwd = os.getcwd()
         
-        # If we're in utilities/, go to parent (astropy root)
-        if original_cwd.endswith('/utilities'):
+        # If we're in tests/integration/, go to astropy root (two levels up)
+        if original_cwd.endswith('/tests/integration'):
+            astropy_root = os.path.dirname(os.path.dirname(original_cwd))
+            os.chdir(astropy_root)
+        elif original_cwd.endswith('/utilities'):
             astropy_root = os.path.dirname(original_cwd)
             os.chdir(astropy_root)
         

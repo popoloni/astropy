@@ -56,7 +56,7 @@ python astropy.py --simulate-time 01:30 --report-only --date 2024-06-01
 python astropy.py --report-only --date 2024-01-01
 
 # Run complete test suite
-python run_tests.py
+cd tests && python run_tests.py
 ```
 
 ## Benefits
