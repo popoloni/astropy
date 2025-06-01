@@ -15,8 +15,9 @@ import matplotlib.patches as patches
 from matplotlib.patches import Rectangle, Ellipse
 import numpy as np
 
-# Add current directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add root directory to path for imports
+root_dir = os.path.join(os.path.dirname(__file__), '..')
+sys.path.insert(0, root_dir)
 
 # Import astropy functions
 from astropy import (

@@ -22,7 +22,7 @@ from astronomy.precision.high_precision import (
     calculate_precise_coordinate_transformation
 )
 from astronomy.precision.config import set_precision_mode, precision_context
-from astronomy.celestial import calculate_altaz, find_twilight, transform_coordinates
+from astronomy.celestial import calculate_altaz, calculate_altaz_precise, find_twilight, transform_coordinates
 
 
 class TestPreciseAltAz(unittest.TestCase):
@@ -331,13 +331,13 @@ class TestIntegrationFunctions(unittest.TestCase):
         """Test calculate_altaz function integration"""
         # Test high precision mode
         with precision_context('high'):
-            result_high = calculate_altaz(
+            result_high = calculate_altaz_precise(
                 self.dt, self.observer_lat, self.observer_lon, self.ra, self.dec
             )
         
         # Test standard mode
         with precision_context('standard'):
-            result_standard = calculate_altaz(
+            result_standard = calculate_altaz_precise(
                 self.dt, self.observer_lat, self.observer_lon, self.ra, self.dec
             )
         

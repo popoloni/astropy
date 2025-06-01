@@ -14,8 +14,9 @@ from datetime import datetime
 import io
 import contextlib
 
-# Add parent directory to path to import astropy
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add root directory to path to import astropy
+root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
+sys.path.insert(0, root_dir)
 
 try:
     import astropy

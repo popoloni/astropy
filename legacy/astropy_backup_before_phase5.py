@@ -46,7 +46,7 @@ from astronomy import (
 )
 from analysis import (
     calculate_object_score, calculate_max_altitude, find_best_objects,
-    filter_visible_objects, filter_objects_by_criteria, generate_observation_schedule, 
+    filter_objects_by_criteria, generate_observation_schedule, 
     combine_objects_and_groups, create_mosaic_groups, analyze_mosaic_compatibility,
     print_schedule_strategy_report, generate_schedule_section_content,
     print_combined_report, print_objects_by_type

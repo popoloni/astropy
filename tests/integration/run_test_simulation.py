@@ -9,8 +9,9 @@ Perfect for testing the app during the day.
 import sys
 import os
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add root directory to path for imports
+root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
+sys.path.insert(0, root_dir)
 
 def main():
     """Run nighttime simulation for daytime testing."""

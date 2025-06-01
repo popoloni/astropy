@@ -94,13 +94,12 @@ def demonstrate_sun_position_precision():
     print(f"  Returns: (altitude, azimuth) = {sun_standard}")
     print(f"  Format: Altitude/Azimuth for specific observer location")
     
-    # High-precision sun position (returns RA, Dec, distance)
+    # High-precision sun position (returns altitude, azimuth)
     sun_high = calculate_sun_position(dt, precision_mode='high')
     print(f"\nHigh-Precision Implementation (VSOP87):")
-    print(f"  Right Ascension: {format_angle_dms(sun_high['ra'])}")
-    print(f"  Declination:     {format_angle_dms(sun_high['dec'])}")
-    print(f"  Distance:        {sun_high['distance']:.6f} AU")
-    print(f"  Expected Dec:    ~23.4° (maximum for solstice)")
+    print(f"  Altitude:        {format_angle_dms(sun_high[0])}")
+    print(f"  Azimuth:         {format_angle_dms(sun_high[1])}")
+    print(f"  Expected Alt:    Variable based on time and location")
     print(f"  Accuracy:        ~2 arcseconds (vs ~2 arcminutes standard)")
 
 def demonstrate_moon_calculations():
