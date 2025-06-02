@@ -238,7 +238,7 @@ class HomeScreen(Screen):
             cols=2,
             spacing=dp(10),
             size_hint_y=None,
-            height=dp(120)
+            height=dp(180)  # Increased height for 3 rows
         )
         
         # View Targets button
@@ -249,6 +249,15 @@ class HomeScreen(Screen):
         )
         targets_btn.bind(on_press=self.go_to_targets)
         actions_grid.add_widget(targets_btn)
+        
+        # Session Planner button
+        session_btn = Button(
+            text='Session\nPlanner',
+            font_size='16sp',
+            background_color=(0.1, 0.8, 0.4, 1.0)
+        )
+        session_btn.bind(on_press=self.go_to_session_planner)
+        actions_grid.add_widget(session_btn)
         
         # Mosaic Planning button
         mosaic_btn = Button(
@@ -542,6 +551,11 @@ class HomeScreen(Screen):
         """Navigate to reports screen"""
         if self.app:
             self.app.screen_manager.current = 'reports'
+    
+    def go_to_session_planner(self, instance):
+        """Navigate to session planner screen"""
+        if self.app:
+            self.app.screen_manager.current = 'session_planner'
     
     def refresh_data(self, instance):
         """Refresh application data"""

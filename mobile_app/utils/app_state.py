@@ -93,6 +93,12 @@ class AppState(EventDispatcher):
         self.filter_presets = {}
         self.active_filter_preset = None
         
+        # Session planning
+        self.session_planner = None
+        self.current_session = None
+        self.session_manager = None
+        self.saved_sessions = []
+        
     def get_strategy_display_name(self, strategy: str) -> str:
         """Get user-friendly display name for scheduling strategy"""
         strategy_names = {
@@ -228,3 +234,132 @@ class AppState(EventDispatcher):
     def get_filtered_targets(self) -> List[Dict]:
         """Get targets with advanced filtering applied"""
         return self.apply_advanced_filter(self.tonights_targets)
+    
+    # Session Planning Methods
+    def initialize_session_planner(self):
+        """Initialize session planning system"""
+        try:
+            from utils.session_planner import SessionPlanner, SessionManager
+            self.session_manager = SessionManager()
+            self.session_planner = SessionPlanner(self.session_manager)
+            self.refresh_saved_sessions()
+            return True
+        except ImportError as e:
+            print(f"Session planner not available: {e}")
+            return False
+    
+    def get_session_planner(self):
+        """Get session planner instance"""
+        if not self.session_planner:
+            self.initialize_session_planner()
+        return self.session_planner
+    
+    def get_session_manager(self):
+        """Get session manager instance"""
+        if not self.session_manager:
+            self.initialize_session_planner()
+        return self.session_manager
+    
+    def create_new_session(self, date, duration, priorities, targets, location, 
+                          session_type=None, optimization_strategy=None):
+        """Create a new observation session"""
+        planner = self.get_session_planner()
+        if not planner:
+            return None
+        
+        try:
+            from utils.session_planner import SessionType, OptimizationStrategy
+            
+            # Set defaults if not provided
+            if session_type is None:
+                session_type = SessionType.MIXED
+            if optimization_strategy is None:
+                optimization_strategy = OptimizationStrategy.BALANCED
+            
+            session = planner.create_session(
+                date=date,
+                duration=duration,
+                priorities=priorities,
+                targets=targets,
+                location=location,
+                session_type=session_type,
+                optimization_strategy=optimization_strategy
+            )
+            
+            self.current_session = session
+            return session
+        except Exception as e:
+            print(f"Error creating session: {e}")
+            return None
+    
+    def save_current_session(self):
+        """Save the current session"""
+        if not self.current_session or not self.session_manager:
+            return False
+        
+        success = self.session_manager.save_session(self.current_session)
+        if success:
+            self.refresh_saved_sessions()
+        return success
+    
+    def load_session(self, session_id):
+        """Load a saved session"""
+        manager = self.get_session_manager()
+        if not manager:
+            return None
+        
+        session = manager.load_session(session_id)
+        if session:
+            self.current_session = session
+        return session
+    
+    def delete_session(self, session_id):
+        """Delete a saved session"""
+        manager = self.get_session_manager()
+        if not manager:
+            return False
+        
+        success = manager.delete_session(session_id)
+        if success:
+            self.refresh_saved_sessions()
+        return success
+    
+    def refresh_saved_sessions(self):
+        """Refresh the list of saved sessions"""
+        manager = self.get_session_manager()
+        if manager:
+            self.saved_sessions = manager.list_sessions()
+        else:
+            self.saved_sessions = []
+    
+    def export_session(self, session, format='pdf', output_path=None):
+        """Export session plan"""
+        planner = self.get_session_planner()
+        if not planner:
+            return None
+        
+        try:
+            return planner.export_session(session, format, output_path)
+        except Exception as e:
+            print(f"Error exporting session: {e}")
+            return None
+    
+    def get_session_statistics(self):
+        """Get statistics about saved sessions"""
+        if not self.saved_sessions:
+            return {}
+        
+        total_sessions = len(self.saved_sessions)
+        total_targets = sum(s.get('target_count', 0) for s in self.saved_sessions)
+        session_types = {}
+        
+        for session in self.saved_sessions:
+            session_type = session.get('session_type', 'unknown')
+            session_types[session_type] = session_types.get(session_type, 0) + 1
+        
+        return {
+            'total_sessions': total_sessions,
+            'total_targets_planned': total_targets,
+            'average_targets_per_session': total_targets / total_sessions if total_sessions > 0 else 0,
+            'session_types': session_types
+        }
