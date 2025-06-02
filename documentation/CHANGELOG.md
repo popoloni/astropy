@@ -82,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Complete modular architecture** with 6 core modules:
   - `astronomical_calculations.py` - Core calculations
   - `observation_planning.py` - Planning algorithms  
-  - `trajectory_analysis.py` - Trajectory computations
+  - `seasonplanner.py` - Trajectory computations
   - `mosaic_analysis.py` - Multi-object imaging
   - `configuration_manager.py` - Settings management
   - `visualization.py` - Plotting and charts

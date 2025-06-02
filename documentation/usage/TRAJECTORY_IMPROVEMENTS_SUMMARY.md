@@ -51,7 +51,7 @@ This document summarizes the major trajectory plotting enhancements implemented 
 
 ### 1. Standard Single Plot (Default)
 ```bash
-python astropy.py
+python nightplanner.py
 ```
 - Complete night overview with all visible objects
 - Intelligent label positioning to minimize overlaps
@@ -60,7 +60,7 @@ python astropy.py
 
 ### 2. 4-Quarter Trajectory Plots
 ```bash
-python astropy.py --quarters
+python nightplanner.py --quarters
 ```
 - Night split into 4 time periods for reduced clutter
 - Each quarter shows objects visible during that period
@@ -86,7 +86,7 @@ python astropy.py --quarters
 - ✅ Professional-quality astronomical charts
 
 ## Files Modified
-- `astropy.py` - Main application with improved plotting functions
+- `nightplanner.py` - Main application with improved plotting functions
 - `README.md` - Updated documentation with new features
 - `TRAJECTORY_IMPROVEMENTS.md` - Detailed technical documentation
 

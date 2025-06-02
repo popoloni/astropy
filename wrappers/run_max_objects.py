@@ -22,14 +22,14 @@ def main():
     
     try:
         # Import astropy after setting up path
-        import astropy
+        import astronightplanner
         
         # Set up arguments for max objects mode
         original_argv = sys.argv.copy()
-        sys.argv = ['astropy.py', '--schedule', 'max_objects']
+        sys.argv = ['astroastronightplanner.py', '--schedule', 'max_objects']
         
         # Run the main astropy function
-        astropy.main()
+        astroastronightplanner.main()
         
         # Restore original argv
         sys.argv = original_argv

@@ -18,7 +18,7 @@ def test_imports():
     try:
         # Test astropy modules
         print("  Testing astropy modules...")
-        from astropy import filter_visible_objects, generate_observation_schedule
+        from astronightplanner import filter_visible_objects, generate_observation_schedule
         from astronomy import calculate_altaz, find_visibility_window
         from analysis import calculate_object_score, create_mosaic_groups
         print("  ✓ Astropy modules imported successfully")
@@ -130,7 +130,7 @@ def test_astropy_integration():
     
     try:
         from datetime import datetime, timedelta
-        from astropy import get_combined_catalog, find_astronomical_twilight
+        from astronightplanner import get_combined_catalog, find_astronomical_twilight
         from astronomy import filter_visible_objects
         
         # Get catalog

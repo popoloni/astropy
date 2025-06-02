@@ -21,14 +21,14 @@ def main():
     
     try:
         # Import astropy after setting up path
-        import astropy
+        import astronightplanner
         
         # Set up arguments for quarters report mode
         original_argv = sys.argv.copy()
-        sys.argv = ['astropy.py', '--quarters', '--report-only']
+        sys.argv = ['astroastronightplanner.py', '--quarters', '--report-only']
         
         # Run the main astropy function
-        astropy.main()
+        astroastronightplanner.main()
         
         # Restore original argv
         sys.argv = original_argv

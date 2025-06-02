@@ -14,7 +14,7 @@ from datetime import datetime
 def run_command_silently(cmd):
     """Run a command and return success status and key metrics"""
     try:
-        # Change to astropy root directory to run astropy.py commands
+        # Change to astropy root directory to run astroastronightplanner.py commands
         import os
         original_cwd = os.getcwd()
         
@@ -24,8 +24,8 @@ def run_command_silently(cmd):
             os.chdir(astropy_root)
         
         # Fix the command path - remove ../ since we're in astropy root
-        if '../astropy.py' in cmd:
-            cmd = cmd.replace('../astropy.py', 'astropy.py')
+        if '../astroastronightplanner.py' in cmd:
+            cmd = cmd.replace('../astroastronightplanner.py', 'astroastronightplanner.py')
         
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
         
@@ -90,10 +90,10 @@ def main():
     
     # Test different modes and collect metrics
     tests = [
-        ("Basic Mode (Original Functionality)", "python3 ../astropy.py --report-only"),
-        ("Mosaic Analysis Integration", "python3 ../astropy.py --mosaic --report-only"),
-        ("Mosaic-Only Mode", "python3 ../astropy.py --mosaic-only --report-only"),
-        ("Mosaic Groups Strategy", "python3 ../astropy.py --schedule mosaic_groups --report-only")
+        ("Basic Mode (Original Functionality)", "python3 ../astroastronightplanner.py --report-only"),
+        ("Mosaic Analysis Integration", "python3 ../astroastronightplanner.py --mosaic --report-only"),
+        ("Mosaic-Only Mode", "python3 ../astroastronightplanner.py --mosaic-only --report-only"),
+        ("Mosaic Groups Strategy", "python3 ../astroastronightplanner.py --schedule mosaic_groups --report-only")
     ]
     
     results = {}
@@ -174,12 +174,12 @@ def main():
     print("=" * 60)
     
     examples = [
-        ("View all strategies:", "python3 ../astropy.py --report-only"),
-        ("Analyze mosaic opportunities:", "python3 ../astropy.py --mosaic --report-only"),
-        ("Focus on mosaic groups only:", "python3 ../astropy.py --mosaic-only --report-only"),
-        ("Use mosaic prioritization:", "python3 ../astropy.py --schedule mosaic_groups --report-only"),
-        ("Generate mosaic plots:", "python3 ../astropy.py --mosaic"),
-        ("Use traditional strategies:", "python3 ../astropy.py --schedule max_objects --report-only")
+        ("View all strategies:", "python3 ../astroastronightplanner.py --report-only"),
+        ("Analyze mosaic opportunities:", "python3 ../astroastronightplanner.py --mosaic --report-only"),
+        ("Focus on mosaic groups only:", "python3 ../astroastronightplanner.py --mosaic-only --report-only"),
+        ("Use mosaic prioritization:", "python3 ../astroastronightplanner.py --schedule mosaic_groups --report-only"),
+        ("Generate mosaic plots:", "python3 ../astroastronightplanner.py --mosaic"),
+        ("Use traditional strategies:", "python3 ../astroastronightplanner.py --schedule max_objects --report-only")
     ]
     
     for description, command in examples:

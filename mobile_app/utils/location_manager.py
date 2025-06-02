@@ -35,7 +35,7 @@ class LocationManager:
             import os
             sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
             
-            from astropy import CONFIG, DEFAULT_LOCATION
+            from astronightplanner import CONFIG, DEFAULT_LOCATION
             
             if CONFIG and 'locations' in CONFIG:
                 for location_key, location_data in CONFIG['locations'].items():

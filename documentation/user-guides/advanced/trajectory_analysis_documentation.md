@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `trajectory_analysis.py` script is a comprehensive tool for analyzing and planning astrophotography sessions throughout the year. It evaluates astronomical objects based on visibility conditions, moon interference, telescope field of view constraints, and optimal timing to provide data-driven recommendations for weekly astrophotography planning.
+The `seasonplanner.py` script is a comprehensive tool for analyzing and planning astrophotography sessions throughout the year. It evaluates astronomical objects based on visibility conditions, moon interference, telescope field of view constraints, and optimal timing to provide data-driven recommendations for weekly astrophotography planning.
 
 ## Key Features
 
@@ -273,15 +273,15 @@ MONTH_TO_WEEKS = {
 ### Basic Usage
 ```bash
 # Analyze entire year
-python trajectory_analysis.py
+python seasonplanner.py
 
 # Analyze specific periods
-python trajectory_analysis.py --quarter Q1
-python trajectory_analysis.py --half H2
-python trajectory_analysis.py --month 3
+python seasonplanner.py --quarter Q1
+python seasonplanner.py --half H2
+python seasonplanner.py --month 3
 
 # Skip plot generation
-python trajectory_analysis.py --no-plots
+python seasonplanner.py --no-plots
 ```
 
 ### Command Line Arguments

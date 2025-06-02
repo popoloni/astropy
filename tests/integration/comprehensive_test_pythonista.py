@@ -14,13 +14,13 @@ from datetime import datetime
 import io
 import contextlib
 
-# Add root directory to path to import astropy
+# Add root directory to path to import astronightplanner
 root_dir = os.path.join(os.path.dirname(__file__), '..', '..')
 sys.path.insert(0, root_dir)
 
 try:
-    import astropy
-    from astropy import main as astropy_main
+    import astronightplanner
+    from astronightplanner import main as astropy_main
 except ImportError as e:
     print(f"Error importing astropy: {e}")
     sys.exit(1)
@@ -36,7 +36,7 @@ def capture_output(func, *args, **kwargs):
         
         # Set up arguments
         if args:
-            sys.argv = ['astropy.py'] + list(args)
+            sys.argv = ['astronightplanner.py'] + list(args)
         
         # Call the function
         try:
@@ -230,7 +230,7 @@ def test_essential_components():
         print(f"MosaicGroup available: {mosaic_group_available}")
         
         # Test SchedulingStrategy.MOSAIC_GROUPS availability
-        mosaic_strategy_available = hasattr(astropy.SchedulingStrategy, 'MOSAIC_GROUPS')
+        mosaic_strategy_available = hasattr(astronightplanner.SchedulingStrategy, 'MOSAIC_GROUPS')
         print(f"SchedulingStrategy.MOSAIC_GROUPS available: {mosaic_strategy_available}")
         
         if mosaic_group_available and mosaic_strategy_available:

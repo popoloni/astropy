@@ -2,7 +2,7 @@
 
 **Comprehensive testing results for iOS Pythonista implementation**
 
-> **💡 Purpose**: These wrapper scripts provide the same functionality as `python astropy.py --parameters` but without needing to type command-line parameters in iOS Pythonista. This is the **current working mobile solution**.
+> **💡 Purpose**: These wrapper scripts provide the same functionality as `python nightplanner.py --parameters` but without needing to type command-line parameters in iOS Pythonista. This is the **current working mobile solution**.
 
 ---
 
@@ -95,7 +95,7 @@
 - **Issue**: DateTime object handling in `plot_object_trajectory_no_legend()` function
 - **Fix**: Added `isinstance(start_idx, datetime)` checks to skip moon interference plotting for newer datetime format
 - **Affected Scripts**: All scripts using trajectory plotting
-- **Location**: `astropy.py` main module
+- **Location**: `nightplanner.py` main module
 
 ### **Import Path Updates**
 - **Issue**: Import errors due to module restructuring

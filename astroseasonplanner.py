@@ -15,8 +15,8 @@ import math
 from typing import List, Dict, Tuple, Optional
 import argparse
 
-# Import from the main astropy module (now in same directory)
-from astropy import (
+# Import from the main astronightplanner module (now in same directory)
+from astronightplanner import (
     get_objects_from_csv, get_combined_catalog, filter_visible_objects,
     find_astronomical_twilight, setup_altaz_plot, plot_object_trajectory,
     get_local_timezone, USE_CSV_CATALOG, DEFAULT_LOCATION, CONFIG,
@@ -383,7 +383,7 @@ def analyze_mosaic_statistics(clusters):
 
 def check_object_visibility_in_config_window(obj, twilight_evening, twilight_morning):
     """Check if object is visible within the configured visibility window"""
-    from astropy import calculate_altaz
+    from astronightplanner import calculate_altaz
     
     # Find visibility periods within the config-defined window
     visibility_periods = find_visibility_window(obj, twilight_evening, twilight_morning, use_margins=True)
@@ -403,7 +403,7 @@ def analyze_weekly_conditions(objects, week_date):
     """Analyze conditions for a specific week"""
     # Get Bortle index from config
     try:
-        from astropy import DEFAULT_LOCATION
+        from astronightplanner import DEFAULT_LOCATION
         bortle_index = DEFAULT_LOCATION.get('bortle_index', 6)
     except:
         bortle_index = 6  # Default moderate sky

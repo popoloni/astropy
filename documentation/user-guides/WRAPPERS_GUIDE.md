@@ -135,4 +135,4 @@ These wrappers complement the main astropy system by providing:
 - **Pythonista compatibility** without code changes
 - **Consistent user experience** across platforms
 
-For comprehensive functionality, use the main `astropy.py` script directly or the wrapper scripts in the root directory (`run_tests.py`, `run_demo.py`). 
+For comprehensive functionality, use the main `nightplanner.py` script directly or the wrapper scripts in the root directory (`run_tests.py`, `run_demo.py`). 

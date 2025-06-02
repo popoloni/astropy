@@ -46,7 +46,7 @@ try:
     from analysis import calculate_object_score
     from astronomy import find_visibility_window, calculate_visibility_duration
 except ImportError as e:
-    Logger.error(f"TargetsScreen: Failed to import astropy modules: {e}")
+    Logger.error(f"TargetsScreen: Failed to import astronightplanner modules: {e}")
 
 
 class ThemedTargetCard(BoxLayout, SwipeableWidget, ThemedWidget):

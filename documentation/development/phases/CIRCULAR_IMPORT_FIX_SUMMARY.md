@@ -7,7 +7,7 @@ Warning: Mosaic analysis module not available: cannot import name 'analyze_objec
 ```
 
 ## Root Cause Analysis
-The issue was in `utilities/analyze_mosaic_groups.py` which was importing directly from the main `astropy.py` module:
+The issue was in `utilities/analyze_mosaic_groups.py` which was importing directly from the main `nightplanner.py` module:
 
 ### Before (Problematic):
 ```python
@@ -22,7 +22,7 @@ from astropy import (
 ```
 
 This created a circular dependency:
-- `astropy.py` → imports from `utilities.analyze_mosaic_groups`
+- `nightplanner.py` → imports from `utilities.analyze_mosaic_groups`
 - `utilities.analyze_mosaic_groups.py` → imports from `astropy`
 - **Result**: Circular import causing module initialization failure
 
@@ -45,7 +45,7 @@ CONFIG = load_config()
 ```
 
 ### Key Changes:
-1. **Removed direct import from `astropy.py`** - No longer imports from the main module
+1. **Removed direct import from `nightplanner.py`** - No longer imports from the main module
 2. **Used modular imports** - Import directly from specific modules (`astronomy`, `catalogs`, `config.settings`)
 3. **Corrected function location** - Moved `get_current_datetime` import to the correct module (`utilities.time_sim`)
 4. **Added local config loading** - Load configuration directly instead of importing it

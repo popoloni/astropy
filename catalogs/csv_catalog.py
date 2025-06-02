@@ -52,7 +52,7 @@ def get_objects_from_csv():
     import sys
     import os
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    from astropy import parse_ra, parse_dec
+    from astronightplanner import parse_ra, parse_dec
     
     csv_objects = []
     try:

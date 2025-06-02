@@ -4,16 +4,16 @@
 
 ```bash
 # Basic yearly analysis
-python trajectory_analysis.py
+python seasonplanner.py
 
 # Analyze spring quarter
-python trajectory_analysis.py --quarter Q2
+python seasonplanner.py --quarter Q2
 
 # Analyze current month only
-python trajectory_analysis.py --month $(date +%m)
+python seasonplanner.py --month $(date +%m)
 
 # Generate analysis without plots (faster)
-python trajectory_analysis.py --no-plots
+python seasonplanner.py --no-plots
 ```
 
 ## Common Use Cases
@@ -21,31 +21,31 @@ python trajectory_analysis.py --no-plots
 ### 1. **Planning Annual Astrophotography Schedule**
 ```bash
 # Full year analysis for strategic planning
-python trajectory_analysis.py --year
+python seasonplanner.py --year
 ```
 **Output**: Complete yearly overview with best weeks identified, seasonal trends, and object-specific optimal periods.
 
 ### 2. **Seasonal Planning**
 ```bash
 # Winter imaging opportunities (Q1)
-python trajectory_analysis.py --quarter Q1
+python seasonplanner.py --quarter Q1
 
 # Summer imaging opportunities (Q3) 
-python trajectory_analysis.py --quarter Q3
+python seasonplanner.py --quarter Q3
 ```
 **Use for**: Identifying seasonal targets and planning equipment requirements.
 
 ### 3. **Monthly Session Planning**
 ```bash
 # Detailed planning for specific month
-python trajectory_analysis.py --month 10  # October
+python seasonplanner.py --month 10  # October
 ```
 **Use for**: Weekly session planning with specific target recommendations.
 
 ### 4. **Quick Assessment Without Plots**
 ```bash
 # Fast analysis for regular updates
-python trajectory_analysis.py --month 3 --no-plots
+python seasonplanner.py --month 3 --no-plots
 ```
 **Use for**: Regular monitoring without generating time-intensive visualizations.
 
@@ -166,17 +166,17 @@ python trajectory_analysis.py --month 3 --no-plots
 
 ```bash
 # Current conditions
-python trajectory_analysis.py --month $(date +%m)
+python seasonplanner.py --month $(date +%m)
 
 # Next quarter planning  
-python trajectory_analysis.py --quarter Q$(( ($(date +%m)-1)/3 + 1 ))
+python seasonplanner.py --quarter Q$(( ($(date +%m)-1)/3 + 1 ))
 
 # Fast update without plots
-python trajectory_analysis.py --month $(date +%m) --no-plots
+python seasonplanner.py --month $(date +%m) --no-plots
 
 # Specific season analysis
-python trajectory_analysis.py --quarter Q1  # Winter
-python trajectory_analysis.py --quarter Q2  # Spring  
-python trajectory_analysis.py --quarter Q3  # Summer
-python trajectory_analysis.py --quarter Q4  # Fall
+python seasonplanner.py --quarter Q1  # Winter
+python seasonplanner.py --quarter Q2  # Spring  
+python seasonplanner.py --quarter Q3  # Summer
+python seasonplanner.py --quarter Q4  # Fall
 ``` 

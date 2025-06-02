@@ -39,7 +39,7 @@ Completely refactored all wrapper scripts to use direct module imports and funct
 #### Before (Broken on iOS)
 ```python
 import subprocess
-result = subprocess.run([sys.executable, "astropy.py", "--report-only"])
+result = subprocess.run([sys.executable, "nightplanner.py", "--report-only"])
 ```
 
 #### After (iOS Compatible)
@@ -50,7 +50,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import astropy
 original_argv = sys.argv.copy()
-sys.argv = ['astropy.py', '--report-only']
+sys.argv = ['nightplanner.py', '--report-only']
 astropy.main()
 sys.argv = original_argv
 ```
@@ -92,7 +92,7 @@ All wrapper scripts now work perfectly on iOS/Pythonista:
 ## Backward Compatibility
 
 - All changes are backward compatible with desktop Python environments
-- No changes required to the core `astropy.py` or `plot_mosaic_trajectories.py` files
+- No changes required to the core `nightplanner.py` or `plot_mosaic_trajectories.py` files
 - Configuration and functionality remain identical
 
 ## User Impact

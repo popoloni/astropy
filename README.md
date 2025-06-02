@@ -71,8 +71,8 @@ The system has been fully refactored into a clean, modular architecture:
 
 ```
 astropy/
-├── 🌟 astropy.py              # Main application entry point
-├── 🌟 trajectory_analysis.py  # Multi-night astrophotography planner
+├── 🌟 astroastronightplanner.py              # Main application entry point
+├── 🌟 astroastroseasonplanner.py  # Multi-night astrophotography planner
 ├── 📄 config.json             # Main configuration file with locations and settings
 ├── 📄 scope_data.json         # Telescope/scope configuration database
 ├── 📁 astronomy/           # Core astronomical calculations
@@ -221,7 +221,7 @@ The system supports three distinct implementation approaches:
 
 #### **1. 🖥️ Desktop Implementation**
 - **Primary Interface**: Command-line with parameters
-- **Usage**: `python astropy.py --date 2024-08-15 --schedule max_objects`
+- **Usage**: `python astronightplanner.py --date 2024-08-15 --schedule max_objects`
 - **Target**: Desktop/laptop users with full Python environment
 
 #### **2. 📱 iOS Pythonista Implementation** ✅ **Current Mobile Solution**
@@ -317,16 +317,16 @@ pip install numpy matplotlib pytz
 ### **Basic Usage**
 ```bash
 # Generate tonight's observation report
-python astropy.py --report-only
+python astronightplanner.py --report-only
 
 # Plan with specific scheduling strategy
-python astropy.py --schedule optimal_snr --report-only
+python astronightplanner.py --schedule optimal_snr --report-only
 
 # Enable mosaic analysis
-python astropy.py --mosaic --schedule mosaic_groups
+python astronightplanner.py --mosaic --schedule mosaic_groups
 
 # Simulate observations for a specific date
-python astropy.py --date 2024-08-15 --schedule max_objects
+python astronightplanner.py --date 2024-08-15 --schedule max_objects
 ```
 
 ### **📱 iOS Pythonista Implementation**
@@ -345,7 +345,7 @@ python wrappers/run_with_plots.py         # Full observation planner with plots
 python wrappers/run_telescope_analysis.py # Telescope analysis and listing
 ```
 
-> **💡 Purpose**: These wrapper scripts provide the same functionality as `python astropy.py --parameters` but without needing to type command-line parameters in iOS Pythonista. This is the **current working mobile solution**.
+> **💡 Purpose**: These wrapper scripts provide the same functionality as `python astronightplanner.py --parameters` but without needing to type command-line parameters in iOS Pythonista. This is the **current working mobile solution**.
 
 ### **Configuration**
 The system uses `config.json` for all settings:
@@ -373,7 +373,7 @@ The system uses `config.json` for all settings:
 
 ## 🌟 **Multi-Night Astrophotography Planner**
 
-The **trajectory analysis script** (`trajectory_analysis.py`) is the **flagship tool** for strategic astrophotography planning across weeks, months, quarters, or entire years. This comprehensive planner is essential for serious astrophotographers who want to maximize their imaging success by analyzing:
+The **trajectory analysis script** (`astroseasonplanner.py`) is the **flagship tool** for strategic astrophotography planning across weeks, months, quarters, or entire years. This comprehensive planner is essential for serious astrophotographers who want to maximize their imaging success by analyzing:
 
 - **Visibility Windows**: When objects are optimally positioned for imaging
 - **Moon Conditions**: Lunar interference and dark sky periods for deep-sky work
@@ -400,22 +400,22 @@ The **trajectory analysis script** (`trajectory_analysis.py`) is the **flagship 
 ### **Quick Start**
 ```bash
 # Analyze current month for optimal photography nights
-python trajectory_analysis.py --month $(date +%m)
+python astroseasonplanner.py --month $(date +%m)
 
 # Plan entire year for strategic scheduling
-python trajectory_analysis.py --year
+python astroseasonplanner.py --year
 
 # Focus on specific season (e.g., summer targets)
-python trajectory_analysis.py --quarter Q3
+python astroseasonplanner.py --quarter Q3
 
 # Enable high-precision calculations for critical accuracy
-python trajectory_analysis.py --month 6 --high-precision
+python astroseasonplanner.py --month 6 --high-precision
 
 # Check precision capabilities
-python trajectory_analysis.py --precision-info
+python astroseasonplanner.py --precision-info
 
 # Fast analysis without plots
-python trajectory_analysis.py --month 10 --no-plots
+python astroseasonplanner.py --month 10 --no-plots
 ```
 
 ### **Understanding the Output**
@@ -469,10 +469,10 @@ mosaic_groups            # Focus on mosaic opportunities
 #### **📅 Plan Tonight's Session**
 ```bash
 # Quick overview
-python astropy.py --report-only
+python astronightplanner.py --report-only
 
 # Detailed planning with plots
-python astropy.py --schedule max_objects
+python astronightplanner.py --schedule max_objects
 
 # Using wrapper scripts (fully functional)
 python wrappers/run_report_only.py
@@ -482,10 +482,10 @@ python wrappers/run_max_objects.py
 #### **🖼️ Mosaic Planning**
 ```bash
 # Find mosaic opportunities
-python astropy.py --mosaic --schedule mosaic_groups
+python astronightplanner.py --mosaic --schedule mosaic_groups
 
 # Focus only on mosaics
-python astropy.py --mosaic-only --no-duplicates
+python astronightplanner.py --mosaic-only --no-duplicates
 
 # Using mosaic wrapper scripts
 python wrappers/run_mosaic_analysis.py
@@ -495,10 +495,10 @@ python wrappers/run_mosaic_plots.py
 #### **🕐 Advanced Planning**
 ```bash
 # Plan for next month
-python astropy.py --date 2024-09-15 --schedule optimal_snr
+python astronightplanner.py --date 2024-09-15 --schedule optimal_snr
 
 # Simulate midnight conditions
-python astropy.py --simulate-time 00:00 --quarters
+python astronightplanner.py --simulate-time 00:00 --quarters
 
 # Using wrapper scripts for specific strategies
 python wrappers/run_optimal_snr.py
@@ -516,7 +516,7 @@ sys.path.insert(0, 'wrappers')
 import run_mosaic_analysis
 ```
 
-> **📱 iOS Pythonista**: Wrapper scripts are designed specifically for iOS Pythonista to simplify running astropy.py without typing parameters. Fully functional on iOS devices with Pythonista installed.
+> **📱 iOS Pythonista**: Wrapper scripts are designed specifically for iOS Pythonista to simplify running astronightplanner.py without typing parameters. Fully functional on iOS devices with Pythonista installed.
 
 #### **📱 Experimental Mobile App - 🧪 EXPERIMENTAL**
 > **⚠️ Experimental Feature**: A separate native mobile app implementation is in development but not fully tested yet. This is different from the fully functional Pythonista compatibility above.
@@ -590,11 +590,11 @@ The system now uses `scope_data.json` as the centralized telescope configuration
 python wrappers/run_telescope_analysis.py
 
 # Use specific telescope in analysis
-python astropy.py --telescope vespera_1 --date 2024-08-15
+python astronightplanner.py --telescope vespera_1 --date 2024-08-15
 
 # Generate telescope-specific reports
-python astropy.py --telescope seestar_s50 --report-only
-python astropy.py --telescope dwarf_3 --report-only
+python astronightplanner.py --telescope seestar_s50 --report-only
+python astronightplanner.py --telescope dwarf_3 --report-only
 ```
 
 > **💡 Note**: The legacy `config.json` imaging section is still supported for backward compatibility, but `scope_data.json` is the recommended configuration method.
@@ -634,7 +634,7 @@ Comprehensive documentation is available in the `documentation/` folder:
 ## 🆕 **Latest Features & Updates**
 
 ### **📱 Wrapper Scripts & iOS Pythonista Compatibility**
-All 10 wrapper scripts have been thoroughly tested and are working correctly on both desktop systems and iOS Pythonista. These scripts simplify running astropy.py without typing parameters in iOS:
+All 10 wrapper scripts have been thoroughly tested and are working correctly on both desktop systems and iOS Pythonista. These scripts simplify running astronightplanner.py without typing parameters in iOS:
 
 #### **✅ Tested Wrapper Scripts:**
 - **run_telescope_analysis.py** - Telescope listing and CLI commands (8 telescopes loaded)
@@ -835,16 +835,16 @@ python -c "from analysis import generate_observation_schedule; print('✅ Analys
 ### **Manual Testing**
 ```bash
 # Test report generation
-python astropy.py --report-only --schedule longest_duration
+python astronightplanner.py --report-only --schedule longest_duration
 
 # Test all scheduling strategies
 for strategy in longest_duration max_objects optimal_snr minimal_mosaic difficulty_balanced mosaic_groups; do
   echo "Testing $strategy..."
-  python astropy.py --report-only --schedule $strategy
+  python astronightplanner.py --report-only --schedule $strategy
 done
 
 # Test mosaic functionality
-python astropy.py --report-only --mosaic --schedule mosaic_groups
+python astronightplanner.py --report-only --mosaic --schedule mosaic_groups
 ```
 
 ### **✅ Test Results & Validation**
@@ -852,7 +852,7 @@ python astropy.py --report-only --mosaic --schedule mosaic_groups
 - ✅ **Legacy Scripts**: 33/33 working (all legacy functionality preserved)
 - ✅ **Test Scripts**: 33/33 functional (all integration, unit, precision, and demo tests)
 - ✅ **Utility Scripts**: 6/6 working perfectly
-- ✅ **Root Scripts**: 2/2 working (astropy.py and trajectory_analysis.py)
+- ✅ **Root Scripts**: 2/2 working (astronightplanner.py and astroseasonplanner.py)
 - ✅ **Wrapper Scripts**: 10/10 working (all mobile app features tested - 🧪 experimental)
 - ✅ **Core Functions**: filter_visible_objects and all visibility functions verified
 - ✅ **Astrophotography Planning**: Visibility filtering with altitude/azimuth constraints intact
@@ -884,7 +884,7 @@ python -m pip install -r requirements.txt
 cd tests && python run_tests.py
 
 # Check for issues
-python astropy.py --report-only  # Should run without errors
+python astronightplanner.py --report-only  # Should run without errors
 ```
 
 ### **Adding Features**

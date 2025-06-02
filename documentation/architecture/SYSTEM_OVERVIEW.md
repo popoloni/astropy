@@ -8,7 +8,7 @@ The Astronomical Observation Planning System has been transformed from a monolit
 
 ### Before Refactoring (Monolithic)
 ```
-astropy.py (4000+ lines)
+nightplanner.py (4000+ lines)
 ├── All astronomical calculations mixed in
 ├── Duplicate functions scattered throughout
 ├── Configuration hardcoded
@@ -208,7 +208,7 @@ Results + Settings → visualization/ → Charts + Reports
 
 ### Dependency Graph
 ```
-Main Application (astropy.py)
+Main Application (nightplanner.py)
 ├── models/ (core data structures)
 ├── config/ (configuration)
 ├── catalogs/ (data loading)

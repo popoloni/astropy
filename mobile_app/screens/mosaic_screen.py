@@ -24,7 +24,7 @@ try:
     from analysis import create_mosaic_groups, analyze_mosaic_compatibility
     from astronomy import calculate_required_panels, calculate_total_area
 except ImportError as e:
-    Logger.error(f"MosaicScreen: Failed to import astropy modules: {e}")
+    Logger.error(f"MosaicScreen: Failed to import astronightplanner modules: {e}")
 
 # Import plotting utilities
 try:

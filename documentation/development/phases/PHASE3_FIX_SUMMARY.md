@@ -1,7 +1,7 @@
-# Phase 3 Fix Summary - astropy.py Working ✅
+# Phase 3 Fix Summary - nightplanner.py Working ✅
 
 ## Issue Identified
-After implementing Phase 3 (astronomical calculations refactoring), the main `astropy.py` file was failing with:
+After implementing Phase 3 (astronomical calculations refactoring), the main `nightplanner.py` file was failing with:
 ```
 TypeError: tuple indices must be integers or slices, not str
 ```
@@ -46,7 +46,7 @@ for start, end, obj in schedule:
 ## Verification Commands
 ```bash
 # Basic functionality test
-python astropy.py --report-only --date 2024-01-01
+python nightplanner.py --report-only --date 2024-01-01
 
 # Complete test suite
 cd tests && python run_tests.py

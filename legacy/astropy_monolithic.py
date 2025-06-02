@@ -1,4 +1,4 @@
-# original astropy.py file
+# original astronightplanner.py file
 # this file is a monolithic file that combines all the functionality of the astropy package
 # it is used to generate the astropy report
 # it is also used to generate the astropy plot

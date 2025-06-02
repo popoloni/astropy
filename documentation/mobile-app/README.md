@@ -2,7 +2,7 @@
 
 **iOS Pythonista compatibility and experimental mobile app development**
 
-> **📱 iOS Pythonista**: Wrapper scripts are fully functional on iOS Pythonista - designed to simplify running astropy.py without typing parameters.
+> **📱 iOS Pythonista**: Wrapper scripts are fully functional on iOS Pythonista - designed to simplify running nightplanner.py without typing parameters.
 > 
 > **🧪 EXPERIMENTAL**: A separate native mobile app implementation is in development but not fully tested yet.
 
@@ -28,7 +28,7 @@ This documentation covers two distinct mobile implementations:
 
 ### **✅ iOS Pythonista Compatibility (Fully Functional)**
 - All 10 wrapper scripts tested and working on desktop AND iOS Pythonista
-- Designed specifically to simplify running astropy.py without typing parameters in iOS
+- Designed specifically to simplify running nightplanner.py without typing parameters in iOS
 - Complete observation planning and scheduling
 - Mosaic analysis and trajectory plotting
 - Report generation and data export

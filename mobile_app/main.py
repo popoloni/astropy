@@ -9,7 +9,7 @@ import sys
 from datetime import datetime, timedelta
 import json
 
-# Add parent directory to path to import astropy modules
+# Add parent directory to path to import astronightplanner modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Kivy imports
@@ -34,13 +34,13 @@ from kivy.storage.jsonstore import JsonStore
 
 # Import existing astropy modules
 try:
-    from astropy import (
+    from astronightplanner import (
         filter_visible_objects, generate_observation_schedule,
         get_combined_catalog, find_astronomical_twilight,
         calculate_moon_phase, get_moon_phase_icon,
         DEFAULT_LOCATION, CONFIG, MIN_ALT, MAX_ALT
     )
-    from trajectory_analysis import analyze_trajectory_density
+    from astroseasonplanner import analyze_trajectory_density
     from analysis import (
         calculate_object_score, find_best_objects,
         create_mosaic_groups, analyze_mosaic_compatibility
@@ -52,7 +52,7 @@ try:
     )
     Logger.info("AstroScope: Successfully imported astropy modules")
 except ImportError as e:
-    Logger.error(f"AstroScope: Failed to import astropy modules: {e}")
+    Logger.error(f"AstroScope: Failed to import astronightplanner modules: {e}")
     sys.exit(1)
 
 # Import custom screens and widgets

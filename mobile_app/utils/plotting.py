@@ -22,7 +22,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 try:
-    from astropy import (
+    from astronightplanner import (
         plot_object_trajectory, plot_visibility_chart, plot_quarterly_trajectories,
         create_mosaic_trajectory_plot, create_mosaic_grid_plot, plot_weekly_analysis
     )

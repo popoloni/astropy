@@ -26,7 +26,7 @@ try:
     )
     from analysis import calculate_object_score
 except ImportError as e:
-    Logger.error(f"TargetDetailScreen: Failed to import astropy modules: {e}")
+    Logger.error(f"TargetDetailScreen: Failed to import astronightplanner modules: {e}")
 
 # Import plotting utilities
 try:

@@ -22,10 +22,10 @@ from kivy.clock import Clock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 try:
-    from astropy import calculate_moon_phase, get_moon_phase_icon, find_astronomical_twilight
+    from astronightplanner import calculate_moon_phase, get_moon_phase_icon, find_astronomical_twilight
     from astronomy import get_local_timezone, utc_to_local
 except ImportError as e:
-    Logger.error(f"HomeScreen: Failed to import astropy modules: {e}")
+    Logger.error(f"HomeScreen: Failed to import astronightplanner modules: {e}")
 
 # Import plotting utilities
 try:

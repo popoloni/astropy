@@ -28,7 +28,7 @@ def main():
     
     try:
         # Import astropy after setting up path
-        import astropy
+        import astronightplanner
         
         # Get scope configuration from settings
         from config.settings import SCOPE_NAME, MOSAIC_FOV_WIDTH, MOSAIC_FOV_HEIGHT
@@ -38,13 +38,13 @@ def main():
         
         # Set up arguments for comprehensive mosaic analysis
         original_argv = sys.argv.copy()
-        sys.argv = ['astropy.py', '--mosaic', '--schedule', 'mosaic_groups']
+        sys.argv = ['astroastronightplanner.py', '--mosaic', '--schedule', 'mosaic_groups']
         
         print("📊 PHASE 1: Mosaic Group Analysis")
         print("=" * 35)
         
         # Run the main astropy function with mosaic analysis and plotting
-        astropy.main()
+        astroastronightplanner.main()
         
         # Restore original argv
         sys.argv = original_argv
