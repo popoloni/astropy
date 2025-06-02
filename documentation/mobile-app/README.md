@@ -262,6 +262,221 @@ Please include:
 
 ---
 
+## 📱 **Experimental Native Mobile App**
+
+> **🧪 EXPERIMENTAL**: This section describes the separate native mobile app implementation (not Pythonista-based) that is currently in development and not fully tested.
+
+### **📋 App Architecture**
+
+The experimental mobile app (`mobile_app/`) is built using Kivy framework and provides a native mobile interface with the following components:
+
+#### **🏗️ Core Structure:**
+```
+mobile_app/
+├── main.py              # Main application entry point
+├── buildozer.spec       # Android build configuration
+├── requirements.txt     # Mobile-specific dependencies
+├── scope_data.json      # Mobile telescope configuration
+├── screens/             # Screen implementations
+├── widgets/             # Custom UI widgets
+├── utils/               # Mobile utilities
+└── assets/              # App icons and resources
+```
+
+### **📱 Screen Descriptions & UX**
+
+#### **🏠 Home Screen** (`home_screen.py`)
+**Purpose**: Main dashboard and entry point
+**Features**:
+- **Tonight's Best Targets**: Top 20 objects for current location and date
+- **Quick Stats**: Moon phase, twilight times, weather summary
+- **Quick Actions**: Direct access to planning, reports, and settings
+- **Location Display**: Current observing location with edit option
+- **Navigation Hub**: Central access to all app features
+
+**UX Elements**:
+- Large, touch-friendly target cards with object thumbnails
+- Swipe gestures for target browsing
+- Pull-to-refresh for updated calculations
+- Quick action buttons with clear icons
+
+#### **🎯 Targets Screen** (`targets_screen.py`)
+**Purpose**: Browse and filter celestial objects
+**Features**:
+- **Object Browser**: Scrollable list of all available targets
+- **Advanced Filtering**: Filter by object type, magnitude, visibility
+- **Search Functionality**: Search by name, catalog number, or constellation
+- **Sorting Options**: Sort by altitude, magnitude, visibility duration
+- **Quick Preview**: Tap for basic info, long-press for details
+
+**UX Elements**:
+- Search bar with auto-complete suggestions
+- Filter chips for quick category selection
+- Infinite scroll with lazy loading
+- Visual indicators for object visibility status
+
+#### **📊 Target Detail Screen** (`target_detail_screen.py`)
+**Purpose**: Comprehensive information for individual objects
+**Features**:
+- **Object Information**: Coordinates, magnitude, size, type
+- **Visibility Analysis**: Rise/set times, optimal viewing windows
+- **Observation Planning**: Best exposure settings, recommended filters
+- **Trajectory Plot**: Altitude vs. time visualization
+- **Mosaic Compatibility**: Grouping suggestions for mosaic imaging
+
+**UX Elements**:
+- Tabbed interface for different information categories
+- Interactive charts with zoom and pan capabilities
+- Action buttons for adding to session or mosaic plans
+- Share functionality for object details
+
+#### **🖼️ Mosaic Screen** (`mosaic_screen.py`)
+**Purpose**: Plan and visualize mosaic imaging sessions
+**Features**:
+- **Mosaic Groups**: Pre-defined object groupings for wide-field imaging
+- **Custom Mosaics**: Create custom mosaic plans
+- **Trajectory Visualization**: Multi-object trajectory plotting
+- **Timing Optimization**: Optimal scheduling for mosaic sequences
+- **Equipment Matching**: Telescope-specific mosaic recommendations
+
+**UX Elements**:
+- Drag-and-drop interface for mosaic planning
+- Multi-touch gestures for plot manipulation
+- Color-coded trajectories for different objects
+- Timeline scrubber for time-based visualization
+
+#### **📅 Session Planner Screen** (`session_planner_screen.py`)
+**Purpose**: Complete observation session planning
+**Features**:
+- **Session Timeline**: Hour-by-hour observation schedule
+- **Strategy Selection**: Choose optimization strategy (max objects, SNR, etc.)
+- **Equipment Configuration**: Select telescope and camera settings
+- **Weather Integration**: Basic weather considerations
+- **Export Options**: Share session plans via email or cloud storage
+
+**UX Elements**:
+- Timeline view with draggable session blocks
+- Strategy picker with visual previews
+- Equipment carousel for telescope selection
+- One-tap session export and sharing
+
+#### **⚙️ Settings Screen** (`settings_screen.py`)
+**Purpose**: App configuration and preferences
+**Features**:
+- **Location Management**: Set observing location with GPS or manual entry
+- **Telescope Profiles**: Select and configure telescope equipment
+- **Display Preferences**: Dark mode, units, chart styles
+- **Calculation Settings**: Precision levels, atmospheric models
+- **Data Management**: Cache management, offline capabilities
+
+**UX Elements**:
+- Grouped settings with clear section headers
+- Toggle switches for boolean preferences
+- Slider controls for numeric values
+- Location picker with map integration
+
+#### **📋 Reports Screen** (`reports_screen.py`)
+**Purpose**: Generate and view observation reports
+**Features**:
+- **Report Generation**: Create detailed observation reports
+- **Multiple Formats**: Text, PDF, and image export options
+- **Historical Data**: View past session reports
+- **Sharing Options**: Email, cloud storage, social media
+- **Print Support**: Direct printing to compatible printers
+
+**UX Elements**:
+- Report preview with live updates
+- Format selection with visual previews
+- Share sheet integration for easy distribution
+- Print dialog with layout options
+
+#### **🔭 Scope Selection Screen** (`scope_selection_screen.py`)
+**Purpose**: Choose and configure telescope equipment
+**Features**:
+- **Telescope Database**: Browse 8+ pre-configured telescope profiles
+- **Equipment Comparison**: Side-by-side telescope comparisons
+- **Custom Configurations**: Create custom telescope setups
+- **FOV Visualization**: Field of view previews for different targets
+- **Compatibility Checking**: Verify telescope-target compatibility
+
+**UX Elements**:
+- Card-based telescope browser with images
+- Comparison mode with swipe gestures
+- Configuration wizard for custom setups
+- Visual FOV overlays on sky charts
+
+### **🎨 Design Principles**
+
+#### **Night Vision Friendly**
+- **Dark Theme**: Default dark interface to preserve night vision
+- **Red Light Mode**: Optional red-tinted interface for extreme dark adaptation
+- **Brightness Control**: Adjustable screen brightness within the app
+
+#### **Touch-Optimized**
+- **Large Touch Targets**: Minimum 44pt touch targets for easy interaction
+- **Gesture Support**: Swipe, pinch, and long-press gestures throughout
+- **Haptic Feedback**: Tactile feedback for important interactions
+
+#### **Responsive Design**
+- **Adaptive Layouts**: Optimized for phones and tablets
+- **Orientation Support**: Both portrait and landscape modes
+- **Dynamic Text**: Supports system text size preferences
+
+### **⚙️ Technical Implementation**
+
+#### **Framework & Tools**
+- **Kivy**: Cross-platform Python framework for mobile development
+- **Buildozer**: Android packaging and build system
+- **JsonStore**: Local data persistence for settings and cache
+- **Clock**: Kivy's scheduling system for background tasks
+
+#### **Performance Optimizations**
+- **Lazy Loading**: Load data only when needed
+- **Background Processing**: Heavy calculations on background threads
+- **Intelligent Caching**: Cache frequently accessed calculations
+- **Memory Management**: Efficient memory usage for mobile constraints
+
+#### **Data Integration**
+- **Shared Modules**: Uses existing astropy calculation modules
+- **Configuration Sync**: Synchronized with main system configuration
+- **Real-time Updates**: Live updates as parameters change
+
+### **🚧 Current Limitations**
+
+#### **Development Status**
+- **Limited Testing**: Not extensively tested on real devices
+- **iOS Support**: Currently Android-focused, iOS support planned
+- **Feature Completeness**: Some advanced features not yet implemented
+- **Performance**: Not optimized for all device types
+
+#### **Known Issues**
+- **Plotting Performance**: Complex plots may be slow on older devices
+- **Memory Usage**: Large catalogs may cause memory issues
+- **Network Dependency**: Some features require internet connectivity
+- **Battery Usage**: Intensive calculations may drain battery quickly
+
+### **🔮 Roadmap**
+
+#### **Short Term (Next Release)**
+- **iOS Build Support**: Extend to iOS platform using kivy-ios
+- **Performance Optimization**: Improve plotting and calculation speed
+- **Bug Fixes**: Address known issues and stability problems
+- **User Testing**: Conduct extensive testing on various devices
+
+#### **Medium Term**
+- **Enhanced UI**: Improved animations and visual polish
+- **Offline Mode**: Full offline capability with local catalogs
+- **Advanced Features**: Real-time tracking, notifications, automation
+- **Integration**: Better integration with external tools and services
+
+#### **Long Term**
+- **Native Rewrite**: Consider native iOS/Android implementations
+- **Cloud Sync**: Synchronize data across devices
+- **Community Features**: Sharing, collaboration, and social features
+- **Professional Tools**: Advanced features for serious astrophotographers
+
+---
+
 ## 🔄 **Future Development**
 
 ### **Planned Improvements**
@@ -270,6 +485,7 @@ Please include:
 - Reduced dependency requirements
 - Mobile-optimized plotting options
 - Touch-friendly user interfaces
+- Complete experimental mobile app development
 
 ### **Contributing**
 Mobile app development contributions are welcome:
@@ -277,9 +493,11 @@ Mobile app development contributions are welcome:
 - Report compatibility issues
 - Suggest mobile-specific improvements
 - Help with iOS Pythonista optimization
+- Contribute to experimental mobile app development
+- Test mobile app on different devices and platforms
 
 ---
 
 **🌟 Happy Mobile Observing! 📱🔭**
 
-*Mobile features are experimental - use desktop version for production planning*
+*Wrapper scripts are fully functional - experimental mobile app is in development*
