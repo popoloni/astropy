@@ -1,8 +1,10 @@
-# 📱 Mobile App Features - 🧪 EXPERIMENTAL
+# 📱 Mobile App Documentation
 
-**Experimental mobile app compatibility for astronomical observation planning**
+**iOS Pythonista compatibility and experimental mobile app development**
 
-> **⚠️ EXPERIMENTAL STATUS**: Mobile app features are currently experimental. While all wrapper scripts have been tested and work correctly on desktop systems, iOS Pythonista compatibility may vary depending on device capabilities and library availability.
+> **📱 iOS Pythonista**: Wrapper scripts are fully functional on iOS Pythonista - designed to simplify running astropy.py without typing parameters.
+> 
+> **🧪 EXPERIMENTAL**: A separate native mobile app implementation is in development but not fully tested yet.
 
 ---
 
@@ -19,20 +21,24 @@
 
 ## 🎯 **Overview**
 
-The mobile app features provide iOS Pythonista-compatible wrapper scripts that allow you to run astronomical observation planning directly on your mobile device. These scripts offer simplified access to the main system functionality through easy-to-use interfaces.
+This documentation covers two distinct mobile implementations:
 
-### **✅ What Works**
-- All 10 wrapper scripts tested and functional on desktop systems
+1. **iOS Pythonista Compatibility** (Fully Functional)
+2. **Experimental Native Mobile App** (In Development)
+
+### **✅ iOS Pythonista Compatibility (Fully Functional)**
+- All 10 wrapper scripts tested and working on desktop AND iOS Pythonista
+- Designed specifically to simplify running astropy.py without typing parameters in iOS
 - Complete observation planning and scheduling
 - Mosaic analysis and trajectory plotting
 - Report generation and data export
 - Multiple scheduling strategies
 
-### **🧪 Experimental Status**
-- iOS Pythonista compatibility not fully verified
-- May require additional library installations
-- Performance may vary on mobile devices
-- Some plotting features may have limitations
+### **🧪 Experimental Native Mobile App (In Development)**
+- Separate mobile app implementation (not Pythonista-based)
+- Not fully tested yet
+- Independent of the wrapper scripts
+- May have different features and limitations
 
 ---
 
@@ -69,7 +75,7 @@ python run_max_objects.py
 python run_mosaic_analysis.py
 ```
 
-### **iOS Pythonista Setup (Experimental)**
+### **iOS Pythonista Setup (Fully Functional)**
 
 #### **1. Install Pythonista**
 - Download Pythonista 3 from the App Store

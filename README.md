@@ -114,7 +114,7 @@ astropy/
 │   └── feature_demonstration.py # Feature demonstration scripts
 ├── 📁 visualization/      # Plotting and chart generation
 │   └── plotting.py       # Core plotting functions and visualizations
-├── 📁 wrappers/          # Mobile app wrapper scripts (🧪 experimental)
+├── 📁 wrappers/          # Wrapper scripts (iOS Pythonista compatible)
 │   ├── run_longest_duration.py # Longest duration strategy wrapper
 │   ├── run_max_objects.py      # Maximum objects strategy wrapper
 │   ├── run_optimal_snr.py      # Optimal SNR strategy wrapper
@@ -179,9 +179,10 @@ python astropy.py --mosaic --schedule mosaic_groups
 python astropy.py --date 2024-08-15 --schedule max_objects
 ```
 
-### **📱 Wrapper Scripts (iOS Pythonista Compatible) - 🧪 EXPERIMENTAL**
+### **📱 iOS Pythonista Implementation**
 ```bash
-# Quick access to common functions - All 10 wrappers tested and working
+# Wrapper scripts to avoid typing command-line parameters in iOS Pythonista
+# All 10 wrappers tested and working on desktop AND iOS Pythonista
 python wrappers/run_report_only.py        # Generate reports
 python wrappers/run_max_objects.py        # Maximum objects strategy
 python wrappers/run_optimal_snr.py        # Optimal SNR strategy
@@ -194,7 +195,7 @@ python wrappers/run_with_plots.py         # Full observation planner with plots
 python wrappers/run_telescope_analysis.py # Telescope analysis and listing
 ```
 
-> **⚠️ Note**: Mobile app features are currently experimental. While all wrapper scripts have been tested and work correctly, iOS Pythonista compatibility may vary depending on device capabilities and library availability.
+> **💡 Purpose**: These wrapper scripts provide the same functionality as `python astropy.py --parameters` but without needing to type command-line parameters in iOS Pythonista. This is the **current working mobile solution**.
 
 ### **Configuration**
 The system uses `config.json` for all settings:
@@ -323,7 +324,7 @@ python astropy.py --report-only
 # Detailed planning with plots
 python astropy.py --schedule max_objects
 
-# Using wrapper scripts (mobile app compatible - experimental)
+# Using wrapper scripts (fully functional)
 python wrappers/run_report_only.py
 python wrappers/run_max_objects.py
 ```
@@ -336,7 +337,7 @@ python astropy.py --mosaic --schedule mosaic_groups
 # Focus only on mosaics
 python astropy.py --mosaic-only --no-duplicates
 
-# Using mosaic wrapper scripts (experimental)
+# Using mosaic wrapper scripts
 python wrappers/run_mosaic_analysis.py
 python wrappers/run_mosaic_plots.py
 ```
@@ -349,23 +350,26 @@ python astropy.py --date 2024-09-15 --schedule optimal_snr
 # Simulate midnight conditions
 python astropy.py --simulate-time 00:00 --quarters
 
-# Using wrapper scripts for specific strategies (experimental)
+# Using wrapper scripts for specific strategies
 python wrappers/run_optimal_snr.py
 python wrappers/run_quarters.py
 ```
 
-#### **📱 iOS Pythonista Usage - 🧪 EXPERIMENTAL**
+#### **📱 iOS Pythonista Usage**
 ```python
-# Direct execution in Pythonista (experimental)
+# Direct execution in Pythonista (fully functional)
 exec(open('wrappers/run_longest_duration.py').read())
 
-# Import and run (experimental)
+# Import and run (fully functional)
 import sys
 sys.path.insert(0, 'wrappers')
 import run_mosaic_analysis
 ```
 
-> **⚠️ Experimental Feature**: iOS Pythonista support is experimental. Some features may require additional setup or may not work on all iOS devices due to library dependencies.
+> **📱 iOS Pythonista**: Wrapper scripts are designed specifically for iOS Pythonista to simplify running astropy.py without typing parameters. Fully functional on iOS devices with Pythonista installed.
+
+#### **📱 Experimental Mobile App - 🧪 EXPERIMENTAL**
+> **⚠️ Experimental Feature**: A separate native mobile app implementation is in development but not fully tested yet. This is different from the fully functional Pythonista compatibility above.
 
 ---
 
@@ -430,7 +434,7 @@ Comprehensive documentation is available in the `documentation/` folder:
 - **🏗️ [Architecture](documentation/architecture/)** - System design and modules
 - **⚙️ [API Documentation](documentation/api/)** - Function and class references
 - **🔧 [Development](documentation/development/)** - Contributing and phase reports
-- **📱 [Mobile App Features](documentation/mobile-app/)** - iOS Pythonista compatibility (🧪 experimental)
+- **📱 [Mobile App Features](documentation/mobile-app/)** - iOS Pythonista compatibility & experimental mobile app
 
 ### **Quick References**
 - **[Quick Start Guide](documentation/usage/QUICK_START.md)** - Get up and running fast
@@ -442,8 +446,8 @@ Comprehensive documentation is available in the `documentation/` folder:
 
 ## 🆕 **Latest Features & Updates**
 
-### **📱 Mobile App Wrapper Scripts - 🧪 EXPERIMENTAL**
-All 10 wrapper scripts have been thoroughly tested and are working correctly:
+### **📱 Wrapper Scripts & iOS Pythonista Compatibility**
+All 10 wrapper scripts have been thoroughly tested and are working correctly on both desktop systems and iOS Pythonista. These scripts simplify running astropy.py without typing parameters in iOS:
 
 #### **✅ Tested Wrapper Scripts:**
 - **run_telescope_analysis.py** - Telescope listing and CLI commands (8 telescopes loaded)
@@ -462,7 +466,8 @@ All 10 wrapper scripts have been thoroughly tested and are working correctly:
 - **Moon Interference Bug Fix**: Fixed datetime object handling in trajectory plotting functions
 - **Plotting Compatibility**: Enhanced moon interference visualization for all wrapper scripts
 
-> **⚠️ Important**: While all wrapper scripts are tested and functional, mobile app compatibility (iOS Pythonista) is experimental and may require additional setup or library installations.
+### **📱 Experimental Mobile App - 🧪 EXPERIMENTAL**
+A separate native mobile app implementation is in development but not fully tested yet. This is different from the fully functional iOS Pythonista compatibility above.
 
 ---
 
