@@ -88,6 +88,11 @@ class AppState(EventDispatcher):
         self.planned_objects = []
         self.completed_objects = []
         
+        # Advanced filtering
+        self.advanced_filter = None
+        self.filter_presets = {}
+        self.active_filter_preset = None
+        
     def get_strategy_display_name(self, strategy: str) -> str:
         """Get user-friendly display name for scheduling strategy"""
         strategy_names = {
@@ -187,3 +192,39 @@ class AppState(EventDispatcher):
             ],
             'stats': self.get_session_stats()
         }
+    
+    def apply_advanced_filter(self, targets: List[Dict]) -> List[Dict]:
+        """Apply advanced filtering to targets"""
+        if self.advanced_filter and self.advanced_filter.enabled:
+            return self.advanced_filter.apply_filters(targets)
+        return targets
+    
+    def set_advanced_filter(self, filter_obj) -> None:
+        """Set the advanced filter object"""
+        self.advanced_filter = filter_obj
+    
+    def get_advanced_filter(self):
+        """Get the current advanced filter object"""
+        return self.advanced_filter
+    
+    def save_filter_preset(self, name: str) -> None:
+        """Save current filter as a preset"""
+        if self.advanced_filter:
+            self.filter_presets[name] = self.advanced_filter.save_preset(name)
+    
+    def load_filter_preset(self, name: str) -> bool:
+        """Load a filter preset"""
+        if name in self.filter_presets:
+            if self.advanced_filter:
+                self.advanced_filter.load_preset(self.filter_presets[name])
+                self.active_filter_preset = name
+                return True
+        return False
+    
+    def get_filter_presets(self) -> List[str]:
+        """Get list of available filter presets"""
+        return list(self.filter_presets.keys())
+    
+    def get_filtered_targets(self) -> List[Dict]:
+        """Get targets with advanced filtering applied"""
+        return self.apply_advanced_filter(self.tonights_targets)
