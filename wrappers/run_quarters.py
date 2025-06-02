@@ -26,10 +26,10 @@ def main():
         
         # Set up arguments for quarters mode
         original_argv = sys.argv.copy()
-        sys.argv = ['astroastronightplanner.py', '--quarters']
+        sys.argv = ['astronightplanner.py', '--quarters']
         
         # Run the main astropy function
-        astroastronightplanner.main()
+        astronightplanner.main()
         
         # Restore original argv
         sys.argv = original_argv

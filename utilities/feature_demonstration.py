@@ -25,7 +25,9 @@ def run_command_silently(cmd):
         
         # Fix the command path - remove ../ since we're in astropy root
         if '../astroastronightplanner.py' in cmd:
-            cmd = cmd.replace('../astroastronightplanner.py', 'astroastronightplanner.py')
+            cmd = cmd.replace('../astroastronightplanner.py', 'astronightplanner.py')
+        elif 'astroastronightplanner.py' in cmd:
+            cmd = cmd.replace('astroastronightplanner.py', 'astronightplanner.py')
         
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
         

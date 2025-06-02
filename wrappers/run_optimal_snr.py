@@ -26,10 +26,10 @@ def main():
         
         # Set up arguments for optimal SNR mode
         original_argv = sys.argv.copy()
-        sys.argv = ['astroastronightplanner.py', '--schedule', 'optimal_snr']
+        sys.argv = ['astronightplanner.py', '--schedule', 'optimal_snr']
         
         # Run the main astropy function
-        astroastronightplanner.main()
+        astronightplanner.main()
         
         # Restore original argv
         sys.argv = original_argv

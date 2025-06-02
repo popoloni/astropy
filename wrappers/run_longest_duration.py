@@ -26,10 +26,10 @@ def main():
         
         # Set up arguments for longest duration mode
         original_argv = sys.argv.copy()
-        sys.argv = ['astroastronightplanner.py', '--schedule', 'longest_duration']
+        sys.argv = ['astronightplanner.py', '--schedule', 'longest_duration']
         
         # Run the main astropy function
-        astroastronightplanner.main()
+        astronightplanner.main()
         
         # Restore original argv
         sys.argv = original_argv

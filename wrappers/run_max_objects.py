@@ -26,10 +26,10 @@ def main():
         
         # Set up arguments for max objects mode
         original_argv = sys.argv.copy()
-        sys.argv = ['astroastronightplanner.py', '--schedule', 'max_objects']
+        sys.argv = ['astronightplanner.py', '--schedule', 'max_objects']
         
         # Run the main astropy function
-        astroastronightplanner.main()
+        astronightplanner.main()
         
         # Restore original argv
         sys.argv = original_argv

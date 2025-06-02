@@ -71,8 +71,8 @@ The system has been fully refactored into a clean, modular architecture:
 
 ```
 astropy/
-├── 🌟 astroastronightplanner.py              # Main application entry point
-├── 🌟 astroastroseasonplanner.py  # Multi-night astrophotography planner
+├── 🌟 astronightplanner.py              # Main application entry point
+├── 🌟 astroseasonplanner.py  # Multi-night astrophotography planner
 ├── 📄 config.json             # Main configuration file with locations and settings
 ├── 📄 scope_data.json         # Telescope/scope configuration database
 ├── 📁 astronomy/           # Core astronomical calculations

@@ -84,10 +84,10 @@ All wrapper scripts are designed to work seamlessly in iOS Pythonista without su
 python3 wrappers/run_mosaic_plots.py
 
 # Standard mosaic analysis (shows individuals + groups)
-python3 astropy.py --mosaic
+python3 astronightplanner.py --mosaic
 
 # Clean mosaic analysis (groups only, no individual duplicates)
-python3 astropy.py --mosaic --no-duplicates
+python3 astronightplanner.py --mosaic --no-duplicates
 
 # Longest duration strategy
 python3 wrappers/run_longest_duration.py
@@ -138,10 +138,10 @@ All wrappers:
 
 ## 📚 Integration with Main System
 
-These wrappers complement the main astropy system by providing:
+These wrappers complement the main astronightplanner system by providing:
 - **Focused interfaces** for specific use cases
 - **Simplified access** to complex functionality
 - **Pythonista compatibility** without code changes
 - **Consistent user experience** across platforms
 
-For comprehensive functionality, use the main `astropy.py` script directly or the wrapper scripts in the root directory (`run_tests.py`, `run_demo.py`). 
+For comprehensive functionality, use the main `astronightplanner.py` script directly or the wrapper scripts in the root directory (`run_tests.py`, `run_demo.py`). 
