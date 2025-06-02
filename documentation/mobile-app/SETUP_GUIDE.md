@@ -1,8 +1,10 @@
-# 📱 Mobile App Setup Guide - 🧪 EXPERIMENTAL
+# 📱 iOS Pythonista Setup Guide
 
-**Step-by-step guide for setting up astronomical observation planning on iOS devices**
+**Step-by-step guide for setting up astronomical observation planning on iOS devices using Pythonista**
 
-> **⚠️ EXPERIMENTAL**: This guide covers experimental mobile app features. Success may vary depending on device capabilities and iOS version.
+> **✅ Current Mobile Solution**: This guide covers the iOS Pythonista implementation - the current working mobile solution. Wrapper scripts eliminate the need to type command-line parameters, making mobile usage practical and efficient.
+> 
+> **🧪 Note**: A separate experimental native mobile app is in development but not covered in this guide.
 
 ---
 

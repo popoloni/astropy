@@ -151,6 +151,27 @@ astropy/
 - **Maintainability**: Well-documented, tested, and organized codebase
 - **Performance**: Optimized calculations with intelligent caching
 
+### **📱 Implementation Layers**
+
+The system supports three distinct implementation approaches:
+
+#### **1. 🖥️ Desktop Implementation**
+- **Primary Interface**: Command-line with parameters
+- **Usage**: `python astropy.py --date 2024-08-15 --schedule max_objects`
+- **Target**: Desktop/laptop users with full Python environment
+
+#### **2. 📱 iOS Pythonista Implementation** ✅ **Current Mobile Solution**
+- **Purpose**: Wrapper scripts to avoid typing command-line parameters in iOS Pythonista
+- **Usage**: `exec(open('wrappers/run_longest_duration.py').read())`
+- **Status**: ✅ Fully tested and working (10/10 wrapper scripts functional)
+- **Target**: iOS users running Python scripts in Pythonista app
+
+#### **3. 📲 Future Native Mobile App** 🧪 **Experimental**
+- **Concept**: Dedicated iOS app with native UI (not Pythonista-based)
+- **Status**: 🧪 Experimental - Not fully tested yet
+- **Goal**: Standalone mobile application with touch-optimized interface
+- **Target**: iOS users wanting a native app experience
+
 ---
 
 ## 🚀 **Quick Start**
@@ -440,7 +461,7 @@ Comprehensive documentation is available in the `documentation/` folder:
 - **[Quick Start Guide](documentation/usage/QUICK_START.md)** - Get up and running fast
 - **🌟 [Trajectory Analysis Guide](documentation/user-guides/trajectory_analysis_quick_reference.md)** - Multi-night planning strategies
 - **[Configuration Guide](documentation/usage/README.md)** - Detailed setup instructions
-- **📱 [Mobile App Setup](documentation/mobile-app/SETUP_GUIDE.md)** - iOS Pythonista setup (🧪 experimental)
+- **📱 [Mobile App Setup](documentation/mobile-app/SETUP_GUIDE.md)** - iOS Pythonista setup (current mobile solution)
 
 ---
 

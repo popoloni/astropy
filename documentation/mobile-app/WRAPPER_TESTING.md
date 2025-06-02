@@ -1,6 +1,8 @@
-# 🧪 Wrapper Script Testing Results
+# ✅ Wrapper Script Testing Results
 
-**Comprehensive testing results for all mobile app wrapper scripts**
+**Comprehensive testing results for iOS Pythonista implementation**
+
+> **💡 Purpose**: These wrapper scripts provide the same functionality as `python astropy.py --parameters` but without needing to type command-line parameters in iOS Pythonista. This is the **current working mobile solution**.
 
 ---
 
