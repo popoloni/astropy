@@ -4,7 +4,8 @@ Manages specifications and capabilities of various smart telescopes
 """
 
 import json
-from typing import Dict, List, Optional, Tuple
+import math
+from typing import Dict, List, Optional, Tuple, NamedTuple
 from dataclasses import dataclass, asdict
 from enum import Enum
 
@@ -170,9 +171,9 @@ class SmartScopeManager:
             resolution_mp=2.1,
             pixel_size_um=2.9,
             sensor_size_mm=(5.6, 3.2),
-            native_fov_deg=(1.3, 0.7),
+            native_fov_deg=(0.7, 1.2),  # x1 normal mode
             has_mosaic_mode=True,
-            mosaic_fov_deg=(2.6, 1.4),
+            mosaic_fov_deg=(1.44, 2.55),  # x2 mosaic mode from blog post
             weight_kg=3.0,
             price_usd=499
         )
@@ -190,8 +191,9 @@ class SmartScopeManager:
             resolution_mp=2.1,
             pixel_size_um=2.9,
             sensor_size_mm=(5.6, 3.2),
-            native_fov_deg=(2.1, 1.2),
-            has_mosaic_mode=False,
+            native_fov_deg=(1.22, 2.17),  # x1 normal mode from blog post
+            has_mosaic_mode=True,  # S30 also has mosaic mode
+            mosaic_fov_deg=(2.44, 4.34),  # x2 mosaic mode (approximate 2x coverage)
             weight_kg=2.0,
             price_usd=299
         )
@@ -407,3 +409,464 @@ def get_all_scope_names() -> List[str]:
 def calculate_target_fov_compatibility(target_size_arcmin: float) -> Dict[str, bool]:
     """Calculate which scopes can capture a target"""
     return get_scope_manager().calculate_fov_for_target(target_size_arcmin)
+
+
+# Exposure and Quality Prediction Classes
+
+class ExposureRecommendation(NamedTuple):
+    """Exposure recommendation result"""
+    single_exposure_sec: float
+    total_frames: int
+    total_time_min: float
+    iso_setting: int
+    binning_mode: str
+    confidence: float
+    reasoning: str
+
+
+class QualityMetrics(NamedTuple):
+    """Image quality prediction metrics"""
+    resolution_score: float  # 0-100
+    sensitivity_score: float  # 0-100
+    noise_score: float  # 0-100 (higher is better)
+    overall_score: float  # 0-100
+    limiting_magnitude: float
+    pixel_scale_arcsec: float
+    snr_estimate: float
+    quality_class: str  # "Excellent", "Good", "Fair", "Poor"
+
+
+class TargetType(Enum):
+    """Types of astronomical targets"""
+    PLANETARY_NEBULA = "planetary_nebula"
+    EMISSION_NEBULA = "emission_nebula"
+    REFLECTION_NEBULA = "reflection_nebula"
+    GALAXY = "galaxy"
+    GLOBULAR_CLUSTER = "globular_cluster"
+    OPEN_CLUSTER = "open_cluster"
+    SUPERNOVA_REMNANT = "supernova_remnant"
+    DARK_NEBULA = "dark_nebula"
+    STAR_FIELD = "star_field"
+    COMET = "comet"
+    ASTEROID = "asteroid"
+    PLANET = "planet"
+    MOON = "moon"
+    SUN = "sun"
+
+
+class ExposureCalculator:
+    """Calculate optimal exposure settings for scope/target combinations"""
+    
+    def __init__(self):
+        # Target-specific exposure parameters
+        self.target_parameters = {
+            TargetType.PLANETARY_NEBULA: {
+                'base_exposure_sec': 180,
+                'magnitude_factor': 1.2,
+                'frames_multiplier': 1.0,
+                'iso_preference': 'medium',
+                'binning_preference': 'x1'
+            },
+            TargetType.EMISSION_NEBULA: {
+                'base_exposure_sec': 300,
+                'magnitude_factor': 1.5,
+                'frames_multiplier': 1.2,
+                'iso_preference': 'low',
+                'binning_preference': 'x1'
+            },
+            TargetType.REFLECTION_NEBULA: {
+                'base_exposure_sec': 240,
+                'magnitude_factor': 1.3,
+                'frames_multiplier': 1.1,
+                'iso_preference': 'medium',
+                'binning_preference': 'x1'
+            },
+            TargetType.GALAXY: {
+                'base_exposure_sec': 300,
+                'magnitude_factor': 1.4,
+                'frames_multiplier': 1.3,
+                'iso_preference': 'low',
+                'binning_preference': 'x1'
+            },
+            TargetType.GLOBULAR_CLUSTER: {
+                'base_exposure_sec': 120,
+                'magnitude_factor': 1.0,
+                'frames_multiplier': 0.8,
+                'iso_preference': 'medium',
+                'binning_preference': 'x1'
+            },
+            TargetType.OPEN_CLUSTER: {
+                'base_exposure_sec': 60,
+                'magnitude_factor': 0.8,
+                'frames_multiplier': 0.6,
+                'iso_preference': 'high',
+                'binning_preference': 'x1'
+            },
+            TargetType.SUPERNOVA_REMNANT: {
+                'base_exposure_sec': 300,
+                'magnitude_factor': 1.6,
+                'frames_multiplier': 1.4,
+                'iso_preference': 'low',
+                'binning_preference': 'x1'
+            },
+            TargetType.STAR_FIELD: {
+                'base_exposure_sec': 30,
+                'magnitude_factor': 0.5,
+                'frames_multiplier': 0.4,
+                'iso_preference': 'high',
+                'binning_preference': 'x1'
+            },
+            TargetType.COMET: {
+                'base_exposure_sec': 120,
+                'magnitude_factor': 1.1,
+                'frames_multiplier': 0.9,
+                'iso_preference': 'medium',
+                'binning_preference': 'x1'
+            },
+            TargetType.PLANET: {
+                'base_exposure_sec': 1,
+                'magnitude_factor': 0.1,
+                'frames_multiplier': 2.0,
+                'iso_preference': 'low',
+                'binning_preference': 'x1'
+            }
+        }
+    
+    def calculate_exposure(self, scope: ScopeSpecifications, target_type: TargetType,
+                          target_magnitude: float = 10.0, session_duration_min: float = 120.0,
+                          moon_phase: float = 0.0, light_pollution: str = "moderate") -> ExposureRecommendation:
+        """
+        Calculate optimal exposure settings
+        
+        Args:
+            scope: Telescope specifications
+            target_type: Type of astronomical target
+            target_magnitude: Target magnitude (lower = brighter)
+            session_duration_min: Available imaging time in minutes
+            moon_phase: Moon phase (0.0 = new moon, 1.0 = full moon)
+            light_pollution: "dark", "moderate", "bright"
+        """
+        params = self.target_parameters.get(target_type, self.target_parameters[TargetType.GALAXY])
+        
+        # Base exposure calculation
+        base_exposure = params['base_exposure_sec']
+        
+        # Adjust for target magnitude
+        magnitude_adjustment = math.pow(2.512, (target_magnitude - 10.0) * params['magnitude_factor'])
+        adjusted_exposure = base_exposure * magnitude_adjustment
+        
+        # Adjust for scope aperture (larger aperture = shorter exposure needed)
+        aperture_factor = (50.0 / scope.aperture_mm) ** 2  # Normalize to 50mm
+        adjusted_exposure *= aperture_factor
+        
+        # Adjust for sensor sensitivity (higher MP usually means smaller pixels, less sensitive)
+        sensor_factor = math.sqrt(scope.resolution_mp / 2.1)  # Normalize to 2.1MP
+        adjusted_exposure *= sensor_factor
+        
+        # Adjust for light pollution
+        pollution_factors = {"dark": 0.7, "moderate": 1.0, "bright": 1.5}
+        adjusted_exposure *= pollution_factors.get(light_pollution, 1.0)
+        
+        # Adjust for moon phase
+        moon_factor = 1.0 + (moon_phase * 0.3)  # Up to 30% longer exposure for full moon
+        adjusted_exposure *= moon_factor
+        
+        # Clamp exposure to scope limits
+        adjusted_exposure = max(scope.min_exposure_sec, min(adjusted_exposure, scope.max_exposure_sec))
+        
+        # Calculate number of frames
+        base_frames = int(session_duration_min * 60 / adjusted_exposure)
+        target_frames = int(base_frames * params['frames_multiplier'])
+        target_frames = max(10, min(target_frames, 200))  # Reasonable limits
+        
+        # Calculate total time
+        total_time = (target_frames * adjusted_exposure) / 60.0
+        
+        # Select ISO setting
+        iso_preferences = {
+            'low': scope.iso_range[0],
+            'medium': int((scope.iso_range[0] + scope.iso_range[1]) / 2),
+            'high': scope.iso_range[1]
+        }
+        iso_setting = iso_preferences.get(params['iso_preference'], iso_preferences['medium'])
+        
+        # Binning mode (most smart scopes use x1)
+        binning_mode = params['binning_preference']
+        
+        # Calculate confidence based on scope suitability
+        confidence = self._calculate_confidence(scope, target_type, adjusted_exposure, target_frames)
+        
+        # Generate reasoning
+        reasoning = self._generate_reasoning(scope, target_type, adjusted_exposure, target_frames, 
+                                           light_pollution, moon_phase)
+        
+        return ExposureRecommendation(
+            single_exposure_sec=round(adjusted_exposure, 1),
+            total_frames=target_frames,
+            total_time_min=round(total_time, 1),
+            iso_setting=iso_setting,
+            binning_mode=binning_mode,
+            confidence=round(confidence, 1),
+            reasoning=reasoning
+        )
+    
+    def _calculate_confidence(self, scope: ScopeSpecifications, target_type: TargetType,
+                            exposure_sec: float, frames: int) -> float:
+        """Calculate confidence score for exposure recommendation"""
+        confidence = 80.0  # Base confidence
+        
+        # Adjust for scope aperture
+        if scope.aperture_mm >= 50:
+            confidence += 10
+        elif scope.aperture_mm >= 35:
+            confidence += 5
+        else:
+            confidence -= 5
+        
+        # Adjust for exposure time reasonableness
+        if 30 <= exposure_sec <= 300:
+            confidence += 10
+        elif exposure_sec < 10 or exposure_sec > 600:
+            confidence -= 15
+        
+        # Adjust for frame count
+        if 20 <= frames <= 100:
+            confidence += 5
+        elif frames < 10:
+            confidence -= 10
+        
+        # Adjust for target type suitability
+        if target_type in [TargetType.EMISSION_NEBULA, TargetType.GALAXY] and scope.aperture_mm >= 40:
+            confidence += 5
+        elif target_type in [TargetType.PLANET, TargetType.MOON] and scope.focal_length_mm >= 200:
+            confidence += 5
+        
+        return max(0, min(100, confidence))
+    
+    def _generate_reasoning(self, scope: ScopeSpecifications, target_type: TargetType,
+                          exposure_sec: float, frames: int, light_pollution: str, moon_phase: float) -> str:
+        """Generate human-readable reasoning for exposure settings"""
+        reasons = []
+        
+        # Scope-specific reasoning
+        if scope.aperture_mm >= 50:
+            reasons.append(f"{scope.aperture_mm}mm aperture provides good light gathering")
+        else:
+            reasons.append(f"{scope.aperture_mm}mm aperture requires longer exposures")
+        
+        # Target-specific reasoning
+        if target_type in [TargetType.EMISSION_NEBULA, TargetType.GALAXY]:
+            reasons.append("Deep sky target requires longer exposures for detail")
+        elif target_type in [TargetType.PLANET, TargetType.MOON]:
+            reasons.append("Bright target allows shorter exposures to avoid overexposure")
+        
+        # Environmental factors
+        if light_pollution == "bright":
+            reasons.append("Light pollution increases required exposure time")
+        elif light_pollution == "dark":
+            reasons.append("Dark skies allow shorter exposures")
+        
+        if moon_phase > 0.5:
+            reasons.append("Bright moon increases sky background")
+        
+        # Frame count reasoning
+        if frames >= 50:
+            reasons.append("Many frames improve signal-to-noise ratio")
+        elif frames < 20:
+            reasons.append("Limited frames due to time constraints")
+        
+        return "; ".join(reasons)
+
+
+class QualityPredictor:
+    """Predict image quality metrics based on scope capabilities"""
+    
+    def __init__(self):
+        # Reference values for quality scoring
+        self.reference_aperture = 50.0  # mm
+        self.reference_focal_length = 200.0  # mm
+        self.reference_resolution = 2.1  # MP
+        self.reference_pixel_size = 2.9  # μm
+    
+    def predict_quality(self, scope: ScopeSpecifications, target_type: TargetType,
+                       target_size_arcmin: float = 60.0, target_magnitude: float = 10.0,
+                       seeing_arcsec: float = 2.0, light_pollution: str = "moderate") -> QualityMetrics:
+        """
+        Predict image quality metrics for a scope/target combination
+        
+        Args:
+            scope: Telescope specifications
+            target_type: Type of astronomical target
+            target_size_arcmin: Target size in arcminutes
+            target_magnitude: Target magnitude
+            seeing_arcsec: Atmospheric seeing in arcseconds
+            light_pollution: "dark", "moderate", "bright"
+        """
+        # Calculate pixel scale
+        pixel_scale = self._calculate_pixel_scale(scope)
+        
+        # Calculate resolution score
+        resolution_score = self._calculate_resolution_score(scope, target_type, pixel_scale, seeing_arcsec)
+        
+        # Calculate sensitivity score
+        sensitivity_score = self._calculate_sensitivity_score(scope, target_magnitude, light_pollution)
+        
+        # Calculate noise score
+        noise_score = self._calculate_noise_score(scope, light_pollution)
+        
+        # Calculate overall score
+        overall_score = (resolution_score * 0.3 + sensitivity_score * 0.4 + noise_score * 0.3)
+        
+        # Calculate limiting magnitude
+        limiting_magnitude = self._calculate_limiting_magnitude(scope, light_pollution)
+        
+        # Estimate SNR
+        snr_estimate = self._estimate_snr(scope, target_magnitude, light_pollution)
+        
+        # Determine quality class
+        quality_class = self._determine_quality_class(overall_score)
+        
+        return QualityMetrics(
+            resolution_score=round(resolution_score, 1),
+            sensitivity_score=round(sensitivity_score, 1),
+            noise_score=round(noise_score, 1),
+            overall_score=round(overall_score, 1),
+            limiting_magnitude=round(limiting_magnitude, 1),
+            pixel_scale_arcsec=round(pixel_scale, 2),
+            snr_estimate=round(snr_estimate, 1),
+            quality_class=quality_class
+        )
+    
+    def _calculate_pixel_scale(self, scope: ScopeSpecifications) -> float:
+        """Calculate pixel scale in arcseconds per pixel"""
+        # Pixel scale = (pixel_size_μm / focal_length_mm) * 206265
+        return (scope.pixel_size_um / scope.focal_length_mm) * 206.265
+    
+    def _calculate_resolution_score(self, scope: ScopeSpecifications, target_type: TargetType,
+                                  pixel_scale: float, seeing_arcsec: float) -> float:
+        """Calculate resolution quality score (0-100)"""
+        # Base score from aperture (larger aperture = better resolution)
+        aperture_score = min(100, (scope.aperture_mm / self.reference_aperture) * 70)
+        
+        # Pixel scale factor (optimal pixel scale is ~1-2 arcsec/pixel for most targets)
+        optimal_pixel_scale = 1.5
+        if target_type in [TargetType.PLANET, TargetType.MOON]:
+            optimal_pixel_scale = 0.5  # Planets benefit from finer sampling
+        elif target_type in [TargetType.STAR_FIELD, TargetType.COMET]:
+            optimal_pixel_scale = 2.0  # Wide field targets can use coarser sampling
+        
+        pixel_scale_factor = 1.0 / (1.0 + abs(pixel_scale - optimal_pixel_scale))
+        pixel_scale_score = pixel_scale_factor * 30
+        
+        # Seeing factor (better seeing improves effective resolution)
+        seeing_factor = max(0.5, 3.0 / seeing_arcsec)
+        seeing_score = min(20, seeing_factor * 10)
+        
+        return min(100, aperture_score + pixel_scale_score + seeing_score)
+    
+    def _calculate_sensitivity_score(self, scope: ScopeSpecifications, target_magnitude: float,
+                                   light_pollution: str) -> float:
+        """Calculate sensitivity quality score (0-100)"""
+        # Base score from aperture (light gathering power scales with area)
+        aperture_area = math.pi * (scope.aperture_mm / 2) ** 2
+        reference_area = math.pi * (self.reference_aperture / 2) ** 2
+        aperture_score = min(100, (aperture_area / reference_area) * 60)
+        
+        # Pixel size factor (larger pixels generally more sensitive)
+        pixel_size_factor = scope.pixel_size_um / self.reference_pixel_size
+        pixel_score = min(25, pixel_size_factor * 20)
+        
+        # Target magnitude factor (brighter targets easier to capture)
+        magnitude_factor = max(0.5, (15.0 - target_magnitude) / 10.0)
+        magnitude_score = magnitude_factor * 15
+        
+        # Light pollution penalty
+        pollution_penalties = {"dark": 0, "moderate": -5, "bright": -15}
+        pollution_penalty = pollution_penalties.get(light_pollution, -5)
+        
+        return max(0, min(100, aperture_score + pixel_score + magnitude_score + pollution_penalty))
+    
+    def _calculate_noise_score(self, scope: ScopeSpecifications, light_pollution: str) -> float:
+        """Calculate noise performance score (0-100, higher is better)"""
+        # Base score from sensor technology
+        base_score = 70
+        if "STARVIS" in scope.sensor_type:
+            base_score += 15
+        elif "CMOS" in scope.sensor_type:
+            base_score += 5
+        
+        # Pixel size factor (larger pixels typically have better noise performance)
+        pixel_size_factor = scope.pixel_size_um / self.reference_pixel_size
+        pixel_score = min(20, pixel_size_factor * 15)
+        
+        # Resolution factor (higher resolution can mean smaller pixels and more noise)
+        resolution_factor = self.reference_resolution / scope.resolution_mp
+        resolution_score = min(10, resolution_factor * 8)
+        
+        # Light pollution penalty
+        pollution_penalties = {"dark": 0, "moderate": -5, "bright": -15}
+        pollution_penalty = pollution_penalties.get(light_pollution, -5)
+        
+        return max(0, min(100, base_score + pixel_score + resolution_score + pollution_penalty))
+    
+    def _calculate_limiting_magnitude(self, scope: ScopeSpecifications, light_pollution: str) -> float:
+        """Calculate estimated limiting magnitude"""
+        # Base limiting magnitude from aperture
+        # Rule of thumb: limiting magnitude ≈ 5 * log10(aperture_mm) + constant
+        base_magnitude = 5.0 * math.log10(scope.aperture_mm) + 7.5
+        
+        # Adjust for light pollution
+        pollution_adjustments = {"dark": 1.5, "moderate": 0.0, "bright": -2.0}
+        pollution_adjustment = pollution_adjustments.get(light_pollution, 0.0)
+        
+        # Adjust for sensor sensitivity
+        if "STARVIS" in scope.sensor_type:
+            sensor_adjustment = 0.5
+        else:
+            sensor_adjustment = 0.0
+        
+        return base_magnitude + pollution_adjustment + sensor_adjustment
+    
+    def _estimate_snr(self, scope: ScopeSpecifications, target_magnitude: float, light_pollution: str) -> float:
+        """Estimate signal-to-noise ratio"""
+        # Simplified SNR estimation based on aperture and target brightness
+        aperture_factor = (scope.aperture_mm / self.reference_aperture) ** 2
+        magnitude_factor = math.pow(2.512, -(target_magnitude - 10.0))
+        
+        base_snr = 20.0 * aperture_factor * magnitude_factor
+        
+        # Adjust for light pollution
+        pollution_factors = {"dark": 1.2, "moderate": 1.0, "bright": 0.6}
+        pollution_factor = pollution_factors.get(light_pollution, 1.0)
+        
+        return base_snr * pollution_factor
+    
+    def _determine_quality_class(self, overall_score: float) -> str:
+        """Determine quality class from overall score"""
+        if overall_score >= 85:
+            return "Excellent"
+        elif overall_score >= 70:
+            return "Good"
+        elif overall_score >= 55:
+            return "Fair"
+        else:
+            return "Poor"
+
+
+# Global instances
+_exposure_calculator = None
+_quality_predictor = None
+
+def get_exposure_calculator() -> ExposureCalculator:
+    """Get global exposure calculator instance"""
+    global _exposure_calculator
+    if _exposure_calculator is None:
+        _exposure_calculator = ExposureCalculator()
+    return _exposure_calculator
+
+def get_quality_predictor() -> QualityPredictor:
+    """Get global quality predictor instance"""
+    global _quality_predictor
+    if _quality_predictor is None:
+        _quality_predictor = QualityPredictor()
+    return _quality_predictor
