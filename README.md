@@ -544,14 +544,14 @@ Edit `config.json` to add your observing location:
 
 ### **Telescope Configuration**
 
-The system now uses `scope_data.json` as the centralized telescope configuration database, supporting 8 different telescope/camera combinations:
+The system now uses `scope_data.json` as the centralized telescope configuration database, supporting 8 different smart telescope configurations:
 
 #### **Available Telescope Profiles:**
-- **Vaonis Vespera I & II** - Smart telescopes with automated features
-- **ZWO ASI2600MC** - High-resolution color camera setups
-- **Canon EOS Ra** - DSLR astrophotography configurations
-- **QHY600M** - Monochrome imaging systems
-- **Custom configurations** - User-defined telescope setups
+- **Vaonis Vespera I, II, Pro, Passenger** - Smart telescopes (50mm aperture, f/4.0)
+- **ZWO Seestar S50** - Smart telescope (50mm aperture, f/5.0)
+- **ZWO Seestar S30** - Compact smart telescope (30mm aperture, f/5.0)
+- **DwarfLab Dwarf II** - Ultra-portable smart telescope (24mm aperture, f/4.2)
+- **DwarfLab Dwarf III** - Enhanced portable smart telescope (35mm aperture, f/4.3)
 
 #### **Configuration Structure:**
 ```json
@@ -589,7 +589,8 @@ python wrappers/run_telescope_analysis.py
 python astropy.py --telescope vespera_1 --date 2024-08-15
 
 # Generate telescope-specific reports
-python astropy.py --telescope zwo_asi2600mc --report-only
+python astropy.py --telescope seestar_s50 --report-only
+python astropy.py --telescope dwarf_3 --report-only
 ```
 
 > **💡 Note**: The legacy `config.json` imaging section is still supported for backward compatibility, but `scope_data.json` is the recommended configuration method.

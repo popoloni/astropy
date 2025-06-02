@@ -393,7 +393,7 @@ mobile_app/
 #### **🔭 Scope Selection Screen** (`scope_selection_screen.py`)
 **Purpose**: Choose and configure telescope equipment
 **Features**:
-- **Telescope Database**: Browse 8+ pre-configured telescope profiles
+- **Telescope Database**: Browse 8 pre-configured smart telescope profiles
 - **Equipment Comparison**: Side-by-side telescope comparisons
 - **Custom Configurations**: Create custom telescope setups
 - **FOV Visualization**: Field of view previews for different targets
