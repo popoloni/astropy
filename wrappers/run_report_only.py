@@ -25,10 +25,10 @@ def main():
         
         # Set up arguments for report-only mode
         original_argv = sys.argv.copy()
-        sys.argv = ['astroastronightplanner.py', '--report-only']
+        sys.argv = ['astronightplanner.py', '--report-only']
         
         # Run the main astropy function
-        astroastronightplanner.main()
+        astronightplanner.main()
         
         # Restore original argv
         sys.argv = original_argv

@@ -10,7 +10,7 @@ Get up and running with AstroPy Observation Planner in minutes!
 # Ensure you have Python 3.7+ with matplotlib, astropy, and pytz
 
 # Basic usage
-python3 nightplanner.py --report-only
+python3 astronightplanner.py --report-only
 ```
 
 ### 2. Configure Your Location
@@ -36,13 +36,13 @@ Edit `config.json`:
 ### Desktop (macOS/Linux/Windows)
 ```bash
 # Text report only (fastest)
-python3 nightplanner.py --report-only
+python3 astronightplanner.py --report-only
 
 # With trajectory plots
-python3 nightplanner.py
+python3 astronightplanner.py
 
 # Mosaic photography planning
-python3 nightplanner.py --mosaic
+python3 astronightplanner.py --mosaic
 
 # Use wrapper scripts for convenience
 python3 wrappers/run_report_only.py
@@ -60,40 +60,40 @@ python3 wrappers/run_report_only.py
 ### Quick Observation Report
 ```bash
 # Fastest way to see tonight's targets
-python3 nightplanner.py --report-only
+python3 astronightplanner.py --report-only
 ```
 
 ### Visual Planning with Plots
 ```bash
 # Complete trajectory plots
-python3 nightplanner.py
+python3 astronightplanner.py
 
 # Clean 4-quarter plots (less cluttered)
-python3 nightplanner.py --quarters
+python3 astronightplanner.py --quarters
 ```
 
 ### Mosaic Astrophotography
 ```bash
 # Find objects that can be photographed together
-python3 nightplanner.py --mosaic --report-only
+python3 astronightplanner.py --mosaic --report-only
 
 # Create specialized mosaic plots
-python3 nightplanner.py --mosaic
+python3 astronightplanner.py --mosaic
 ```
 
 ### Different Scheduling Strategies
 ```bash
 # Maximum number of objects (visual observing)
-python3 nightplanner.py --schedule max_objects --report-only
+python3 astronightplanner.py --schedule max_objects --report-only
 
 # Best imaging conditions
-python3 nightplanner.py --schedule optimal_snr --report-only
+python3 astronightplanner.py --schedule optimal_snr --report-only
 
 # Longest observation windows
-python3 nightplanner.py --schedule longest_duration --report-only
+python3 astronightplanner.py --schedule longest_duration --report-only
 
 # Mosaic group prioritization
-python3 nightplanner.py --schedule mosaic_groups --report-only
+python3 astronightplanner.py --schedule mosaic_groups --report-only
 ```
 
 ## 🔧 Essential Configuration
@@ -179,13 +179,13 @@ Instead of remembering command-line options, use these:
 ### Quick Fixes
 ```bash
 # Test with relaxed constraints
-python3 nightplanner.py --report-only  # Uses default settings
+python3 astronightplanner.py --report-only  # Uses default settings
 
 # Check your configuration
 python3 -c "import json; print(json.load(open('config.json')))"
 
 # Simulate nighttime during day
-python3 nightplanner.py --simulate-time "22:00" --report-only
+python3 astronightplanner.py --simulate-time "22:00" --report-only
 ```
 
 ## 📚 Next Steps
@@ -201,19 +201,19 @@ Once you're comfortable with the basics:
 
 ### New User Workflow
 1. Configure location in `config.json`
-2. Run `python3 nightplanner.py --report-only`
+2. Run `python3 astronightplanner.py --report-only`
 3. Review the observation schedule
-4. Try `python3 nightplanner.py` for plots
+4. Try `python3 astronightplanner.py` for plots
 
 ### Astrophotographer Workflow
-1. Run `python3 nightplanner.py --mosaic --report-only`
+1. Run `python3 astronightplanner.py --mosaic --report-only`
 2. Check mosaic groups for multi-target sessions
-3. Use `python3 nightplanner.py --schedule optimal_snr` for best conditions
-4. Generate plots with `python3 nightplanner.py --mosaic`
+3. Use `python3 astronightplanner.py --schedule optimal_snr` for best conditions
+4. Generate plots with `python3 astronightplanner.py --mosaic`
 
 ### Visual Observer Workflow
-1. Run `python3 nightplanner.py --schedule max_objects --report-only`
-2. Use `python3 nightplanner.py --quarters` for clean trajectory plots
+1. Run `python3 astronightplanner.py --schedule max_objects --report-only`
+2. Use `python3 astronightplanner.py --quarters` for clean trajectory plots
 3. Focus on the visibility chart for timing
 
 ---

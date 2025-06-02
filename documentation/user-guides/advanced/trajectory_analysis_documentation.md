@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `seasonplanner.py` script is a comprehensive tool for analyzing and planning astrophotography sessions throughout the year. It evaluates astronomical objects based on visibility conditions, moon interference, telescope field of view constraints, and optimal timing to provide data-driven recommendations for weekly astrophotography planning.
+The `astroseasonplanner.py` script is a comprehensive tool for analyzing and planning astrophotography sessions throughout the year. It evaluates astronomical objects based on visibility conditions, moon interference, telescope field of view constraints, and optimal timing to provide data-driven recommendations for weekly astrophotography planning.
 
 ## Key Features
 
@@ -273,15 +273,15 @@ MONTH_TO_WEEKS = {
 ### Basic Usage
 ```bash
 # Analyze entire year
-python seasonplanner.py
+python astroseasonplanner.py
 
 # Analyze specific periods
-python seasonplanner.py --quarter Q1
-python seasonplanner.py --half H2
-python seasonplanner.py --month 3
+python astroseasonplanner.py --quarter Q1
+python astroseasonplanner.py --half H2
+python astroseasonplanner.py --month 3
 
 # Skip plot generation
-python seasonplanner.py --no-plots
+python astroseasonplanner.py --no-plots
 ```
 
 ### Command Line Arguments

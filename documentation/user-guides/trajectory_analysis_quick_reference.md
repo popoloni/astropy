@@ -4,16 +4,16 @@
 
 ```bash
 # Basic yearly analysis
-python seasonplanner.py
+python astroseasonplanner.py
 
 # Analyze spring quarter
-python seasonplanner.py --quarter Q2
+python astroseasonplanner.py --quarter Q2
 
 # Analyze current month only
-python seasonplanner.py --month $(date +%m)
+python astroseasonplanner.py --month $(date +%m)
 
 # Generate analysis without plots (faster)
-python seasonplanner.py --no-plots
+python astroseasonplanner.py --no-plots
 ```
 
 ## Common Use Cases
@@ -21,31 +21,31 @@ python seasonplanner.py --no-plots
 ### 1. **Planning Annual Astrophotography Schedule**
 ```bash
 # Full year analysis for strategic planning
-python seasonplanner.py --year
+python astroseasonplanner.py --year
 ```
 **Output**: Complete yearly overview with best weeks identified, seasonal trends, and object-specific optimal periods.
 
 ### 2. **Seasonal Planning**
 ```bash
 # Winter imaging opportunities (Q1)
-python seasonplanner.py --quarter Q1
+python astroseasonplanner.py --quarter Q1
 
 # Summer imaging opportunities (Q3) 
-python seasonplanner.py --quarter Q3
+python astroseasonplanner.py --quarter Q3
 ```
 **Use for**: Identifying seasonal targets and planning equipment requirements.
 
 ### 3. **Monthly Session Planning**
 ```bash
 # Detailed planning for specific month
-python seasonplanner.py --month 10  # October
+python astroseasonplanner.py --month 10  # October
 ```
 **Use for**: Weekly session planning with specific target recommendations.
 
 ### 4. **Quick Assessment Without Plots**
 ```bash
 # Fast analysis for regular updates
-python seasonplanner.py --month 3 --no-plots
+python astroseasonplanner.py --month 3 --no-plots
 ```
 **Use for**: Regular monitoring without generating time-intensive visualizations.
 
@@ -166,17 +166,17 @@ python seasonplanner.py --month 3 --no-plots
 
 ```bash
 # Current conditions
-python seasonplanner.py --month $(date +%m)
+python astroseasonplanner.py --month $(date +%m)
 
 # Next quarter planning  
-python seasonplanner.py --quarter Q$(( ($(date +%m)-1)/3 + 1 ))
+python astroseasonplanner.py --quarter Q$(( ($(date +%m)-1)/3 + 1 ))
 
 # Fast update without plots
-python seasonplanner.py --month $(date +%m) --no-plots
+python astroseasonplanner.py --month $(date +%m) --no-plots
 
 # Specific season analysis
-python seasonplanner.py --quarter Q1  # Winter
-python seasonplanner.py --quarter Q2  # Spring  
-python seasonplanner.py --quarter Q3  # Summer
-python seasonplanner.py --quarter Q4  # Fall
+python astroseasonplanner.py --quarter Q1  # Winter
+python astroseasonplanner.py --quarter Q2  # Spring  
+python astroseasonplanner.py --quarter Q3  # Summer
+python astroseasonplanner.py --quarter Q4  # Fall
 ``` 

@@ -29,7 +29,7 @@ The trajectory plotting system has been significantly improved to minimize label
 ## Available Plotting Modes
 
 ### 1. **Original Single Plot (Default)**
-**Usage**: `python nightplanner.py`
+**Usage**: `python astronightplanner.py`
 
 - Shows all visible objects on a single trajectory plot
 - Best for getting a complete overview of the night
@@ -37,7 +37,7 @@ The trajectory plotting system has been significantly improved to minimize label
 - Color-coded trajectories with proper legend
 
 ### 2. **4-Quarter Trajectory Plots (`--quarters`)**
-**Usage**: `python nightplanner.py --quarters`
+**Usage**: `python astronightplanner.py --quarters`
 
 - Splits the night into 4 quarters to reduce visual clutter
 - Each quarter shows trajectories for that time period only
@@ -72,19 +72,19 @@ The new `find_optimal_label_position()` function:
 
 ```bash
 # Standard trajectory plot with improved labels
-python nightplanner.py
+python astronightplanner.py
 
 # 4-quarter view for less cluttered visualization  
-python nightplanner.py --quarters
+python astronightplanner.py --quarters
 
 # Text report only (no plots)
-python nightplanner.py --report-only
+python astronightplanner.py --report-only
 
 # Use visibility margins for extended coverage
-python nightplanner.py --quarters
+python astronightplanner.py --quarters
 
 # Disable visibility margins for strict boundaries
-python nightplanner.py --quarters --no-margins
+python astronightplanner.py --quarters --no-margins
 ```
 
 ## Configuration Options

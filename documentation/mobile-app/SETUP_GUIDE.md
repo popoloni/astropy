@@ -87,7 +87,7 @@ Ensure your Pythonista directory has this structure:
 ```
 Pythonista/
 ├── astropy/
-│   ├── nightplanner.py
+│   ├── astronightplanner.py
 │   ├── config/
 │   │   └── settings.py
 │   ├── astronomy/

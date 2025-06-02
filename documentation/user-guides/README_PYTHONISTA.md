@@ -98,7 +98,7 @@ Simply tap on any of these scripts in Pythonista to run them:
 ## Setup Instructions
 
 1. **Copy all files** from this directory to your Pythonista app
-2. **Ensure you have** `nightplanner.py` and `config.json` in the same directory
+2. **Ensure you have** `astronightplanner.py` and `config.json` in the same directory
 3. **Tap any script** to run it directly in Pythonista
 
 ## ✅ iOS Compatibility
@@ -212,7 +212,7 @@ This enables:
 ## Troubleshooting
 
 If you get import errors:
-1. Make sure `nightplanner.py` is in the same folder
+1. Make sure `astronightplanner.py` is in the same folder
 2. Check that all required libraries are installed in Pythonista:
    - numpy
    - matplotlib  
@@ -225,7 +225,7 @@ If plots don't display properly:
 ## Files Needed
 
 Make sure you have these files in your Pythonista directory:
-- `nightplanner.py` (main program)
+- `astronightplanner.py` (main program)
 - `config.json` (your configuration with Vespera Passenger specs) 🆕
 - All the `run_*.py` scripts (these wrapper scripts)
 - `test_yellow_labels.py` ⭐ **NEW** (test script for yellow labels)

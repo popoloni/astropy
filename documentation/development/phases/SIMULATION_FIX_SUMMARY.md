@@ -9,16 +9,16 @@ NameError: name 'get_simulated_datetime' is not defined
 When trying to run simulation tests like:
 ```bash
 python wrappers/run_test_simulation.py
-python nightplanner.py --simulate-time 01:30 --report-only
+python astronightplanner.py --simulate-time 01:30 --report-only
 ```
 
 ## Root Cause
-Two missing imports in `nightplanner.py`:
+Two missing imports in `astronightplanner.py`:
 1. `get_simulated_datetime` function was not imported from `utilities.time_sim`
 2. The `time_sim` module itself was not imported (needed for `time_sim.SIMULATED_DATETIME`)
 
 ## Fix Applied
-Added the missing imports to `nightplanner.py`:
+Added the missing imports to `astronightplanner.py`:
 
 ### Before (Broken):
 ```python
@@ -50,10 +50,10 @@ The time simulation functionality allows testing the astronomical observation pl
 python wrappers/run_test_simulation.py
 
 # Test direct simulation
-python nightplanner.py --simulate-time 01:30 --report-only --date 2024-06-01
+python astronightplanner.py --simulate-time 01:30 --report-only --date 2024-06-01
 
 # Verify normal operation still works
-python nightplanner.py --report-only --date 2024-01-01
+python astronightplanner.py --report-only --date 2024-01-01
 
 # Run complete test suite
 cd tests && python run_tests.py

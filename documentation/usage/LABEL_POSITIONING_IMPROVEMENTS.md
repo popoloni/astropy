@@ -133,13 +133,13 @@ The improvements are automatically applied to all trajectory plotting modes:
 
 ```bash
 # Regular trajectory plot with improved labels
-python nightplanner.py
+python astronightplanner.py
 
 # Quarterly plots with clean label positioning
-python nightplanner.py --quarters
+python astronightplanner.py --quarters
 
 # Enhanced plot with priority-based object selection
-python nightplanner.py --enhanced
+python astronightplanner.py --enhanced
 ```
 
 ## Configuration

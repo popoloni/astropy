@@ -15,10 +15,10 @@ A new command-line flag that enhances the mosaic analysis workflow by preventing
 **Usage:**
 ```bash
 # Standard mosaic analysis (shows individual objects + mosaic groups)
-python nightplanner.py --mosaic
+python astronightplanner.py --mosaic
 
 # Clean mosaic analysis (shows only mosaic groups, no individual duplicates)
-python nightplanner.py --mosaic --no-duplicates
+python astronightplanner.py --mosaic --no-duplicates
 ```
 
 **Benefits:**
@@ -102,7 +102,7 @@ The cleaner output makes it easier to plan observation sequences without confusi
 
 ### Desktop Usage
 ```bash
-python nightplanner.py --mosaic --no-duplicates
+python astronightplanner.py --mosaic --no-duplicates
 ```
 
 ### iPad (Pythonista)

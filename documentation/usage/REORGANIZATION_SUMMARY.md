@@ -9,7 +9,7 @@ Successfully reorganized the astropy codebase to improve structure, create Pytho
 ### Before Reorganization
 ```
 astropy/
-├── nightplanner.py (main script)
+├── astronightplanner.py (main script)
 ├── astropy_legacy.py (old version)
 ├── plot_mosaic_trajectories.py (standalone script)
 ├── test_mosaic_integration.py (old test)
@@ -18,7 +18,7 @@ astropy/
 ├── INTEGRATION_SUMMARY.md (docs)
 ├── utilities/
 │   ├── analyze_mosaic_groups.py
-│   ├── seasonplanner.py
+│   ├── astroseasonplanner.py
 │   └── ... (other utilities)
 └── ... (other files)
 ```
@@ -26,12 +26,12 @@ astropy/
 ### After Reorganization
 ```
 astropy/
-├── nightplanner.py (main script - enhanced)
+├── astronightplanner.py (main script - enhanced)
 ├── run_tests.py (test wrapper)
 ├── run_demo.py (demo wrapper)
 ├── utilities/
 │   ├── analyze_mosaic_groups.py
-│   ├── seasonplanner.py
+│   ├── astroseasonplanner.py
 │   ├── comprehensive_test.py (subprocess version)
 │   ├── comprehensive_test_pythonista.py (iOS compatible)
 │   ├── feature_demonstration.py (subprocess version)
@@ -68,7 +68,7 @@ astropy/
 - `run_demo.py` - Auto-detects environment and runs appropriate demo version
 
 ### 5. **Path Handling Fixed**
-- Updated `nightplanner.py` config loading to use absolute paths
+- Updated `astronightplanner.py` config loading to use absolute paths
 - Fixed relative path issues in all test and demo scripts
 - Ensured proper working directory handling
 
@@ -94,7 +94,7 @@ comprehensive_test_pythonista.main()
 
 # Option 3: Run astropy directly
 import sys
-sys.argv = ['nightplanner.py', '--mosaic', '--report-only']
+sys.argv = ['astronightplanner.py', '--mosaic', '--report-only']
 import astropy
 astropy.main()
 ```
@@ -156,7 +156,7 @@ cd tests && python3 run_tests.py
 python3 run_demo.py
 
 # Run astropy directly
-python3 nightplanner.py --mosaic --report-only
+python3 astronightplanner.py --mosaic --report-only
 ```
 
 ### Pythonista (iOS):
