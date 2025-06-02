@@ -129,7 +129,8 @@
     "iso_range": [
       100,
       25600
-    ]
+    ],
+    "default": true
   },
   "seestar_s50": {
     "name": "Seestar S50",

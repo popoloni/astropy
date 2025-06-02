@@ -84,170 +84,98 @@ class QualityMetrics(NamedTuple):
 
 
 def get_telescope_database() -> Dict[str, ScopeSpecifications]:
-    """Get complete telescope database"""
+    """Get complete telescope database from JSON file"""
+    import os
+    
+    # Get the path to scope_data.json (relative to this module)
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    scope_data_path = os.path.join(current_dir, 'scope_data.json')
+    
+    try:
+        with open(scope_data_path, 'r') as f:
+            scope_data = json.load(f)
+    except FileNotFoundError:
+        print(f"Warning: scope_data.json not found at {scope_data_path}")
+        return {}
+    except json.JSONDecodeError as e:
+        print(f"Warning: Invalid JSON in scope_data.json: {e}")
+        return {}
+    
     scopes = {}
-    
-    # Vaonis Vespera I
-    scopes["vespera_1"] = ScopeSpecifications(
-        name="Vespera I",
-        manufacturer="Vaonis",
-        scope_type=ScopeType.VAONIS,
-        aperture_mm=50,
-        focal_length_mm=200,
-        focal_ratio=4.0,
-        sensor_model="Sony IMX462",
-        sensor_type="CMOS",
-        resolution_mp=2.1,
-        pixel_size_um=2.9,
-        sensor_size_mm=(5.6, 3.2),
-        native_fov_deg=(1.6, 1.6),
-        has_mosaic_mode=True,
-        mosaic_fov_deg=(4.18, 2.45),
-        weight_kg=5.0,
-        price_usd=1499
-    )
-    
-    # Vaonis Vespera II
-    scopes["vespera_2"] = ScopeSpecifications(
-        name="Vespera II",
-        manufacturer="Vaonis",
-        scope_type=ScopeType.VAONIS,
-        aperture_mm=50,
-        focal_length_mm=200,
-        focal_ratio=4.0,
-        sensor_model="Sony IMX585",
-        sensor_type="CMOS",
-        resolution_mp=8.4,
-        pixel_size_um=2.9,
-        sensor_size_mm=(13.4, 8.9),
-        native_fov_deg=(1.6, 1.6),
-        has_mosaic_mode=True,
-        mosaic_fov_deg=(4.18, 2.45),
-        weight_kg=5.0,
-        price_usd=1990
-    )
-    
-    # Vaonis Vespera Pro
-    scopes["vespera_pro"] = ScopeSpecifications(
-        name="Vespera Pro",
-        manufacturer="Vaonis",
-        scope_type=ScopeType.VAONIS,
-        aperture_mm=50,
-        focal_length_mm=200,
-        focal_ratio=4.0,
-        sensor_model="Sony IMX678",
-        sensor_type="CMOS STARVIS 2",
-        resolution_mp=12.5,
-        pixel_size_um=2.0,
-        sensor_size_mm=(7.1, 7.1),
-        native_fov_deg=(1.6, 1.6),
-        has_mosaic_mode=True,
-        mosaic_fov_deg=(4.18, 2.45),
-        weight_kg=5.5,
-        price_usd=2690
-    )
-    
-    # Vaonis Vespera Passenger
-    scopes["vespera_passenger"] = ScopeSpecifications(
-        name="Vespera Passenger",
-        manufacturer="Vaonis",
-        scope_type=ScopeType.VAONIS,
-        aperture_mm=50,
-        focal_length_mm=200,
-        focal_ratio=4.0,
-        sensor_model="Sony IMX678",
-        sensor_type="CMOS STARVIS 2",
-        resolution_mp=12.5,
-        pixel_size_um=2.0,
-        sensor_size_mm=(7.1, 7.1),
-        native_fov_deg=(1.6, 1.6),
-        has_mosaic_mode=True,
-        mosaic_fov_deg=(4.18, 2.45),
-        weight_kg=5.5,
-        price_usd=2690
-    )
-    
-    # ZWO Seestar S50
-    scopes["seestar_s50"] = ScopeSpecifications(
-        name="Seestar S50",
-        manufacturer="ZWO",
-        scope_type=ScopeType.ZWO,
-        aperture_mm=50,
-        focal_length_mm=250,
-        focal_ratio=5.0,
-        sensor_model="Sony IMX462",
-        sensor_type="CMOS",
-        resolution_mp=2.1,
-        pixel_size_um=2.9,
-        sensor_size_mm=(5.6, 3.2),
-        native_fov_deg=(0.7, 1.2),  # x1 normal mode
-        has_mosaic_mode=True,
-        mosaic_fov_deg=(1.44, 2.55),  # x2 mosaic mode from blog post
-        weight_kg=3.0,
-        price_usd=499
-    )
-    
-    # ZWO Seestar S30
-    scopes["seestar_s30"] = ScopeSpecifications(
-        name="Seestar S30",
-        manufacturer="ZWO",
-        scope_type=ScopeType.ZWO,
-        aperture_mm=30,
-        focal_length_mm=150,
-        focal_ratio=5.0,
-        sensor_model="Sony IMX462",
-        sensor_type="CMOS",
-        resolution_mp=2.1,
-        pixel_size_um=2.9,
-        sensor_size_mm=(5.6, 3.2),
-        native_fov_deg=(1.22, 2.17),  # x1 normal mode from blog post
-        has_mosaic_mode=True,  # S30 also has mosaic mode
-        mosaic_fov_deg=(2.44, 4.34),  # x2 mosaic mode (approximate 2x coverage)
-        weight_kg=2.0,
-        price_usd=299
-    )
-    
-    # DwarfLab Dwarf 2
-    scopes["dwarf_2"] = ScopeSpecifications(
-        name="Dwarf II",
-        manufacturer="DwarfLab",
-        scope_type=ScopeType.DWARFLAB,
-        aperture_mm=24,
-        focal_length_mm=100,
-        focal_ratio=4.2,
-        sensor_model="Sony IMX415",
-        sensor_type="CMOS STARVIS 2",
-        resolution_mp=8.3,
-        pixel_size_um=1.45,
-        sensor_size_mm=(5.8, 3.3),
-        native_fov_deg=(3.2, 1.8),
-        has_mosaic_mode=True,
-        mosaic_fov_deg=(6.4, 3.6),
-        weight_kg=1.2,
-        price_usd=459
-    )
-    
-    # DwarfLab Dwarf 3
-    scopes["dwarf_3"] = ScopeSpecifications(
-        name="Dwarf III",
-        manufacturer="DwarfLab",
-        scope_type=ScopeType.DWARFLAB,
-        aperture_mm=35,
-        focal_length_mm=150,
-        focal_ratio=4.3,
-        sensor_model="Sony IMX678",
-        sensor_type="CMOS STARVIS 2",
-        resolution_mp=12.5,
-        pixel_size_um=2.0,
-        sensor_size_mm=(7.1, 7.1),
-        native_fov_deg=(3.0, 1.7),
-        has_mosaic_mode=True,
-        mosaic_fov_deg=(6.0, 3.4),
-        weight_kg=1.5,
-        price_usd=599
-    )
+    for scope_id, data in scope_data.items():
+        try:
+            # Convert scope_type string to enum
+            scope_type_str = data.get('scope_type', 'vaonis').lower()
+            if scope_type_str == 'vaonis':
+                scope_type = ScopeType.VAONIS
+            elif scope_type_str == 'zwo':
+                scope_type = ScopeType.ZWO
+            elif scope_type_str == 'dwarflab':
+                scope_type = ScopeType.DWARFLAB
+            else:
+                scope_type = ScopeType.VAONIS  # Default fallback
+            
+            # Create ScopeSpecifications object
+            scopes[scope_id] = ScopeSpecifications(
+                name=data['name'],
+                manufacturer=data['manufacturer'],
+                scope_type=scope_type,
+                aperture_mm=data['aperture_mm'],
+                focal_length_mm=data['focal_length_mm'],
+                focal_ratio=data['focal_ratio'],
+                sensor_model=data['sensor_model'],
+                sensor_type=data['sensor_type'],
+                resolution_mp=data['resolution_mp'],
+                pixel_size_um=data['pixel_size_um'],
+                sensor_size_mm=tuple(data['sensor_size_mm']),
+                native_fov_deg=tuple(data['native_fov_deg']),
+                has_mosaic_mode=data.get('has_mosaic_mode', False),
+                mosaic_fov_deg=tuple(data.get('mosaic_fov_deg', [0, 0])),
+                weight_kg=data.get('weight_kg', 0),
+                price_usd=data.get('price_usd', 0)
+            )
+        except KeyError as e:
+            print(f"Warning: Missing required field {e} in scope {scope_id}")
+            continue
+        except Exception as e:
+            print(f"Warning: Error loading scope {scope_id}: {e}")
+            continue
     
     return scopes
+
+
+def get_default_telescope() -> Tuple[str, Optional[ScopeSpecifications]]:
+    """Get the default telescope from scope_data.json"""
+    import os
+    
+    # Get the path to scope_data.json (relative to this module)
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    scope_data_path = os.path.join(current_dir, 'scope_data.json')
+    
+    try:
+        with open(scope_data_path, 'r') as f:
+            scope_data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        # Fallback to first scope in database if JSON fails
+        database = get_telescope_database()
+        if database:
+            first_id = next(iter(database.keys()))
+            return first_id, database[first_id]
+        return "vespera_passenger", None
+    
+    # Find the default scope
+    for scope_id, data in scope_data.items():
+        if data.get('default', False):
+            scope = get_telescope_by_id(scope_id)
+            return scope_id, scope
+    
+    # If no default is set, use the first scope
+    if scope_data:
+        first_id = next(iter(scope_data.keys()))
+        scope = get_telescope_by_id(first_id)
+        return first_id, scope
+    
+    return "vespera_passenger", None
 
 
 def get_telescope_by_id(telescope_id: str) -> Optional[ScopeSpecifications]:

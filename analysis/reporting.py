@@ -5,7 +5,7 @@ Schedule reporting and formatting functions.
 from astronomy import (
     format_time, calculate_required_exposure, get_moon_phase_icon,
     find_visibility_window, calculate_visibility_duration, utc_to_local,
-    calculate_required_panels
+    calculate_required_panels, calculate_moon_phase, calculate_moon_position
 )
 from config.settings import BORTLE_INDEX, SINGLE_EXPOSURE, LATITUDE, LONGITUDE
 import math

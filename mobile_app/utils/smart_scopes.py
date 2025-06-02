@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from analysis.telescope_analysis import (
     ScopeSpecifications, ScopeType, TargetType,
     ExposureRecommendation, QualityMetrics,
-    get_telescope_database, get_telescope_by_id,
+    get_telescope_database, get_telescope_by_id, get_default_telescope,
     calculate_fov_compatibility, calculate_pixel_scale,
     calculate_exposure_recommendation, calculate_quality_metrics,
     compare_telescopes_for_target, export_telescope_data
@@ -25,7 +25,9 @@ class ScopeManager:
     """Manages smart telescope scopes and their capabilities"""
     
     def __init__(self):
-        self.selected_scope_id = "seestar_s50"  # Default scope
+        # Use the default scope from scope_data.json
+        default_id, _ = get_default_telescope()
+        self.selected_scope_id = default_id
         self.mosaic_mode_enabled = False
     
     def get_all_scopes(self) -> Dict[str, ScopeSpecifications]:
@@ -35,6 +37,11 @@ class ScopeManager:
     def get_scope(self, scope_id: str) -> Optional[ScopeSpecifications]:
         """Get specific scope by ID"""
         return get_telescope_by_id(scope_id)
+    
+    def get_default_scope(self) -> Optional[ScopeSpecifications]:
+        """Get the default scope from scope_data.json"""
+        _, scope = get_default_telescope()
+        return scope
     
     def get_scope_names(self) -> List[str]:
         """Get list of all scope names for UI"""

@@ -67,18 +67,86 @@ MAX_OVERLAP_MINUTES = CONFIG['scheduling']['max_overlap_minutes']
 # Visibility Filtering
 EXCLUDE_INSUFFICIENT_TIME = CONFIG['scheduling']['exclude_insufficient_time']
 
-# Imaging Configuration
-# Vespera Passenger Specifications
-SCOPE_FOV_WIDTH = CONFIG['imaging']['scope']['fov_width']
-SCOPE_FOV_HEIGHT = CONFIG['imaging']['scope']['fov_height']
+# Imaging Configuration - Load from default scope in scope_data.json
+def _get_default_scope_config():
+    """Get default scope configuration from scope_data.json"""
+    try:
+        # Load scope_data.json directly to avoid circular imports
+        import json
+        import os
+        
+        current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        scope_data_path = os.path.join(current_dir, 'scope_data.json')
+        
+        with open(scope_data_path, 'r') as f:
+            scope_data = json.load(f)
+        
+        # Find the default scope
+        for scope_id, data in scope_data.items():
+            if data.get('default', False):
+                return {
+                    'name': data['name'],
+                    'fov_width': data['native_fov_deg'][0],
+                    'fov_height': data['native_fov_deg'][1],
+                    'mosaic_fov_width': data['mosaic_fov_deg'][0],
+                    'mosaic_fov_height': data['mosaic_fov_deg'][1],
+                    'pixel_size': data['pixel_size_um'],
+                    'focal_length': data['focal_length_mm'],
+                    'aperture': data['aperture_mm'],
+                    'sensor_model': data['sensor_model'],
+                    'resolution_mp': data['resolution_mp']
+                }
+        
+        # If no default found, use first scope
+        if scope_data:
+            first_scope = next(iter(scope_data.values()))
+            return {
+                'name': first_scope['name'],
+                'fov_width': first_scope['native_fov_deg'][0],
+                'fov_height': first_scope['native_fov_deg'][1],
+                'mosaic_fov_width': first_scope['mosaic_fov_deg'][0],
+                'mosaic_fov_height': first_scope['mosaic_fov_deg'][1],
+                'pixel_size': first_scope['pixel_size_um'],
+                'focal_length': first_scope['focal_length_mm'],
+                'aperture': first_scope['aperture_mm'],
+                'sensor_model': first_scope['sensor_model'],
+                'resolution_mp': first_scope['resolution_mp']
+            }
+            
+    except Exception as e:
+        print(f"Warning: Could not load default scope configuration: {e}")
+    
+    # Fallback configuration if scope loading fails
+    return {
+        'name': 'Vespera Passenger',
+        'fov_width': 1.6,
+        'fov_height': 1.6,
+        'mosaic_fov_width': 4.18,
+        'mosaic_fov_height': 2.45,
+        'pixel_size': 2.0,
+        'focal_length': 200,
+        'aperture': 50,
+        'sensor_model': 'Sony IMX678',
+        'resolution_mp': 12.5
+    }
+
+# Load default scope configuration
+DEFAULT_SCOPE_CONFIG = _get_default_scope_config()
+
+# Scope specifications from default scope
+SCOPE_FOV_WIDTH = DEFAULT_SCOPE_CONFIG['fov_width']
+SCOPE_FOV_HEIGHT = DEFAULT_SCOPE_CONFIG['fov_height']
 SCOPE_FOV_AREA = SCOPE_FOV_WIDTH * SCOPE_FOV_HEIGHT  # square degrees
-SINGLE_EXPOSURE = CONFIG['imaging']['scope']['single_exposure']
-MIN_SNR = CONFIG['imaging']['scope']['min_snr']
-GAIN = CONFIG['imaging']['scope']['gain']
-READ_NOISE = CONFIG['imaging']['scope']['read_noise']
-PIXEL_SIZE = CONFIG['imaging']['scope']['pixel_size']
-FOCAL_LENGTH = CONFIG['imaging']['scope']['focal_length']
-APERTURE = CONFIG['imaging']['scope']['aperture']
+PIXEL_SIZE = DEFAULT_SCOPE_CONFIG['pixel_size']
+FOCAL_LENGTH = DEFAULT_SCOPE_CONFIG['focal_length']
+APERTURE = DEFAULT_SCOPE_CONFIG['aperture']
+SCOPE_NAME = DEFAULT_SCOPE_CONFIG['name']
+
+# Default imaging parameters (these could be moved to a separate config section)
+SINGLE_EXPOSURE = 10  # seconds
+MIN_SNR = 20
+GAIN = 800
+READ_NOISE = 0.8
 
 # Plot Configuration
 MAX_OBJECTS_OPTIMAL = CONFIG['plotting']['max_objects_optimal']
@@ -96,9 +164,8 @@ MOON_MARKER_SIZE = CONFIG['moon']['marker_size']
 MOON_INTERFERENCE_COLOR = CONFIG['moon']['interference_color']
 
 # Mosaic Configuration
-MOSAIC_FOV_WIDTH = CONFIG['imaging']['scope']['mosaic_fov_width']
-MOSAIC_FOV_HEIGHT = CONFIG['imaging']['scope']['mosaic_fov_height']
-SCOPE_NAME = CONFIG['imaging']['scope']['name']
+MOSAIC_FOV_WIDTH = DEFAULT_SCOPE_CONFIG['mosaic_fov_width']
+MOSAIC_FOV_HEIGHT = DEFAULT_SCOPE_CONFIG['mosaic_fov_height']
 
 # Mosaic analysis functions will be imported dynamically to avoid circular imports
 MOSAIC_ANALYSIS_AVAILABLE = True
