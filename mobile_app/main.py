@@ -61,6 +61,7 @@ from screens.targets_screen import TargetsScreen
 from screens.target_detail_screen import TargetDetailScreen
 from screens.mosaic_screen import MosaicScreen
 from screens.settings_screen import SettingsScreen
+from screens.reports_screen import ReportsScreen
 from utils.app_state import AppState
 from utils.location_manager import LocationManager
 
@@ -95,12 +96,14 @@ class AstroScopePlannerApp(App):
         self.target_detail_screen = TargetDetailScreen(name='target_detail', app=self)
         self.mosaic_screen = MosaicScreen(name='mosaic', app=self)
         self.settings_screen = SettingsScreen(name='settings', app=self)
+        self.reports_screen = ReportsScreen(name='reports', app=self)
         
         self.screen_manager.add_widget(self.home_screen)
         self.screen_manager.add_widget(self.targets_screen)
         self.screen_manager.add_widget(self.target_detail_screen)
         self.screen_manager.add_widget(self.mosaic_screen)
         self.screen_manager.add_widget(self.settings_screen)
+        self.screen_manager.add_widget(self.reports_screen)
         
         # Set initial screen
         self.screen_manager.current = 'home'

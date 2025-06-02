@@ -26,6 +26,15 @@ try:
 except ImportError as e:
     Logger.error(f"MosaicScreen: Failed to import astropy modules: {e}")
 
+# Import plotting utilities
+try:
+    from utils.plotting import mobile_plot_generator
+    from widgets.plot_widget import PlotWidget, PlotContainer
+    PLOTTING_AVAILABLE = True
+except ImportError as e:
+    Logger.warning(f"MosaicScreen: Plotting not available: {e}")
+    PLOTTING_AVAILABLE = False
+
 class MosaicScreen(Screen):
     """Screen for mosaic planning and visualization"""
     
@@ -55,6 +64,11 @@ class MosaicScreen(Screen):
         # Selected group details
         details_container = self.create_details_section()
         main_layout.add_widget(details_container)
+        
+        # Mosaic visualizations
+        if PLOTTING_AVAILABLE:
+            viz_container = self.create_visualization_section()
+            main_layout.add_widget(viz_container)
         
         self.add_widget(main_layout)
     
@@ -593,10 +607,85 @@ class MosaicScreen(Screen):
         except Exception as e:
             Logger.error(f"MosaicScreen: Error adding group to plan: {e}")
     
+    def create_visualization_section(self):
+        """Create mosaic visualization section"""
+        viz_layout = BoxLayout(
+            orientation='vertical',
+            size_hint_y=None,
+            height=dp(350),
+            padding=dp(15),
+            spacing=dp(10)
+        )
+        
+        # Title
+        title = Label(
+            text='Mosaic Visualizations',
+            size_hint_y=None,
+            height=dp(30),
+            font_size='16sp',
+            bold=True,
+            color=(1, 1, 1, 1)
+        )
+        viz_layout.add_widget(title)
+        
+        # Plot container with tabs
+        self.mosaic_plot_container = PlotContainer()
+        
+        # Trajectory plot
+        trajectory_plot = PlotWidget()
+        self.mosaic_plot_container.add_plot_tab("Trajectory", trajectory_plot)
+        
+        # Grid plot
+        grid_plot = PlotWidget()
+        self.mosaic_plot_container.add_plot_tab("Grid", grid_plot)
+        
+        viz_layout.add_widget(self.mosaic_plot_container)
+        
+        # Generate plots button
+        generate_btn = Button(
+            text='Generate Visualizations',
+            size_hint_y=None,
+            height=dp(40),
+            background_color=(0.2, 0.8, 0.2, 1.0)
+        )
+        generate_btn.bind(on_press=self.generate_mosaic_plots)
+        viz_layout.add_widget(generate_btn)
+        
+        return viz_layout
+    
+    def generate_mosaic_plots(self, instance):
+        """Generate mosaic visualization plots"""
+        if not self.selected_group:
+            Logger.warning("MosaicScreen: No group selected for visualization")
+            return
+        
+        try:
+            # Generate trajectory plot
+            trajectory_widget = self.mosaic_plot_container.plots.get("Trajectory", {}).get('widget')
+            if trajectory_widget:
+                trajectory_widget.load_plot_async(
+                    mobile_plot_generator.create_mosaic_plot,
+                    "Mosaic Trajectory",
+                    [self.selected_group]
+                )
+            
+            # Generate grid plot
+            grid_widget = self.mosaic_plot_container.plots.get("Grid", {}).get('widget')
+            if grid_widget:
+                grid_widget.load_plot_async(
+                    mobile_plot_generator.create_mosaic_grid_plot,
+                    "Mosaic Grid",
+                    [self.selected_group]
+                )
+            
+            Logger.info("MosaicScreen: Mosaic plot generation initiated")
+            
+        except Exception as e:
+            Logger.error(f"MosaicScreen: Error generating mosaic plots: {e}")
+
     def visualize_group(self, instance):
         """Visualize the selected mosaic group"""
-        # TODO: Implement mosaic visualization
-        Logger.info("MosaicScreen: Mosaic visualization not yet implemented")
+        self.generate_mosaic_plots(instance)
     
     def export_group(self, instance):
         """Export mosaic group plan"""

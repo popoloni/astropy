@@ -28,6 +28,15 @@ try:
 except ImportError as e:
     Logger.error(f"TargetDetailScreen: Failed to import astropy modules: {e}")
 
+# Import plotting utilities
+try:
+    from utils.plotting import mobile_plot_generator
+    from widgets.plot_widget import PlotWidget, PlotContainer
+    PLOTTING_AVAILABLE = True
+except ImportError as e:
+    Logger.warning(f"TargetDetailScreen: Plotting not available: {e}")
+    PLOTTING_AVAILABLE = False
+
 class TargetDetailScreen(Screen):
     """Detailed view of a selected target"""
     
@@ -159,6 +168,11 @@ class TargetDetailScreen(Screen):
             # Coordinates and technical data
             technical_info = self.create_technical_section()
             self.content_layout.add_widget(technical_info)
+            
+            # Plots section
+            if PLOTTING_AVAILABLE:
+                plots_section = self.create_plots_section()
+                self.content_layout.add_widget(plots_section)
             
             # Update action buttons
             self.update_action_buttons()
@@ -456,6 +470,84 @@ class TargetDetailScreen(Screen):
         accordion.height = dp(44) + dp(80)
         
         return accordion
+    
+    def create_plots_section(self):
+        """Create plots section with trajectory and visibility charts"""
+        accordion = Accordion(orientation='vertical', size_hint_y=None)
+        
+        item = AccordionItem(
+            title='Charts & Plots',
+            size_hint_y=None,
+            min_space=dp(44)
+        )
+        
+        content = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
+        
+        # Create plot container with tabs
+        self.plot_container = PlotContainer()
+        
+        # Trajectory plot
+        trajectory_plot = PlotWidget()
+        self.plot_container.add_plot_tab("Trajectory", trajectory_plot)
+        
+        # Altitude plot
+        altitude_plot = PlotWidget()
+        self.plot_container.add_plot_tab("Altitude", altitude_plot)
+        
+        # Generate plots button
+        generate_btn = Button(
+            text='Generate Plots',
+            size_hint_y=None,
+            height=dp(40),
+            background_color=(0.2, 0.8, 0.2, 1.0)
+        )
+        generate_btn.bind(on_press=self.generate_plots)
+        
+        content.add_widget(self.plot_container)
+        content.add_widget(generate_btn)
+        
+        item.add_widget(content)
+        accordion.add_widget(item)
+        accordion.height = dp(44) + dp(400)  # Larger height for plots
+        
+        return accordion
+    
+    def generate_plots(self, instance):
+        """Generate plots for the current target"""
+        if not self.current_target or not self.app:
+            Logger.warning("TargetDetailScreen: No target or app available for plotting")
+            return
+        
+        try:
+            location = self.app.app_state.current_location
+            if not location:
+                Logger.warning("TargetDetailScreen: No location available for plotting")
+                return
+            
+            # Generate trajectory plot
+            trajectory_widget = self.plot_container.plots.get("Trajectory", {}).get('widget')
+            if trajectory_widget:
+                trajectory_widget.load_plot_async(
+                    mobile_plot_generator.create_trajectory_plot,
+                    "Trajectory Plot",
+                    self.current_target,
+                    location
+                )
+            
+            # Generate altitude plot
+            altitude_widget = self.plot_container.plots.get("Altitude", {}).get('widget')
+            if altitude_widget:
+                altitude_widget.load_plot_async(
+                    mobile_plot_generator.create_target_altitude_plot,
+                    "Altitude Plot",
+                    self.current_target,
+                    location
+                )
+            
+            Logger.info("TargetDetailScreen: Plot generation initiated")
+            
+        except Exception as e:
+            Logger.error(f"TargetDetailScreen: Error generating plots: {e}")
     
     def update_action_buttons(self):
         """Update action button states"""

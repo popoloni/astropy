@@ -27,6 +27,15 @@ try:
 except ImportError as e:
     Logger.error(f"HomeScreen: Failed to import astropy modules: {e}")
 
+# Import plotting utilities
+try:
+    from utils.plotting import mobile_plot_generator
+    from widgets.plot_widget import PlotWidget
+    PLOTTING_AVAILABLE = True
+except ImportError as e:
+    Logger.warning(f"HomeScreen: Plotting not available: {e}")
+    PLOTTING_AVAILABLE = False
+
 class HomeScreen(Screen):
     """Main home screen with tonight's overview"""
     
@@ -61,6 +70,11 @@ class HomeScreen(Screen):
         # Tonight's highlights
         highlights_card = self.create_highlights_card()
         main_layout.add_widget(highlights_card)
+        
+        # Visibility chart
+        if PLOTTING_AVAILABLE:
+            chart_card = self.create_visibility_chart_card()
+            main_layout.add_widget(chart_card)
         
         self.add_widget(main_layout)
     
@@ -263,6 +277,15 @@ class HomeScreen(Screen):
         settings_btn.bind(on_press=self.go_to_settings)
         actions_grid.add_widget(settings_btn)
         
+        # Reports button
+        reports_btn = Button(
+            text='Reports',
+            font_size='16sp',
+            background_color=(0.8, 0.6, 0.2, 1.0)
+        )
+        reports_btn.bind(on_press=self.go_to_reports)
+        actions_grid.add_widget(reports_btn)
+        
         return actions_grid
     
     def create_highlights_card(self):
@@ -298,6 +321,69 @@ class HomeScreen(Screen):
         highlights_layout.add_widget(scroll)
         
         return highlights_layout
+    
+    def create_visibility_chart_card(self):
+        """Create visibility chart card"""
+        chart_layout = BoxLayout(
+            orientation='vertical',
+            padding=dp(15),
+            spacing=dp(10)
+        )
+        
+        # Title
+        title = Label(
+            text="Tonight's Visibility Chart",
+            size_hint_y=None,
+            height=dp(30),
+            font_size='16sp',
+            bold=True,
+            color=(1, 1, 1, 1)
+        )
+        chart_layout.add_widget(title)
+        
+        # Plot widget
+        self.visibility_plot = PlotWidget()
+        chart_layout.add_widget(self.visibility_plot)
+        
+        # Generate chart button
+        generate_btn = Button(
+            text='Generate Chart',
+            size_hint_y=None,
+            height=dp(40),
+            background_color=(0.2, 0.6, 1.0, 1.0)
+        )
+        generate_btn.bind(on_press=self.generate_visibility_chart)
+        chart_layout.add_widget(generate_btn)
+        
+        return chart_layout
+    
+    def generate_visibility_chart(self, instance):
+        """Generate visibility chart for tonight's targets"""
+        if not self.app:
+            Logger.warning("HomeScreen: No app available for chart generation")
+            return
+        
+        try:
+            # Get visible targets for tonight
+            visible_targets = self.app.app_state.visible_objects[:10]  # Top 10
+            location = self.app.app_state.current_location
+            
+            if not visible_targets or not location:
+                Logger.warning("HomeScreen: No targets or location for chart")
+                return
+            
+            # Generate visibility chart
+            self.visibility_plot.load_plot_async(
+                mobile_plot_generator.create_visibility_chart,
+                "Tonight's Visibility",
+                visible_targets,
+                location
+            )
+            
+            Logger.info("HomeScreen: Visibility chart generation initiated")
+            
+        except Exception as e:
+            Logger.error(f"HomeScreen: Error generating visibility chart: {e}")
     
     def update_display(self):
         """Update all display elements"""
@@ -451,6 +537,11 @@ class HomeScreen(Screen):
         """Navigate to settings screen"""
         if self.app:
             self.app.screen_manager.current = 'settings'
+    
+    def go_to_reports(self, instance):
+        """Navigate to reports screen"""
+        if self.app:
+            self.app.screen_manager.current = 'reports'
     
     def refresh_data(self, instance):
         """Refresh application data"""
