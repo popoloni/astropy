@@ -268,11 +268,16 @@ The experimental mobile app (`mobile_app/`) provides a Kivy-based native mobile 
 - **Configuration**: Dedicated `scope_data.json` for mobile-specific settings
 
 #### **📖 Mobile App Documentation:**
-For detailed mobile app information, setup instructions, and development guides, see:
+For comprehensive mobile app information, including detailed UX documentation and screen descriptions, see:
 
-**📁 [Mobile App Documentation](documentation/mobile-app/README.md)**
+**📁 [Mobile App README](mobile_app/README.md)** - Complete mobile app documentation including:
+- **Screen Documentation**: Detailed UX flows and interface descriptions for all 8 screens
+- **User Experience Guide**: Touch interactions, navigation patterns, and mobile-optimized workflows
+- **Setup Instructions**: Installation, configuration, and development environment setup
+- **Technical Architecture**: Implementation details, state management, and component structure
+
+**📁 [Mobile App Development Documentation](documentation/mobile-app/README.md)** - Additional development resources:
 - **Setup Guide**: Installation and configuration instructions
-- **Screen Documentation**: Detailed description of each app screen
 - **Development Guide**: Contributing to mobile app development
 - **Testing Results**: Current testing status and known limitations
 
