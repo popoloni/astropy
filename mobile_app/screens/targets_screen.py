@@ -25,11 +25,12 @@ from kivy.logger import Logger
 # Add parent directory to path for astropy imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-# Import advanced filtering, gestures, and themes
+# Import advanced filtering, gestures, themes, and smart scopes
 try:
     from utils.advanced_filter import AdvancedFilter, FilterPresetManager, ImagingDifficulty, ObjectType
     from utils.gesture_manager import SwipeableWidget, AstronomyGestures
     from utils.theme_manager import get_theme_manager, ThemedWidget
+    from utils.smart_scopes import get_scope_manager, get_all_scope_names
 except ImportError:
     # Fallback if modules not available
     AdvancedFilter = None
@@ -38,6 +39,8 @@ except ImportError:
     AstronomyGestures = None
     get_theme_manager = lambda: None
     ThemedWidget = object
+    get_scope_manager = lambda: None
+    get_all_scope_names = lambda: []
 
 try:
     from analysis import calculate_object_score
@@ -921,6 +924,54 @@ class TargetsScreen(Screen, SwipeableWidget, ThemedWidget):
         exp_layout.add_widget(self.exp_time_label)
         layout.add_widget(exp_layout)
         
+        # Smart telescope scope selection
+        scope_layout = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(120))
+        scope_layout.add_widget(Label(text='Smart Telescope Scope', size_hint_y=None, height=dp(30)))
+        
+        scope_selection_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(50))
+        
+        # Get available scopes
+        scope_names = ['Default'] + get_all_scope_names()
+        current_scope = filter_obj.selected_scope
+        scope_manager = get_scope_manager()
+        
+        # Find current scope name
+        current_scope_name = 'Default'
+        if current_scope:
+            scope_spec = scope_manager.get_scope(current_scope)
+            if scope_spec:
+                current_scope_name = scope_spec.name
+        
+        self.scope_spinner = Spinner(
+            text=current_scope_name,
+            values=scope_names,
+            size_hint_x=0.6
+        )
+        
+        scope_select_btn = Button(
+            text='Configure',
+            size_hint_x=0.2,
+            background_color=(0.2, 0.6, 0.8, 1.0)
+        )
+        scope_select_btn.bind(on_press=self.open_scope_selection)
+        
+        scope_selection_layout.add_widget(self.scope_spinner)
+        scope_selection_layout.add_widget(scope_select_btn)
+        
+        # Mosaic mode toggle
+        mosaic_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
+        mosaic_layout.add_widget(Label(text='Use Mosaic Mode:', size_hint_x=0.7))
+        
+        self.mosaic_switch = Switch(
+            active=filter_obj.use_mosaic_mode,
+            size_hint_x=0.3
+        )
+        mosaic_layout.add_widget(self.mosaic_switch)
+        
+        scope_layout.add_widget(scope_selection_layout)
+        scope_layout.add_widget(mosaic_layout)
+        layout.add_widget(scope_layout)
+        
         scroll.add_widget(layout)
         return scroll
     
@@ -1055,6 +1106,18 @@ class TargetsScreen(Screen, SwipeableWidget, ThemedWidget):
         season = self.season_spinner.text
         filter_obj.season_preference = None if season == 'Any' else season
         
+        # Update scope selection
+        scope_name = self.scope_spinner.text
+        if scope_name == 'Default':
+            filter_obj.selected_scope = None
+        else:
+            scope_manager = get_scope_manager()
+            scope_id = scope_manager.get_scope_id_by_name(scope_name)
+            filter_obj.selected_scope = scope_id
+        
+        # Update mosaic mode
+        filter_obj.use_mosaic_mode = self.mosaic_switch.active
+        
         # Apply filters and update display
         self.update_targets_list()
         
@@ -1082,6 +1145,10 @@ class TargetsScreen(Screen, SwipeableWidget, ThemedWidget):
         # Reset object type checkboxes
         for obj_type, checkbox in self.object_type_checkboxes.items():
             checkbox.active = obj_type in filter_obj.object_types
+        
+        # Reset scope selection
+        self.scope_spinner.text = 'Default'
+        self.mosaic_switch.active = filter_obj.use_mosaic_mode
     
     def load_filter_preset(self, instance):
         """Load selected filter preset"""
@@ -1114,3 +1181,14 @@ class TargetsScreen(Screen, SwipeableWidget, ThemedWidget):
             if hasattr(widget, 'title') and 'Advanced Filter' in str(widget.title):
                 widget.dismiss()
                 break
+    
+    def open_scope_selection(self, instance):
+        """Open scope selection screen"""
+        try:
+            # Navigate to scope selection screen
+            if hasattr(self.manager, 'current'):
+                self.manager.current = 'scope_selection'
+        except Exception as e:
+            Logger.error(f"TargetsScreen: Failed to open scope selection: {e}")
+            # Fallback: show simple popup with scope info
+            self._show_scope_info_popup()

@@ -63,6 +63,7 @@ from screens.mosaic_screen import MosaicScreen
 from screens.settings_screen import SettingsScreen
 from screens.reports_screen import ReportsScreen
 from screens.session_planner_screen import SessionPlannerScreen
+from screens.scope_selection_screen import ScopeSelectionScreen
 from utils.app_state import AppState
 from utils.location_manager import LocationManager
 
@@ -99,6 +100,7 @@ class AstroScopePlannerApp(App):
         self.settings_screen = SettingsScreen(name='settings', app=self)
         self.reports_screen = ReportsScreen(name='reports', app=self)
         self.session_planner_screen = SessionPlannerScreen(name='session_planner', app=self)
+        self.scope_selection_screen = ScopeSelectionScreen(name='scope_selection', app=self)
         
         self.screen_manager.add_widget(self.home_screen)
         self.screen_manager.add_widget(self.targets_screen)
@@ -107,6 +109,7 @@ class AstroScopePlannerApp(App):
         self.screen_manager.add_widget(self.settings_screen)
         self.screen_manager.add_widget(self.reports_screen)
         self.screen_manager.add_widget(self.session_planner_screen)
+        self.screen_manager.add_widget(self.scope_selection_screen)
         
         # Set initial screen
         self.screen_manager.current = 'home'

@@ -7,6 +7,7 @@ from typing import List, Dict, Tuple, Optional, Any
 from dataclasses import dataclass, field
 from enum import Enum
 import math
+from .smart_scopes import get_scope_manager, ScopeSpecifications
 
 
 class ImagingDifficulty(Enum):
@@ -80,6 +81,10 @@ class AdvancedFilter:
     pixel_scale_range: Tuple[float, float] = (0.5, 5.0)  # arcsec/pixel
     exposure_time_max: float = 600.0  # seconds
     
+    # Smart telescope selection
+    selected_scope: Optional[str] = None  # Scope ID, None means use default
+    use_mosaic_mode: bool = False  # Whether to use mosaic FOV when available
+    
     # Custom criteria
     custom_criteria: List[FilterCriteria] = field(default_factory=list)
     
@@ -152,6 +157,9 @@ class AdvancedFilter:
         filter_results.append(self._check_focal_length_filter(target))
         filter_results.append(self._check_pixel_scale_filter(target))
         filter_results.append(self._check_exposure_time_filter(target))
+        
+        # Scope compatibility filter
+        filter_results.append(self._check_scope_compatibility(target))
         
         # Custom criteria
         filter_results.append(self._check_custom_criteria(target))
@@ -340,6 +348,107 @@ class AdvancedFilter:
         
         return True
 
+    def _check_scope_compatibility(self, target: Dict) -> bool:
+        """Check if target is compatible with selected scope"""
+        if not self.selected_scope:
+            return True  # No scope filter applied
+        
+        scope_manager = get_scope_manager()
+        scope = scope_manager.get_scope(self.selected_scope)
+        if not scope:
+            return True  # Invalid scope, skip filter
+        
+        # Get target size
+        target_size = target.get('size', 0)  # in arcminutes
+        if target_size <= 0:
+            return True  # No size info, assume compatible
+        
+        # Determine FOV to use
+        if self.use_mosaic_mode and scope.has_mosaic_mode and scope.mosaic_fov_deg:
+            fov_deg = max(scope.mosaic_fov_deg)
+        else:
+            fov_deg = max(scope.native_fov_deg)
+        
+        # Convert target size to degrees and check if it fits with margin
+        target_size_deg = target_size / 60.0
+        return fov_deg >= target_size_deg * 1.2  # 20% margin for framing
+
+    def get_scope_recommendations(self, target: Dict) -> List[Tuple[str, str, float]]:
+        """
+        Get scope recommendations for a specific target
+        Returns list of (scope_id, scope_name, suitability_score)
+        """
+        target_size = target.get('size', 0)  # in arcminutes
+        if target_size <= 0:
+            return []
+        
+        scope_manager = get_scope_manager()
+        recommendations = []
+        
+        for scope_id, scope in scope_manager.get_all_scopes().items():
+            # Calculate suitability
+            target_size_deg = target_size / 60.0
+            
+            # Check native FOV
+            native_fov = max(scope.native_fov_deg)
+            mosaic_fov = max(scope.mosaic_fov_deg) if scope.mosaic_fov_deg else native_fov
+            
+            # Skip if target doesn't fit even with mosaic
+            if mosaic_fov < target_size_deg * 1.1:
+                continue
+            
+            # Calculate suitability score
+            fov_efficiency = min(target_size_deg / native_fov, 1.0)  # How well target fills FOV
+            resolution_factor = scope.resolution_mp / 15.0  # Normalize to ~15MP
+            aperture_factor = scope.aperture_mm / 60.0  # Normalize to ~60mm
+            
+            # Weight factors: FOV efficiency most important, then resolution, then aperture
+            suitability = (fov_efficiency * 0.5 + resolution_factor * 0.3 + aperture_factor * 0.2)
+            
+            recommendations.append((scope_id, scope.name, suitability))
+        
+        # Sort by suitability (descending)
+        recommendations.sort(key=lambda x: x[2], reverse=True)
+        return recommendations
+
+    def set_scope_filter(self, scope_id: str, use_mosaic: bool = False) -> bool:
+        """Set scope filter with optional mosaic mode"""
+        scope_manager = get_scope_manager()
+        if scope_manager.get_scope(scope_id):
+            self.selected_scope = scope_id
+            self.use_mosaic_mode = use_mosaic
+            return True
+        return False
+
+    def clear_scope_filter(self) -> None:
+        """Clear scope filter"""
+        self.selected_scope = None
+        self.use_mosaic_mode = False
+
+    def get_selected_scope_info(self) -> Optional[Dict[str, Any]]:
+        """Get information about currently selected scope"""
+        if not self.selected_scope:
+            return None
+        
+        scope_manager = get_scope_manager()
+        scope = scope_manager.get_scope(self.selected_scope)
+        if not scope:
+            return None
+        
+        fov_used = scope.mosaic_fov_deg if (self.use_mosaic_mode and scope.mosaic_fov_deg) else scope.native_fov_deg
+        
+        return {
+            'scope_id': self.selected_scope,
+            'name': scope.name,
+            'manufacturer': scope.manufacturer,
+            'aperture_mm': scope.aperture_mm,
+            'focal_length_mm': scope.focal_length_mm,
+            'resolution_mp': scope.resolution_mp,
+            'fov_deg': fov_used,
+            'using_mosaic': self.use_mosaic_mode and scope.has_mosaic_mode,
+            'has_mosaic': scope.has_mosaic_mode
+        }
+
     def add_custom_criteria(self, field: str, operator: FilterOperator, value: Any) -> None:
         """Add custom filter criteria"""
         criteria = FilterCriteria(field=field, operator=operator, value=value)
@@ -364,6 +473,8 @@ class AdvancedFilter:
             'focal_length_range': self.focal_length_range,
             'pixel_scale_range': self.pixel_scale_range,
             'exposure_time_max': self.exposure_time_max,
+            'selected_scope': self.selected_scope,
+            'use_mosaic_mode': self.use_mosaic_mode,
             'custom_criteria_count': len(self.custom_criteria),
             'combine_with_and': self.combine_with_and,
             'enabled': self.enabled
@@ -383,6 +494,8 @@ class AdvancedFilter:
         self.focal_length_range = (200.0, 3000.0)
         self.pixel_scale_range = (0.5, 5.0)
         self.exposure_time_max = 600.0
+        self.selected_scope = None
+        self.use_mosaic_mode = False
         self.custom_criteria = []
         self.combine_with_and = True
         self.enabled = True
