@@ -23,12 +23,27 @@ from kivy.logger import Logger
 # Add parent directory to path for astropy imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-class SettingsScreen(Screen):
+# Import theme and gesture managers
+try:
+    from utils.theme_manager import get_theme_manager, ThemedWidget
+    from utils.gesture_manager import GestureManager, AstronomyGestures
+except ImportError:
+    # Fallback if modules not available
+    get_theme_manager = lambda: None
+    ThemedWidget = object
+    GestureManager = None
+    AstronomyGestures = None
+
+class SettingsScreen(Screen, ThemedWidget):
     """Settings and configuration screen"""
     
     def __init__(self, app=None, **kwargs):
         super().__init__(**kwargs)
         self.app = app
+        
+        # Initialize theme manager
+        self.theme_manager = get_theme_manager()
+        
         self.build_ui()
     
     def build_ui(self):
@@ -99,6 +114,14 @@ class SettingsScreen(Screen):
     
     def create_settings_sections(self):
         """Create all settings sections"""
+        # Theme Settings
+        theme_section = self.create_theme_section()
+        self.settings_content.add_widget(theme_section)
+        
+        # Gesture Settings
+        gesture_section = self.create_gesture_section()
+        self.settings_content.add_widget(gesture_section)
+        
         # Location Settings
         location_section = self.create_location_section()
         self.settings_content.add_widget(location_section)
@@ -118,6 +141,130 @@ class SettingsScreen(Screen):
         # About Section
         about_section = self.create_about_section()
         self.settings_content.add_widget(about_section)
+    
+    def create_theme_section(self):
+        """Create theme settings section"""
+        accordion = Accordion(orientation='vertical', size_hint_y=None)
+        
+        item = AccordionItem(
+            title='Theme Settings',
+            size_hint_y=None,
+            height=dp(200)
+        )
+        
+        content = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
+        
+        # Theme selection
+        if self.theme_manager:
+            available_themes = self.theme_manager.get_available_themes()
+            
+            for theme_info in available_themes:
+                theme_layout = BoxLayout(
+                    orientation='horizontal',
+                    size_hint_y=None,
+                    height=dp(40),
+                    spacing=dp(10)
+                )
+                
+                # Theme info
+                info_layout = BoxLayout(orientation='vertical')
+                
+                name_label = Label(
+                    text=theme_info['name'],
+                    font_size='16sp',
+                    bold=True,
+                    halign='left',
+                    size_hint_y=None,
+                    height=dp(20)
+                )
+                name_label.bind(size=name_label.setter('text_size'))
+                
+                desc_label = Label(
+                    text=theme_info['description'],
+                    font_size='12sp',
+                    halign='left',
+                    size_hint_y=None,
+                    height=dp(20)
+                )
+                desc_label.bind(size=desc_label.setter('text_size'))
+                
+                info_layout.add_widget(name_label)
+                info_layout.add_widget(desc_label)
+                
+                # Selection button
+                select_btn = Button(
+                    text='Current' if theme_info['current'] else 'Select',
+                    size_hint_x=None,
+                    width=dp(80),
+                    disabled=theme_info['current']
+                )
+                
+                if not theme_info['current']:
+                    select_btn.bind(on_press=lambda x, theme_id=theme_info['id']: self.select_theme(theme_id))
+                
+                theme_layout.add_widget(info_layout)
+                theme_layout.add_widget(select_btn)
+                content.add_widget(theme_layout)
+        else:
+            content.add_widget(Label(text='Theme manager not available'))
+        
+        item.add_widget(content)
+        accordion.add_widget(item)
+        accordion.height = dp(50)  # Collapsed height
+        
+        return accordion
+    
+    def create_gesture_section(self):
+        """Create gesture settings section"""
+        accordion = Accordion(orientation='vertical', size_hint_y=None)
+        
+        item = AccordionItem(
+            title='Gesture Controls',
+            size_hint_y=None,
+            height=dp(150)
+        )
+        
+        content = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
+        
+        # Enable gestures toggle
+        gestures_row = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=dp(40)
+        )
+        
+        gestures_label = Label(
+            text='Enable Gesture Controls',
+            font_size='16sp',
+            halign='left'
+        )
+        gestures_label.bind(size=gestures_label.setter('text_size'))
+        
+        self.gestures_switch = Switch(
+            active=True,  # Default enabled
+            size_hint_x=None,
+            width=dp(60)
+        )
+        self.gestures_switch.bind(active=self.on_gestures_toggle)
+        
+        gestures_row.add_widget(gestures_label)
+        gestures_row.add_widget(self.gestures_switch)
+        content.add_widget(gestures_row)
+        
+        # Gesture help button
+        help_btn = Button(
+            text='View Gesture Guide',
+            size_hint_y=None,
+            height=dp(35)
+        )
+        help_btn.bind(on_press=self.show_gesture_help)
+        content.add_widget(help_btn)
+        
+        item.add_widget(content)
+        accordion.add_widget(item)
+        accordion.height = dp(50)  # Collapsed height
+        
+        return accordion
     
     def create_location_section(self):
         """Create location settings section"""
@@ -818,6 +965,69 @@ class SettingsScreen(Screen):
             content=content,
             size_hint=(0.8, 0.6),
             auto_dismiss=False
+        )
+        
+        close_btn.bind(on_press=popup.dismiss)
+        popup.open()
+    
+    def select_theme(self, theme_id):
+        """Select a theme"""
+        if self.theme_manager:
+            success = self.theme_manager.set_theme(theme_id)
+            if success:
+                Logger.info(f"SettingsScreen: Changed theme to {theme_id}")
+                # Rebuild UI to reflect theme change
+                self.clear_widgets()
+                self.build_ui()
+            else:
+                Logger.error(f"SettingsScreen: Failed to change theme to {theme_id}")
+    
+    def on_gestures_toggle(self, instance, active):
+        """Handle gesture toggle"""
+        Logger.info(f"SettingsScreen: Gestures {'enabled' if active else 'disabled'}")
+        # TODO: Implement gesture enable/disable in app state
+    
+    def show_gesture_help(self, instance):
+        """Show gesture help popup"""
+        content = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
+        
+        help_text = """Gesture Controls:
+
+Target Cards:
+• Swipe right: Add to plan
+• Swipe left: Remove from plan
+• Long press: View details
+• Double tap: Toggle planned status
+
+Navigation:
+• Swipe up: Scroll to top
+• Swipe down: Refresh
+• Double tap: Quick filter toggle
+
+General:
+• Pinch: Zoom (where applicable)
+• Two-finger tap: Context menu"""
+        
+        help_label = Label(
+            text=help_text,
+            text_size=(dp(300), None),
+            halign='left',
+            valign='top'
+        )
+        
+        close_btn = Button(
+            text='Close',
+            size_hint_y=None,
+            height=dp(40)
+        )
+        
+        content.add_widget(help_label)
+        content.add_widget(close_btn)
+        
+        popup = Popup(
+            title='Gesture Guide',
+            content=content,
+            size_hint=(0.9, 0.8)
         )
         
         close_btn.bind(on_press=popup.dismiss)

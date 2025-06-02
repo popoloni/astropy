@@ -601,6 +601,69 @@ class TargetsScreen(Screen, SwipeableWidget, ThemedWidget):
             # Use the new themed target card
             return ThemedTargetCard(target, self)
             
+            # Score and details
+            score = self.get_target_score(target)
+            duration = self.get_visibility_duration(target)
+            
+            details_label = Label(
+                text=f'Score: {score:.1f}\nDuration: {duration:.1f}h',
+                font_size='14sp',
+                halign='right',
+                valign='middle',
+                size_hint_x=0.4
+            )
+            details_label.bind(size=details_label.setter('text_size'))
+            
+            info_row.add_widget(name_label)
+            info_row.add_widget(details_label)
+            
+            # Action buttons row
+            actions_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(35))
+            
+            # View details button
+            details_btn = Button(
+                text='Details',
+                size_hint_x=0.4,
+                background_color=(0.2, 0.6, 1.0, 1.0)
+            )
+            details_btn.bind(on_press=lambda x, t=target: self.view_target_details(t))
+            
+            # Add to plan button
+            plan_btn = Button(
+                text='Add to Plan',
+                size_hint_x=0.4,
+                background_color=(0.2, 0.8, 0.2, 1.0)
+            )
+            plan_btn.bind(on_press=lambda x, t=target: self.add_to_plan(t))
+            
+            # Mosaic indicator
+            if getattr(target, 'is_mosaic_candidate', target.get('is_mosaic_candidate', False)):
+                mosaic_label = Label(
+                    text='🧩',
+                    size_hint_x=0.2,
+                    font_size='20sp'
+                )
+                actions_row.add_widget(mosaic_label)
+            else:
+                actions_row.add_widget(Label(size_hint_x=0.2))  # Spacer
+            
+            actions_row.add_widget(details_btn)
+            actions_row.add_widget(plan_btn)
+            
+            card.add_widget(info_row)
+            card.add_widget(actions_row)
+            
+            # Add separator
+            separator = Label(
+                text='─' * 50,
+                size_hint_y=None,
+                height=dp(10),
+                color=(0.5, 0.5, 0.5, 1.0)
+            )
+            card.add_widget(separator)
+            
+            return card
+            
         except Exception as e:
             Logger.error(f"TargetsScreen: Error creating target card: {e}")
             return Label(text='Error loading target', size_hint_y=None, height=dp(50))
