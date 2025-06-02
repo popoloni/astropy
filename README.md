@@ -207,9 +207,13 @@ The system uses comprehensive configuration files to manage all aspects of obser
 
 #### **📄 scope_data.json - Telescope Database**
 - **Equipment Specifications**: Aperture, focal length, sensor details for multiple telescope models
-- **Supported Telescopes**: Vespera I/II, Stellina, Hyperia, and custom configurations
-- **Technical Parameters**: FOV calculations, mosaic capabilities, exposure ranges
+- **Supported Telescopes**: 
+  - **Vaonis**: Vespera I, Vespera II, Vespera Pro, Vespera Passenger (default)
+  - **ZWO**: Seestar S50, Seestar S30
+  - **DwarfLab**: Dwarf II, Dwarf III
+- **Technical Parameters**: FOV calculations, mosaic capabilities, exposure ranges (0.1-600s)
 - **Performance Metrics**: Weight, price, resolution, and imaging specifications
+- **Sensor Details**: Sony IMX462/585/678/415 sensors with CMOS/STARVIS 2 technology
 
 ### **📱 Implementation Layers**
 

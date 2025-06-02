@@ -148,7 +148,7 @@ The mobile app features 8 specialized screens designed for optimal touch interac
 **Purpose**: Choose and configure telescope equipment
 - **UX Flow**: Browse telescopes → Compare specifications → Select configuration → Apply settings
 - **Key Features**:
-  - Comprehensive telescope database (Vespera, Stellina, Hyperia, custom)
+  - Comprehensive telescope database (Vaonis Vespera series, ZWO Seestar, DwarfLab Dwarf, custom)
   - Side-by-side specification comparison
   - FOV visualization for different targets
   - Custom telescope configuration support
