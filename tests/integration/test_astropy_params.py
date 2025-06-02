@@ -57,8 +57,40 @@ def main():
     print(f"Current working directory: {os.getcwd()}")
     print()
     
+    # Find the astropy directory - it should contain astropy.py
+    current_dir = os.getcwd()
+    astropy_dir = None
+    
+    # Check if we're already in the astropy directory
+    if os.path.exists(os.path.join(current_dir, 'astropy.py')):
+        astropy_dir = current_dir
+    else:
+        # Look for astropy directory in common locations
+        possible_paths = [
+            current_dir,
+            os.path.dirname(current_dir),  # One level up
+            os.path.dirname(os.path.dirname(current_dir)),  # Two levels up
+            os.path.join(current_dir, '..'),  # Relative path
+            os.path.join(current_dir, '../..'),  # Two levels up relative
+        ]
+        
+        for path in possible_paths:
+            test_path = os.path.abspath(path)
+            if os.path.exists(os.path.join(test_path, 'astropy.py')):
+                astropy_dir = test_path
+                break
+    
+    if astropy_dir is None:
+        print("❌ ERROR: Could not find astropy.py in any expected location")
+        print("   Expected to find astropy.py in current directory or parent directories")
+        return False
+    
+    print(f"Found astropy directory: {astropy_dir}")
+    
     # Change to astropy directory
-    os.chdir('/workspace/astropy')
+    if astropy_dir != current_dir:
+        print(f"Changing to astropy directory: {astropy_dir}")
+        os.chdir(astropy_dir)
     
     # Test cases: (parameters, description)
     test_cases = [
