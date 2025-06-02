@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import all smart scope modules
 from mobile_app.utils.smart_scopes import (
-    ScopeSpecifications, SmartScopeManager, ScopeType,
+    ScopeSpecifications, ScopeManager, ScopeType,
     get_scope_manager, get_all_scope_names, get_selected_scope,
     set_selected_scope, calculate_target_fov_compatibility
 )
