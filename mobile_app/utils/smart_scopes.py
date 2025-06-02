@@ -298,13 +298,22 @@ class SmartScopeManager:
         target_size_deg = target_size_arcmin / 60.0
         
         for scope_id, scope in self.scopes.items():
-            if use_mosaic and scope.has_mosaic_mode and scope.mosaic_fov_deg:
-                fov = max(scope.mosaic_fov_deg)
-            else:
-                fov = max(scope.native_fov_deg)
+            # First try native FOV
+            native_fov = max(scope.native_fov_deg)
+            can_capture_native = native_fov >= target_size_deg * 1.1
             
-            # Target should fit within FOV with some margin
-            results[scope_id] = fov >= target_size_deg * 1.2
+            # If native doesn't work, try mosaic mode
+            can_capture_mosaic = False
+            if scope.has_mosaic_mode and scope.mosaic_fov_deg:
+                mosaic_fov = max(scope.mosaic_fov_deg)
+                can_capture_mosaic = mosaic_fov >= target_size_deg * 1.1
+            
+            # If use_mosaic is specified, prefer mosaic mode
+            if use_mosaic and scope.has_mosaic_mode and scope.mosaic_fov_deg:
+                results[scope_id] = can_capture_mosaic
+            else:
+                # Can capture if either native or mosaic works
+                results[scope_id] = can_capture_native or can_capture_mosaic
         
         return results
     
