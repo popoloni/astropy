@@ -30,12 +30,10 @@ def main():
         # Import astropy after setting up path
         import astropy
         
-        # Get scope configuration
-        scope_name = astropy.CONFIG['imaging']['scope']['name']
-        mosaic_fov_w = astropy.CONFIG['imaging']['scope']['mosaic_fov_width']
-        mosaic_fov_h = astropy.CONFIG['imaging']['scope']['mosaic_fov_height']
-        print(f"🔭 {scope_name}")
-        print(f"📐 Mosaic FOV: {mosaic_fov_w}° × {mosaic_fov_h}°")
+        # Get scope configuration from settings
+        from config.settings import SCOPE_NAME, MOSAIC_FOV_WIDTH, MOSAIC_FOV_HEIGHT
+        print(f"🔭 {SCOPE_NAME}")
+        print(f"📐 Mosaic FOV: {MOSAIC_FOV_WIDTH}° × {MOSAIC_FOV_HEIGHT}°")
         print()
         
         # Set up arguments for comprehensive mosaic analysis

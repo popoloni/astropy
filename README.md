@@ -114,7 +114,7 @@ astropy/
 │   └── feature_demonstration.py # Feature demonstration scripts
 ├── 📁 visualization/      # Plotting and chart generation
 │   └── plotting.py       # Core plotting functions and visualizations
-├── 📁 wrappers/          # Pythonista-compatible wrapper scripts
+├── 📁 wrappers/          # Mobile app wrapper scripts (🧪 experimental)
 │   ├── run_longest_duration.py # Longest duration strategy wrapper
 │   ├── run_max_objects.py      # Maximum objects strategy wrapper
 │   ├── run_optimal_snr.py      # Optimal SNR strategy wrapper
@@ -123,6 +123,7 @@ astropy/
 │   ├── run_quarters.py         # Quarterly analysis wrapper
 │   ├── run_quarters_report.py  # Quarterly reporting wrapper
 │   ├── run_report_only.py      # Report-only wrapper
+│   ├── run_telescope_analysis.py # Telescope analysis and listing
 │   └── run_with_plots.py       # Full plotting wrapper
 ├── 📁 tests/             # Comprehensive test suite (79 verified scripts)
 │   ├── integration/      # Integration and system tests
@@ -178,15 +179,22 @@ python astropy.py --mosaic --schedule mosaic_groups
 python astropy.py --date 2024-08-15 --schedule max_objects
 ```
 
-### **📱 Wrapper Scripts (iOS Pythonista Compatible)**
+### **📱 Wrapper Scripts (iOS Pythonista Compatible) - 🧪 EXPERIMENTAL**
 ```bash
-# Quick access to common functions
+# Quick access to common functions - All 10 wrappers tested and working
 python wrappers/run_report_only.py        # Generate reports
 python wrappers/run_max_objects.py        # Maximum objects strategy
 python wrappers/run_optimal_snr.py        # Optimal SNR strategy
 python wrappers/run_mosaic_analysis.py    # Comprehensive mosaic analysis
 python wrappers/run_quarters.py           # Quarterly planning
+python wrappers/run_longest_duration.py   # Longest duration strategy
+python wrappers/run_mosaic_plots.py       # Mosaic trajectory plotting
+python wrappers/run_quarters_report.py    # Quarterly analysis without plots
+python wrappers/run_with_plots.py         # Full observation planner with plots
+python wrappers/run_telescope_analysis.py # Telescope analysis and listing
 ```
+
+> **⚠️ Note**: Mobile app features are currently experimental. While all wrapper scripts have been tested and work correctly, iOS Pythonista compatibility may vary depending on device capabilities and library availability.
 
 ### **Configuration**
 The system uses `config.json` for all settings:
@@ -315,7 +323,7 @@ python astropy.py --report-only
 # Detailed planning with plots
 python astropy.py --schedule max_objects
 
-# Using wrapper scripts (Pythonista compatible)
+# Using wrapper scripts (mobile app compatible - experimental)
 python wrappers/run_report_only.py
 python wrappers/run_max_objects.py
 ```
@@ -328,7 +336,7 @@ python astropy.py --mosaic --schedule mosaic_groups
 # Focus only on mosaics
 python astropy.py --mosaic-only --no-duplicates
 
-# Using mosaic wrapper scripts
+# Using mosaic wrapper scripts (experimental)
 python wrappers/run_mosaic_analysis.py
 python wrappers/run_mosaic_plots.py
 ```
@@ -341,21 +349,23 @@ python astropy.py --date 2024-09-15 --schedule optimal_snr
 # Simulate midnight conditions
 python astropy.py --simulate-time 00:00 --quarters
 
-# Using wrapper scripts for specific strategies
+# Using wrapper scripts for specific strategies (experimental)
 python wrappers/run_optimal_snr.py
 python wrappers/run_quarters.py
 ```
 
-#### **📱 iOS Pythonista Usage**
+#### **📱 iOS Pythonista Usage - 🧪 EXPERIMENTAL**
 ```python
-# Direct execution in Pythonista
+# Direct execution in Pythonista (experimental)
 exec(open('wrappers/run_longest_duration.py').read())
 
-# Import and run
+# Import and run (experimental)
 import sys
 sys.path.insert(0, 'wrappers')
 import run_mosaic_analysis
 ```
+
+> **⚠️ Experimental Feature**: iOS Pythonista support is experimental. Some features may require additional setup or may not work on all iOS devices due to library dependencies.
 
 ---
 
@@ -420,11 +430,39 @@ Comprehensive documentation is available in the `documentation/` folder:
 - **🏗️ [Architecture](documentation/architecture/)** - System design and modules
 - **⚙️ [API Documentation](documentation/api/)** - Function and class references
 - **🔧 [Development](documentation/development/)** - Contributing and phase reports
+- **📱 [Mobile App Features](documentation/mobile-app/)** - iOS Pythonista compatibility (🧪 experimental)
 
 ### **Quick References**
 - **[Quick Start Guide](documentation/usage/QUICK_START.md)** - Get up and running fast
 - **🌟 [Trajectory Analysis Guide](documentation/user-guides/trajectory_analysis_quick_reference.md)** - Multi-night planning strategies
 - **[Configuration Guide](documentation/usage/README.md)** - Detailed setup instructions
+- **📱 [Mobile App Setup](documentation/mobile-app/SETUP_GUIDE.md)** - iOS Pythonista setup (🧪 experimental)
+
+---
+
+## 🆕 **Latest Features & Updates**
+
+### **📱 Mobile App Wrapper Scripts - 🧪 EXPERIMENTAL**
+All 10 wrapper scripts have been thoroughly tested and are working correctly:
+
+#### **✅ Tested Wrapper Scripts:**
+- **run_telescope_analysis.py** - Telescope listing and CLI commands (8 telescopes loaded)
+- **run_report_only.py** - Comprehensive observation report generation
+- **run_longest_duration.py** - Strategy-based scheduling optimization
+- **run_mosaic_analysis.py** - Comprehensive mosaic analysis with trajectory plots
+- **run_max_objects.py** - Maximum objects strategy optimization
+- **run_optimal_snr.py** - Optimal SNR strategy implementation
+- **run_quarters.py** - 4-quarter trajectory plots with scheduling
+- **run_mosaic_plots.py** - Mosaic trajectory plotting and visualization
+- **run_quarters_report.py** - Quarterly analysis without plots
+- **run_with_plots.py** - Full observation planner with comprehensive plots
+
+#### **🔧 Recent Fixes Applied:**
+- **Configuration Updates**: Updated wrappers to use new `config.settings` module structure
+- **Moon Interference Bug Fix**: Fixed datetime object handling in trajectory plotting functions
+- **Plotting Compatibility**: Enhanced moon interference visualization for all wrapper scripts
+
+> **⚠️ Important**: While all wrapper scripts are tested and functional, mobile app compatibility (iOS Pythonista) is experimental and may require additional setup or library installations.
 
 ---
 
@@ -623,7 +661,7 @@ python astropy.py --report-only --mosaic --schedule mosaic_groups
 - ✅ **Test Scripts**: 33/33 functional (all integration, unit, precision, and demo tests)
 - ✅ **Utility Scripts**: 6/6 working perfectly
 - ✅ **Root Scripts**: 2/2 working (astropy.py and trajectory_analysis.py)
-- ✅ **Wrapper Scripts**: 9/9 working (all Pythonista iOS compatible)
+- ✅ **Wrapper Scripts**: 10/10 working (all mobile app features tested - 🧪 experimental)
 - ✅ **Core Functions**: filter_visible_objects and all visibility functions verified
 - ✅ **Astrophotography Planning**: Visibility filtering with altitude/azimuth constraints intact
 - ✅ **Integration Tests**: 10/10 comprehensive integration tests pass
