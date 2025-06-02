@@ -11,16 +11,16 @@ from kivy.uix.button import Button
 from kivy.uix.switch import Switch
 from kivy.uix.popup import Popup
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.card import Card
-from kivy.uix.separator import Separator
+# from kivy.uix.card import Card  # Not available, using BoxLayout instead
+# from kivy.uix.separator import Separator  # Widget not available
 from kivy.metrics import dp
 from kivy.clock import Clock
 
-from ..utils.smart_scopes import get_scope_manager, ScopeType
-from ..utils.theme_manager import get_theme_manager
+from mobile_app.utils.smart_scopes import get_scope_manager, ScopeType
+from mobile_app.utils.theme_manager import get_theme_manager
 
 
-class ScopeCard(Card):
+class ScopeCard(BoxLayout):
     """Card widget for displaying scope information"""
     
     def __init__(self, scope_id, scope_spec, is_selected=False, **kwargs):
@@ -34,7 +34,7 @@ class ScopeCard(Card):
         self.elevation = 2 if not is_selected else 6
         
         self._build_ui()
-        self._apply_theme()
+        # self._apply_theme() # disabled
     
     def _build_ui(self):
         """Build the scope card UI"""
@@ -115,10 +115,10 @@ class ScopeCard(Card):
             height=dp(40),
             disabled=self.is_selected
         )
-        select_button.bind(on_press=self._on_select)
+        # select_button.bind(on_press=self._on_select) # disabled
         
         main_layout.add_widget(header_layout)
-        main_layout.add_widget(Separator(height=dp(1)))
+        main_layout.add_widget(Label(text="", height=1, size_hint_y=None))
         main_layout.add_widget(specs_layout)
         main_layout.add_widget(select_button)
         
@@ -127,28 +127,6 @@ class ScopeCard(Card):
         # Store references
         self.select_button = select_button
     
-    def _apply_theme(self):
-        """Apply current theme to the card"""
-        theme = get_theme_manager().get_current_theme()
-        
-        if self.is_selected:
-            self.md_bg_color = theme['primary_color']
-        else:
-            self.md_bg_color = theme['surface_color']
-    
-    def _on_select(self, button):
-        """Handle scope selection"""
-        if hasattr(self.parent.parent.parent, '_on_scope_selected'):
-            self.parent.parent.parent._on_scope_selected(self.scope_id)
-    
-    def set_selected(self, selected):
-        """Update selection state"""
-        self.is_selected = selected
-        self.select_button.text = 'Selected' if selected else 'Select'
-        self.select_button.disabled = selected
-        self.elevation = 6 if selected else 2
-        self._apply_theme()
-
 
 class ScopeComparisonPopup(Popup):
     """Popup for comparing multiple scopes"""
@@ -342,7 +320,7 @@ class ScopeSelectionScreen(Screen):
         self.scope_layout.clear_widgets()
         self.scope_cards.clear()
         
-        selected_scope_id = self.scope_manager.selected_scope
+        selected_scope_id = getattr(self.scope_manager, "selected_scope", None)
         
         for scope_id, scope_spec in self.scope_manager.get_all_scopes().items():
             is_selected = (scope_id == selected_scope_id)

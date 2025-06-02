@@ -13,7 +13,7 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.card import Card
+# from kivy.uix.card import Card  # Not available, using BoxLayout instead
 from kivy.metrics import dp
 from kivy.logger import Logger
 from kivy.clock import Clock

@@ -49,7 +49,7 @@ except ImportError as e:
     Logger.error(f"TargetsScreen: Failed to import astronightplanner modules: {e}")
 
 
-class ThemedTargetCard(BoxLayout, SwipeableWidget, ThemedWidget):
+class ThemedTargetCard(BoxLayout):
     """Themed target card with gesture support"""
     
     def __init__(self, target, parent_screen, **kwargs):
@@ -237,7 +237,7 @@ class ThemedTargetCard(BoxLayout, SwipeableWidget, ThemedWidget):
         Logger.info(f"Toggled planned status for {getattr(self.target, 'name', 'target')} via double tap")
 
 
-class TargetsScreen(Screen, SwipeableWidget, ThemedWidget):
+class TargetsScreen(Screen):
     """Screen for browsing and filtering targets"""
     
     def __init__(self, app=None, **kwargs):
