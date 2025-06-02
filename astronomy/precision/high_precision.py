@@ -614,7 +614,7 @@ def find_precise_astronomical_twilight(dt: datetime, observer_lat: float, observ
             
             # Calculate midpoint
             mid_seconds = (start_time.timestamp() + end_time.timestamp()) / 2
-            mid_time = datetime.fromtimestamp(mid_seconds, tz=pytz.UTC)
+            mid_time = datetime.fromtimestamp(mid_seconds)  # Remove tz=pytz.UTC to keep it timezone-naive
             mid_alt = get_sun_altitude(mid_time)
             
             # Determine which half contains the root
