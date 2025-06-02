@@ -10,7 +10,8 @@ import unittest
 from unittest.mock import Mock, patch, MagicMock
 
 # Add mobile app to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'mobile_app'))
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(root_dir, 'mobile_app'))
 
 class TestGestureManager(unittest.TestCase):
     """Test gesture manager functionality"""

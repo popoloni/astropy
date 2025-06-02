@@ -11,8 +11,9 @@ import json
 from typing import List, Dict
 
 # Add paths for imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mobile_app'))
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, root_dir)
+sys.path.insert(0, os.path.join(root_dir, 'mobile_app'))
 
 # Test imports
 try:
@@ -40,7 +41,8 @@ class SystemTester:
     
     def __init__(self):
         self.test_results = []
-        self.cli_script = "wrappers/run_telescope_analysis.py"
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.cli_script = os.path.join(root_dir, "wrappers", "run_telescope_analysis.py")
     
     def run_test(self, test_name: str, test_func) -> bool:
         """Run a test and record results"""
@@ -128,9 +130,10 @@ class SystemTester:
     def test_cli_interface(self) -> bool:
         """Test CLI interface"""
         # Test list command
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         result = subprocess.run([
             sys.executable, self.cli_script, "list"
-        ], capture_output=True, text=True, cwd=os.path.dirname(os.path.abspath(__file__)))
+        ], capture_output=True, text=True, cwd=root_dir)
         
         if result.returncode != 0:
             return False
@@ -141,7 +144,7 @@ class SystemTester:
         # Test analyze command
         result = subprocess.run([
             sys.executable, self.cli_script, "analyze", "vespera_2"
-        ], capture_output=True, text=True, cwd=os.path.dirname(os.path.abspath(__file__)))
+        ], capture_output=True, text=True, cwd=root_dir)
         
         if result.returncode != 0:
             return False
@@ -153,7 +156,7 @@ class SystemTester:
         result = subprocess.run([
             sys.executable, self.cli_script, "exposure", "seestar_s30", "galaxy",
             "--magnitude", "9.5", "--pollution", "dark"
-        ], capture_output=True, text=True, cwd=os.path.dirname(os.path.abspath(__file__)))
+        ], capture_output=True, text=True, cwd=root_dir)
         
         if result.returncode != 0:
             return False
@@ -165,7 +168,7 @@ class SystemTester:
         result = subprocess.run([
             sys.executable, self.cli_script, "quality", "dwarf_2", "emission_nebula",
             "--magnitude", "8.0", "--size", "45"
-        ], capture_output=True, text=True, cwd=os.path.dirname(os.path.abspath(__file__)))
+        ], capture_output=True, text=True, cwd=root_dir)
         
         if result.returncode != 0:
             return False
@@ -177,7 +180,7 @@ class SystemTester:
         result = subprocess.run([
             sys.executable, self.cli_script, "compare", "planetary_nebula",
             "--magnitude", "10.0", "--size", "30"
-        ], capture_output=True, text=True, cwd=os.path.dirname(os.path.abspath(__file__)))
+        ], capture_output=True, text=True, cwd=root_dir)
         
         if result.returncode != 0:
             return False
@@ -189,16 +192,17 @@ class SystemTester:
     
     def test_data_export(self) -> bool:
         """Test data export functionality"""
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         # Test CLI export
         result = subprocess.run([
             sys.executable, self.cli_script, "export", "--filename", "test_export.json"
-        ], capture_output=True, text=True, cwd=os.path.dirname(os.path.abspath(__file__)))
+        ], capture_output=True, text=True, cwd=root_dir)
         
         if result.returncode != 0:
             return False
         
         # Check if file was created
-        export_file = "test_export.json"
+        export_file = os.path.join(root_dir, "test_export.json")
         if not os.path.exists(export_file):
             return False
         
@@ -224,16 +228,17 @@ class SystemTester:
     def test_mobile_app_integration(self) -> bool:
         """Test mobile app integration tests"""
         # Run existing mobile app tests
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         test_files = [
-            "mobile_app/test_all_scope_configurations.py",
-            "mobile_app/test_exposure_quality_system.py"
+            os.path.join(root_dir, "mobile_app", "test_all_scope_configurations.py"),
+            os.path.join(root_dir, "mobile_app", "test_exposure_quality_system.py")
         ]
         
         for test_file in test_files:
             if os.path.exists(test_file):
                 result = subprocess.run([
                     sys.executable, test_file
-                ], capture_output=True, text=True, cwd=os.path.dirname(os.path.abspath(__file__)))
+                ], capture_output=True, text=True, cwd=root_dir)
                 
                 # Accept exit code 1 if the test shows mostly working status
                 if result.returncode != 0 and "WORKING" not in result.stdout:
