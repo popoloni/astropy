@@ -158,6 +158,37 @@ class AppState(EventDispatcher):
         if target not in self.completed_objects:
             self.completed_objects.append(target)
     
+    def get_target_name(self, target):
+        """Safely get target name from either CelestialObject or dict"""
+        try:
+            if hasattr(target, 'name'):
+                return target.name
+            elif isinstance(target, dict):
+                return target.get('name', '')
+            else:
+                return str(target) if target else ''
+        except Exception:
+            return ''
+    
+    def is_target_planned(self, target) -> bool:
+        """Check if target is in planned observations"""
+        # Compare by name since target objects might be different instances
+        target_name = self.get_target_name(target)
+        for planned in self.planned_objects:
+            planned_name = self.get_target_name(planned)
+            if target_name == planned_name:
+                return True
+        return False
+    
+    def is_target_completed(self, target) -> bool:
+        """Check if target is completed"""
+        target_name = self.get_target_name(target)
+        for completed in self.completed_objects:
+            completed_name = self.get_target_name(completed)
+            if target_name == completed_name:
+                return True
+        return False
+    
     def get_session_stats(self) -> Dict[str, Any]:
         """Get current session statistics"""
         return {
@@ -182,17 +213,17 @@ class AppState(EventDispatcher):
             'strategy': self.scheduling_strategy,
             'planned_objects': [
                 {
-                    'name': getattr(obj, 'name', obj.get('name', 'Unknown')),
-                    'type': getattr(obj, 'object_type', obj.get('object_type', 'Unknown')),
-                    'ra': getattr(obj, 'ra', obj.get('ra', 0)),
-                    'dec': getattr(obj, 'dec', obj.get('dec', 0))
+                    'name': self.get_target_name(obj),
+                    'type': getattr(obj, 'object_type', 'Unknown') if hasattr(obj, 'object_type') else obj.get('object_type', 'Unknown') if isinstance(obj, dict) else 'Unknown',
+                    'ra': getattr(obj, 'ra', 0) if hasattr(obj, 'ra') else obj.get('ra', 0) if isinstance(obj, dict) else 0,
+                    'dec': getattr(obj, 'dec', 0) if hasattr(obj, 'dec') else obj.get('dec', 0) if isinstance(obj, dict) else 0
                 }
                 for obj in self.planned_objects
             ],
             'completed_objects': [
                 {
-                    'name': getattr(obj, 'name', obj.get('name', 'Unknown')),
-                    'type': getattr(obj, 'object_type', obj.get('object_type', 'Unknown'))
+                    'name': self.get_target_name(obj),
+                    'type': getattr(obj, 'object_type', 'Unknown') if hasattr(obj, 'object_type') else obj.get('object_type', 'Unknown') if isinstance(obj, dict) else 'Unknown'
                 }
                 for obj in self.completed_objects
             ],

@@ -21,6 +21,8 @@ from kivy.uix.popup import Popup
 from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
 from kivy.metrics import dp
 from kivy.logger import Logger
+from kivy.clock import Clock
+from mobile_app.utils.app_logger import log_info, log_error, log_warning, log_debug
 
 # Add parent directory to path for astropy imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -47,194 +49,6 @@ try:
     from astronomy import find_visibility_window, calculate_visibility_duration
 except ImportError as e:
     Logger.error(f"TargetsScreen: Failed to import astronightplanner modules: {e}")
-
-
-class ThemedTargetCard(BoxLayout):
-    """Themed target card with gesture support"""
-    
-    def __init__(self, target, parent_screen, **kwargs):
-        super().__init__(**kwargs)
-        self.target = target
-        self.parent_screen = parent_screen
-        self.theme_manager = get_theme_manager()
-        
-        # Setup card properties
-        self.orientation = 'vertical'
-        self.padding = dp(10)
-        self.spacing = dp(5)
-        self.size_hint_y = None
-        self.height = dp(100)
-        
-        # Setup gestures
-        self.setup_target_gestures()
-        
-        # Build card content
-        self.build_card()
-        
-        # Apply theme
-        self.apply_theme()
-    
-    def setup_target_gestures(self):
-        """Setup gestures for target card"""
-        if hasattr(self, 'gesture_manager'):
-            # Swipe right to add to planned
-            self.gesture_manager.register_gesture('swipe_right', self.on_swipe_add_to_plan)
-            
-            # Swipe left to remove from planned
-            self.gesture_manager.register_gesture('swipe_left', self.on_swipe_remove_from_plan)
-            
-            # Long press for details
-            self.gesture_manager.register_gesture('long_press', self.on_long_press_details)
-            
-            # Double tap for quick action
-            self.gesture_manager.register_gesture('double_tap', self.on_double_tap_action)
-    
-    def build_card(self):
-        """Build the card content"""
-        # Target info row
-        info_row = BoxLayout(orientation='horizontal')
-        
-        # Target name and type
-        name = getattr(self.target, 'name', self.target.get('name', 'Unknown'))
-        obj_type = getattr(self.target, 'object_type', self.target.get('object_type', 'Unknown'))
-        
-        self.name_label = Label(
-            text=f'{name}\n{obj_type}',
-            font_size='16sp',
-            bold=True,
-            halign='left',
-            valign='middle',
-            size_hint_x=0.6
-        )
-        self.name_label.bind(size=self.name_label.setter('text_size'))
-        
-        # Score and details
-        score = self.parent_screen.get_target_score(self.target)
-        duration = self.parent_screen.get_visibility_duration(self.target)
-        
-        self.details_label = Label(
-            text=f'Score: {score:.1f}\nDuration: {duration:.1f}h',
-            font_size='14sp',
-            halign='right',
-            valign='middle',
-            size_hint_x=0.4
-        )
-        self.details_label.bind(size=self.details_label.setter('text_size'))
-        
-        info_row.add_widget(self.name_label)
-        info_row.add_widget(self.details_label)
-        
-        # Action buttons row
-        buttons_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(35))
-        
-        # View details button
-        self.details_btn = Button(
-            text='Details',
-            font_size='14sp',
-            size_hint_x=0.3
-        )
-        self.details_btn.bind(on_press=lambda x: self.parent_screen.view_target_details(self.target))
-        
-        # Add to plan button
-        is_planned = self.parent_screen.app.app_state.is_target_planned(self.target)
-        self.plan_btn = Button(
-            text='Remove' if is_planned else 'Add to Plan',
-            font_size='14sp',
-            size_hint_x=0.4
-        )
-        self.plan_btn.bind(on_press=lambda x: self.toggle_planned())
-        
-        # Quick info
-        self.info_label = Label(
-            text=self.get_quick_info(),
-            font_size='12sp',
-            size_hint_x=0.3
-        )
-        
-        buttons_row.add_widget(self.details_btn)
-        buttons_row.add_widget(self.plan_btn)
-        buttons_row.add_widget(self.info_label)
-        
-        self.add_widget(info_row)
-        self.add_widget(buttons_row)
-    
-    def get_quick_info(self):
-        """Get quick info text for target"""
-        try:
-            # Get magnitude if available
-            mag = getattr(self.target, 'magnitude', self.target.get('magnitude', None))
-            if mag is not None:
-                return f'Mag: {mag:.1f}'
-            
-            # Get size if available
-            size = getattr(self.target, 'size', self.target.get('size', None))
-            if size is not None:
-                return f'Size: {size:.1f}\'\''
-            
-            return 'Info'
-        except:
-            return 'Info'
-    
-    def apply_theme(self):
-        """Apply current theme to the card"""
-        if self.theme_manager:
-            # Apply background color
-            self.canvas.before.clear()
-            with self.canvas.before:
-                from kivy.graphics import Color, Rectangle
-                Color(*self.theme_manager.get_color('background_card'))
-                self.bg_rect = Rectangle(pos=self.pos, size=self.size)
-            
-            # Bind to update background on size/position change
-            self.bind(pos=self.update_bg, size=self.update_bg)
-            
-            # Apply text colors
-            self.name_label.color = self.theme_manager.get_color('text_primary')
-            self.details_label.color = self.theme_manager.get_color('text_secondary')
-            self.info_label.color = self.theme_manager.get_color('text_hint')
-            
-            # Apply button colors
-            self.details_btn.background_color = self.theme_manager.get_color('button_secondary')
-            self.plan_btn.background_color = self.theme_manager.get_color('accent_primary')
-    
-    def update_bg(self, *args):
-        """Update background rectangle"""
-        if hasattr(self, 'bg_rect'):
-            self.bg_rect.pos = self.pos
-            self.bg_rect.size = self.size
-    
-    def toggle_planned(self):
-        """Toggle planned status"""
-        if self.parent_screen.app.app_state.is_target_planned(self.target):
-            self.parent_screen.app.app_state.remove_from_planned(self.target)
-            self.plan_btn.text = 'Add to Plan'
-        else:
-            self.parent_screen.app.app_state.add_to_planned(self.target)
-            self.plan_btn.text = 'Remove'
-    
-    def on_swipe_add_to_plan(self, data):
-        """Handle swipe right gesture - add to plan"""
-        if not self.parent_screen.app.app_state.is_target_planned(self.target):
-            self.parent_screen.app.app_state.add_to_planned(self.target)
-            self.plan_btn.text = 'Remove'
-            Logger.info(f"Added {getattr(self.target, 'name', 'target')} to plan via swipe")
-    
-    def on_swipe_remove_from_plan(self, data):
-        """Handle swipe left gesture - remove from plan"""
-        if self.parent_screen.app.app_state.is_target_planned(self.target):
-            self.parent_screen.app.app_state.remove_from_planned(self.target)
-            self.plan_btn.text = 'Add to Plan'
-            Logger.info(f"Removed {getattr(self.target, 'name', 'target')} from plan via swipe")
-    
-    def on_long_press_details(self, data):
-        """Handle long press gesture - show details"""
-        self.parent_screen.view_target_details(self.target)
-        Logger.info(f"Showing details for {getattr(self.target, 'name', 'target')} via long press")
-    
-    def on_double_tap_action(self, data):
-        """Handle double tap gesture - toggle planned status"""
-        self.toggle_planned()
-        Logger.info(f"Toggled planned status for {getattr(self.target, 'name', 'target')} via double tap")
 
 
 class TargetsScreen(Screen):
@@ -515,7 +329,7 @@ class TargetsScreen(Screen):
             if self.current_filter_type != 'All Types':
                 targets = [
                     t for t in targets
-                    if getattr(t, 'object_type', t.get('object_type', '')).lower() == self.current_filter_type.lower()
+                    if self.get_target_attribute(t, 'object_type', '').lower() == self.current_filter_type.lower()
                 ]
             
             # Apply search filter
@@ -523,14 +337,14 @@ class TargetsScreen(Screen):
                 search_lower = self.search_text.lower()
                 targets = [
                     t for t in targets
-                    if search_lower in getattr(t, 'name', t.get('name', '')).lower()
+                    if search_lower in self.get_target_attribute(t, 'name', '').lower()
                 ]
             
             # Apply mosaic filter
             if self.mosaic_switch.active:
                 targets = [
                     t for t in targets
-                    if getattr(t, 'is_mosaic_candidate', t.get('is_mosaic_candidate', False))
+                    if self.get_target_attribute(t, 'is_mosaic_candidate', False)
                 ]
             
             # Apply sorting
@@ -550,11 +364,11 @@ class TargetsScreen(Screen):
             elif self.current_sort_method == 'Score (Low to High)':
                 return sorted(targets, key=lambda t: self.get_target_score(t))
             elif self.current_sort_method == 'Name (A-Z)':
-                return sorted(targets, key=lambda t: getattr(t, 'name', t.get('name', '')))
+                return sorted(targets, key=lambda t: self.get_target_attribute(t, 'name', ''))
             elif self.current_sort_method == 'Name (Z-A)':
-                return sorted(targets, key=lambda t: getattr(t, 'name', t.get('name', '')), reverse=True)
+                return sorted(targets, key=lambda t: self.get_target_attribute(t, 'name', ''), reverse=True)
             elif self.current_sort_method == 'Type':
-                return sorted(targets, key=lambda t: getattr(t, 'object_type', t.get('object_type', '')))
+                return sorted(targets, key=lambda t: self.get_target_attribute(t, 'object_type', ''))
             elif self.current_sort_method == 'Visibility Duration':
                 return sorted(targets, key=lambda t: self.get_visibility_duration(t), reverse=True)
             else:
@@ -566,47 +380,210 @@ class TargetsScreen(Screen):
     def get_target_score(self, target):
         """Get score for a target"""
         try:
-            if hasattr(target, 'score'):
-                return target.score
-            elif isinstance(target, dict) and 'score' in target:
-                return target['score']
-            else:
-                # Calculate score using astropy function
+            # First try to get existing score attribute
+            score = self.get_target_attribute(target, 'score', None)
+            if score is not None:
+                return float(score)
+            
+            # If no score, try to calculate it
+            if calculate_object_score:
                 return calculate_object_score(target)
-        except:
-            return 0
+            else:
+                return 0.0
+        except Exception:
+            return 0.0
     
     def get_visibility_duration(self, target):
         """Get visibility duration for a target"""
         try:
-            if hasattr(target, 'visibility_duration'):
-                return target.visibility_duration
-            elif isinstance(target, dict) and 'visibility_duration' in target:
-                return target['visibility_duration']
-            else:
-                # Calculate using astropy function
-                if self.app and self.app.app_state.current_location:
-                    location = self.app.app_state.current_location
+            # First try to get existing duration attribute
+            duration = self.get_target_attribute(target, 'visibility_duration', None)
+            if duration is not None:
+                return float(duration)
+            
+            duration = self.get_target_attribute(target, 'visibility_hours', None)
+            if duration is not None:
+                return float(duration)
+                
+            # If no duration, try to calculate it
+            if calculate_visibility_duration and self.app and self.app.app_state.current_location:
+                location = self.app.app_state.current_location
+                lat = self.get_target_attribute(location, 'latitude', None) or self.get_target_attribute(location, 'lat', None)
+                lon = self.get_target_attribute(location, 'longitude', None) or self.get_target_attribute(location, 'lon', None)
+                
+                if lat is not None and lon is not None:
                     duration = calculate_visibility_duration(
                         target,
                         datetime.now(),
-                        location['latitude'],
-                        location['longitude']
+                        float(lat),
+                        float(lon)
                     )
                     return duration
-                return 0
-        except:
-            return 0
+            
+            return 0.0
+        except Exception:
+            return 0.0
     
-    def create_target_card(self, target):
-        """Create a card widget for a target"""
+    def get_target_attribute(self, target, attr_name, default_value='Unknown'):
+        """Safely get attribute from target (handles both objects and dicts)"""
         try:
-            # Use the new themed target card
-            return ThemedTargetCard(target, self)
+            if isinstance(target, dict):
+                return target.get(attr_name, default_value)
+            else:
+                return getattr(target, attr_name, default_value)
+        except Exception:
+            return default_value
+
+    def create_target_card(self, target):
+        """Create a simple mobile-friendly card widget for a target"""
+        try:
+            # Create simple card layout
+            card = BoxLayout(
+                orientation='vertical',
+                size_hint_y=None,
+                height=dp(100),
+                padding=dp(10),
+                spacing=dp(5)
+            )
+            
+            # Add border background
+            from kivy.graphics import Color, Rectangle, Line
+            with card.canvas.before:
+                Color(0.2, 0.2, 0.2, 1)  # Dark gray background
+                card.bg_rect = Rectangle(pos=card.pos, size=card.size)
+                Color(0.4, 0.4, 0.4, 1)  # Border color
+                card.border = Line(rectangle=(card.x, card.y, card.width, card.height), width=1)
+            
+            # Update background when card size/position changes
+            card.bind(pos=lambda *args: setattr(card.bg_rect, 'pos', card.pos))
+            card.bind(size=lambda *args: setattr(card.bg_rect, 'size', card.size))
+            card.bind(pos=lambda *args: setattr(card.border, 'rectangle', (card.x, card.y, card.width, card.height)))
+            card.bind(size=lambda *args: setattr(card.border, 'rectangle', (card.x, card.y, card.width, card.height)))
+            
+            # Target info row
+            info_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(50))
+            
+            # Target name and type using safe attribute getter
+            name = self.get_target_attribute(target, 'name', 'Unknown')
+            obj_type = self.get_target_attribute(target, 'object_type', 'Unknown')
+            
+            name_label = Label(
+                text=f'{name}\n({obj_type})',
+                font_size='14sp',
+                halign='left',
+                valign='middle',
+                size_hint_x=0.6,
+                color=(1, 1, 1, 1)
+            )
+            name_label.bind(size=name_label.setter('text_size'))
+            
+            # Score and details
+            score = self.get_target_score(target)
+            duration = self.get_visibility_duration(target)
+            magnitude = self.get_target_attribute(target, 'magnitude', 'N/A')
+            
+            # Format magnitude for display
+            if magnitude != 'N/A':
+                try:
+                    magnitude = f"{float(magnitude):.1f}"
+                except (ValueError, TypeError):
+                    magnitude = str(magnitude)
+            
+            details_label = Label(
+                text=f'Mag: {magnitude}\nScore: {score:.1f}\nVis: {duration:.1f}h',
+                font_size='12sp',
+                halign='right',
+                valign='middle',
+                size_hint_x=0.4,
+                color=(0.8, 0.8, 0.8, 1)
+            )
+            details_label.bind(size=details_label.setter('text_size'))
+            
+            info_row.add_widget(name_label)
+            info_row.add_widget(details_label)
+            
+            # Action buttons row
+            buttons_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40), spacing=dp(5))
+            
+            # View details button
+            details_btn = Button(
+                text='Details',
+                font_size='12sp',
+                size_hint_x=0.3,
+                background_color=(0.2, 0.6, 1.0, 1.0)
+            )
+            details_btn.bind(on_press=lambda x: self.view_target_details(target))
+            
+            # Add to plan button
+            try:
+                is_planned = self.app.app_state.is_target_planned(target) if self.app and self.app.app_state else False
+            except:
+                is_planned = False
+                
+            plan_btn = Button(
+                text='Remove' if is_planned else 'Add',
+                font_size='12sp',
+                size_hint_x=0.3,
+                background_color=(0.8, 0.4, 0.2, 1.0) if is_planned else (0.2, 0.8, 0.2, 1.0)
+            )
+            plan_btn.bind(on_press=lambda x: self.toggle_target_planned(target, plan_btn))
+            
+            # Info label
+            optimal_time = self.get_target_attribute(target, 'optimal_time', None)
+            if optimal_time:
+                if hasattr(optimal_time, 'strftime'):
+                    time_str = optimal_time.strftime('%H:%M')
+                else:
+                    time_str = str(optimal_time)[:5]  # Just get HH:MM part
+                info_text = f'Best: {time_str}'
+            else:
+                info_text = 'Tonight'
+                
+            info_label = Label(
+                text=info_text,
+                font_size='11sp',
+                size_hint_x=0.4,
+                color=(0.6, 0.8, 1.0, 1)
+            )
+            
+            buttons_row.add_widget(details_btn)
+            buttons_row.add_widget(plan_btn)
+            buttons_row.add_widget(info_label)
+            
+            card.add_widget(info_row)
+            card.add_widget(buttons_row)
+            
+            return card
             
         except Exception as e:
             Logger.error(f"TargetsScreen: Error creating target card: {e}")
-            return Label(text='Error loading target', size_hint_y=None, height=dp(50))
+            # Return simple fallback
+            target_name = self.get_target_attribute(target, 'name', 'Unknown target')
+            fallback = Label(
+                text=f"Error: {target_name}",
+                size_hint_y=None,
+                height=dp(50),
+                color=(1, 0.5, 0.5, 1)
+            )
+            return fallback
+    
+    def toggle_target_planned(self, target, button):
+        """Toggle target planned status and update button"""
+        try:
+            if self.app and self.app.app_state:
+                is_planned = self.app.app_state.is_target_planned(target)
+                if is_planned:
+                    self.app.app_state.remove_from_planned(target)
+                    button.text = 'Add'
+                    button.background_color = (0.2, 0.8, 0.2, 1.0)
+                    Logger.info(f"TargetsScreen: Removed {getattr(target, 'name', 'target')} from plan")
+                else:
+                    self.app.app_state.add_to_planned(target)
+                    button.text = 'Remove'
+                    button.background_color = (0.8, 0.4, 0.2, 1.0)
+                    Logger.info(f"TargetsScreen: Added {getattr(target, 'name', 'target')} to plan")
+        except Exception as e:
+            Logger.error(f"TargetsScreen: Error toggling planned status: {e}")
     
     # Event handlers
     def on_search_text_change(self, instance, text):
@@ -634,11 +611,117 @@ class TargetsScreen(Screen):
             self.app.app_state.selected_target = target
             self.app.screen_manager.current = 'target_detail'
     
-    def add_to_plan(self, target):
-        """Add target to observation plan"""
-        if self.app:
-            self.app.app_state.add_to_planned(target)
-            Logger.info(f"TargetsScreen: Added {getattr(target, 'name', 'target')} to plan")
+    def add_target_to_plan(self, instance):
+        """Add this target to the planned observations"""
+        try:
+            log_info(f"Target card: Adding {self.target.get('name', 'Unknown')} to plan")
+            
+            # Get the main app instance
+            from kivy.app import App
+            app = App.get_running_app()
+            
+            if app and hasattr(app, 'add_target_to_plan'):
+                success = app.add_target_to_plan(self.target)
+                if success:
+                    instance.text = "Added!"
+                    instance.disabled = True
+                    
+                    # Reset button after 2 seconds
+                    Clock.schedule_once(lambda dt: self._reset_add_button(instance), 2)
+                    log_info(f"Successfully added {self.target.get('name', 'Unknown')} to plan")
+                else:
+                    instance.text = "Already Added"
+                    Clock.schedule_once(lambda dt: self._reset_add_button(instance), 2)
+                    log_warning(f"Target {self.target.get('name', 'Unknown')} already in plan")
+            else:
+                log_error("App instance or add_target_to_plan method not available")
+                instance.text = "Error"
+                Clock.schedule_once(lambda dt: self._reset_add_button(instance), 2)
+                
+        except Exception as e:
+            log_error(f"Error adding target to plan from card", e, {'target': str(self.target)})
+            instance.text = "Error"
+            Clock.schedule_once(lambda dt: self._reset_add_button(instance), 2)
+    
+    def _reset_add_button(self, button):
+        """Reset the add button to original state"""
+        button.text = "Add"
+        button.disabled = False
+    
+    def remove_target_from_plan(self, instance):
+        """Remove this target from planned observations"""
+        try:
+            log_info(f"Target card: Removing {self.target.get('name', 'Unknown')} from plan")
+            
+            # Get the main app instance
+            from kivy.app import App
+            app = App.get_running_app()
+            
+            if app and hasattr(app, 'remove_target_from_plan'):
+                success = app.remove_target_from_plan(self.target)
+                if success:
+                    instance.text = "Removed!"
+                    # Switch back to add button after removal
+                    Clock.schedule_once(lambda dt: self._switch_to_add_button(instance), 1)
+                    log_info(f"Successfully removed {self.target.get('name', 'Unknown')} from plan")
+                else:
+                    instance.text = "Not Found"
+                    Clock.schedule_once(lambda dt: self._reset_remove_button(instance), 2)
+                    log_warning(f"Target {self.target.get('name', 'Unknown')} not found in plan")
+            else:
+                log_error("App instance or remove_target_from_plan method not available")
+                instance.text = "Error"
+                Clock.schedule_once(lambda dt: self._reset_remove_button(instance), 2)
+                
+        except Exception as e:
+            log_error(f"Error removing target from plan", e, {'target': str(self.target)})
+            instance.text = "Error"
+            Clock.schedule_once(lambda dt: self._reset_remove_button(instance), 2)
+    
+    def _reset_remove_button(self, button):
+        """Reset the remove button to original state"""
+        button.text = "Remove"
+    
+    def _switch_to_add_button(self, button):
+        """Switch button back to Add mode after removal"""
+        button.text = "Add"
+        button.unbind(on_press=self.remove_target_from_plan)
+        button.bind(on_press=self.add_target_to_plan)
+        
+    def update_button_state(self):
+        """Update button state based on whether target is planned"""
+        try:
+            from kivy.app import App
+            app = App.get_running_app()
+            
+            if app and app.app_state and hasattr(app.app_state, 'is_target_planned'):
+                is_planned = app.app_state.is_target_planned(self.target)
+                
+                # Find the action button (should be the last button in button_layout)
+                button_layout = None
+                for child in self.children:
+                    if hasattr(child, 'children'):
+                        for grandchild in child.children:
+                            if hasattr(grandchild, 'orientation') and grandchild.orientation == 'horizontal':
+                                button_layout = grandchild
+                                break
+                
+                if button_layout and button_layout.children:
+                    action_button = button_layout.children[-1]  # Last button should be the action button
+                    
+                    if is_planned:
+                        action_button.text = "Remove"
+                        action_button.unbind(on_press=self.add_target_to_plan)
+                        action_button.bind(on_press=self.remove_target_from_plan)
+                    else:
+                        action_button.text = "Add"
+                        action_button.unbind(on_press=self.remove_target_from_plan)
+                        action_button.bind(on_press=self.add_target_to_plan)
+                        
+                    log_debug(f"Updated button state for {self.target.get('name', 'Unknown')}: {'Remove' if is_planned else 'Add'}")
+                    
+        except Exception as e:
+            log_error(f"Error updating button state", e, {'target': str(self.target)})
     
     def refresh_targets(self, instance):
         """Refresh targets data"""

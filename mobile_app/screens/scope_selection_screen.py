@@ -214,8 +214,9 @@ class ScopeComparisonPopup(Popup):
 class ScopeSelectionScreen(Screen):
     """Screen for selecting smart telescope scope"""
     
-    def __init__(self, **kwargs):
+    def __init__(self, app=None, **kwargs):
         super().__init__(**kwargs)
+        self.app = app
         self.name = 'scope_selection'
         self.scope_manager = get_scope_manager()
         self.scope_cards = {}

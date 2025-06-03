@@ -32,9 +32,9 @@ except ImportError:
 class SessionPlannerScreen(Screen):
     """Session planning and management screen"""
     
-    def __init__(self, **kwargs):
+    def __init__(self, app=None, **kwargs):
         super().__init__(**kwargs)
-        self.app = None
+        self.app = app
         self.current_session = None
         self.selected_targets = []
         self.build_ui()

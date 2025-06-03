@@ -15,6 +15,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.accordion import Accordion, AccordionItem
 from kivy.metrics import dp
 from kivy.logger import Logger
+from kivy.clock import Clock
 
 # Add parent directory to path for astropy imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -30,8 +31,8 @@ except ImportError as e:
 
 # Import plotting utilities
 try:
-    from utils.plotting import mobile_plot_generator
-    from widgets.plot_widget import PlotWidget, PlotContainer
+    from mobile_app.utils.plotting import mobile_plot_generator
+    from mobile_app.widgets.plot_widget import PlotWidget, PlotContainer
     PLOTTING_AVAILABLE = True
 except ImportError as e:
     Logger.warning(f"TargetDetailScreen: Plotting not available: {e}")
@@ -145,7 +146,7 @@ class TargetDetailScreen(Screen):
                 return
             
             self.current_target = self.app.app_state.selected_target
-            target_name = getattr(self.current_target, 'name', self.current_target.get('name', 'Unknown'))
+            target_name = self.get_target_attribute(self.current_target, 'name', 'Unknown')
             
             # Update header
             self.target_name_label.text = target_name
@@ -194,8 +195,8 @@ class TargetDetailScreen(Screen):
         content = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
         
         # Object type and magnitude
-        obj_type = getattr(self.current_target, 'object_type', self.current_target.get('object_type', 'Unknown'))
-        magnitude = getattr(self.current_target, 'magnitude', self.current_target.get('magnitude', 'N/A'))
+        obj_type = self.get_target_attribute(self.current_target, 'object_type')
+        magnitude = self.get_target_attribute(self.current_target, 'magnitude')
         
         type_label = Label(
             text=f'Type: {obj_type}',
@@ -262,69 +263,105 @@ class TargetDetailScreen(Screen):
             if self.app and self.app.app_state.current_location:
                 location = self.app.app_state.current_location
                 
-                # Current position
-                current_alt, current_az = calculate_altaz(
-                    self.current_target,
-                    datetime.now(),
-                    location['latitude'],
-                    location['longitude']
-                )
+                # Get location coordinates using safe attribute getter
+                lat = self.get_target_attribute(location, 'latitude', None) or self.get_target_attribute(location, 'lat', None)
+                lon = self.get_target_attribute(location, 'longitude', None) or self.get_target_attribute(location, 'lon', None)
                 
-                current_pos_label = Label(
-                    text=f'Current Position: Alt {current_alt:.1f}°, Az {current_az:.1f}°',
-                    halign='left',
-                    size_hint_y=None,
-                    height=dp(30)
-                )
-                current_pos_label.bind(size=current_pos_label.setter('text_size'))
-                
-                # Visibility window
-                visibility_window = find_visibility_window(
-                    self.current_target,
-                    datetime.now(),
-                    location['latitude'],
-                    location['longitude']
-                )
-                
-                if visibility_window:
-                    start_time, end_time = visibility_window
-                    duration = calculate_visibility_duration(
-                        self.current_target,
-                        datetime.now(),
-                        location['latitude'],
-                        location['longitude']
-                    )
+                if lat is not None and lon is not None:
+                    # Current position
+                    try:
+                        current_alt, current_az = calculate_altaz(
+                            self.current_target,
+                            datetime.now(),
+                            float(lat),
+                            float(lon)
+                        )
+                        
+                        current_pos_label = Label(
+                            text=f'Current Position: Alt {current_alt:.1f}°, Az {current_az:.1f}°',
+                            halign='left',
+                            size_hint_y=None,
+                            height=dp(30)
+                        )
+                        current_pos_label.bind(size=current_pos_label.setter('text_size'))
+                        content.add_widget(current_pos_label)
+                    except Exception as e:
+                        Logger.warning(f"TargetDetailScreen: Error calculating current position: {e}")
+                        current_pos_label = Label(
+                            text='Current Position: Calculation error',
+                            halign='left',
+                            size_hint_y=None,
+                            height=dp(30)
+                        )
+                        current_pos_label.bind(size=current_pos_label.setter('text_size'))
+                        content.add_widget(current_pos_label)
                     
-                    window_label = Label(
-                        text=f'Visible: {start_time.strftime("%H:%M")} - {end_time.strftime("%H:%M")} ({duration:.1f}h)',
+                    # Visibility window
+                    try:
+                        visibility_window = find_visibility_window(
+                            self.current_target,
+                            datetime.now(),
+                            float(lat),
+                            float(lon)
+                        )
+                        
+                        if visibility_window:
+                            start_time, end_time = visibility_window
+                            duration = calculate_visibility_duration(
+                                self.current_target,
+                                datetime.now(),
+                                float(lat),
+                                float(lon)
+                            )
+                            
+                            window_label = Label(
+                                text=f'Visible: {start_time.strftime("%H:%M")} - {end_time.strftime("%H:%M")} ({duration:.1f}h)',
+                                halign='left',
+                                size_hint_y=None,
+                                height=dp(30)
+                            )
+                            window_label.bind(size=window_label.setter('text_size'))
+                        else:
+                            window_label = Label(
+                                text='Not visible tonight',
+                                halign='left',
+                                size_hint_y=None,
+                                height=dp(30)
+                            )
+                            window_label.bind(size=window_label.setter('text_size'))
+                        
+                        content.add_widget(window_label)
+                        
+                    except Exception as e:
+                        Logger.warning(f"TargetDetailScreen: Error calculating visibility window: {e}")
+                        window_label = Label(
+                            text='Visibility calculation error',
+                            halign='left',
+                            size_hint_y=None,
+                            height=dp(30)
+                        )
+                        window_label.bind(size=window_label.setter('text_size'))
+                        content.add_widget(window_label)
+                    
+                    # Best time
+                    best_time = self.calculate_best_observation_time()
+                    best_time_label = Label(
+                        text=f'Best Time: {best_time}',
                         halign='left',
                         size_hint_y=None,
                         height=dp(30)
                     )
-                    window_label.bind(size=window_label.setter('text_size'))
+                    best_time_label.bind(size=best_time_label.setter('text_size'))
+                    content.add_widget(best_time_label)
                 else:
-                    window_label = Label(
-                        text='Not visible tonight',
+                    no_coords_label = Label(
+                        text='Location coordinates not available',
                         halign='left',
                         size_hint_y=None,
                         height=dp(30)
                     )
-                    window_label.bind(size=window_label.setter('text_size'))
-                
-                # Best time
-                best_time = self.calculate_best_observation_time()
-                best_time_label = Label(
-                    text=f'Best Time: {best_time}',
-                    halign='left',
-                    size_hint_y=None,
-                    height=dp(30)
-                )
-                best_time_label.bind(size=best_time_label.setter('text_size'))
-                
-                content.add_widget(current_pos_label)
-                content.add_widget(window_label)
-                content.add_widget(best_time_label)
-                
+                    no_coords_label.bind(size=no_coords_label.setter('text_size'))
+                    content.add_widget(no_coords_label)
             else:
                 no_location_label = Label(
                     text='Location not set - cannot calculate visibility',
@@ -441,8 +478,8 @@ class TargetDetailScreen(Screen):
         content = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
         
         # Coordinates
-        ra = getattr(self.current_target, 'ra', self.current_target.get('ra', 'N/A'))
-        dec = getattr(self.current_target, 'dec', self.current_target.get('dec', 'N/A'))
+        ra = self.get_target_attribute(self.current_target, 'ra')
+        dec = self.get_target_attribute(self.current_target, 'dec')
         
         coords_label = Label(
             text=f'RA: {ra}, Dec: {dec}',
@@ -487,16 +524,16 @@ class TargetDetailScreen(Screen):
         self.plot_container = PlotContainer()
         
         # Trajectory plot
-        trajectory_plot = PlotWidget()
-        self.plot_container.add_plot_tab("Trajectory", trajectory_plot)
+        self.trajectory_plot = PlotWidget()
+        self.plot_container.add_plot_tab("Trajectory", self.trajectory_plot)
         
         # Altitude plot
-        altitude_plot = PlotWidget()
-        self.plot_container.add_plot_tab("Altitude", altitude_plot)
+        self.altitude_plot = PlotWidget()
+        self.plot_container.add_plot_tab("Altitude", self.altitude_plot)
         
         # Generate plots button
         generate_btn = Button(
-            text='Generate Plots',
+            text='Refresh Plots',
             size_hint_y=None,
             height=dp(40),
             background_color=(0.2, 0.8, 0.2, 1.0)
@@ -510,7 +547,15 @@ class TargetDetailScreen(Screen):
         accordion.add_widget(item)
         accordion.height = dp(44) + dp(400)  # Larger height for plots
         
+        # Auto-generate plots after a short delay to allow the UI to load
+        Clock.schedule_once(self.auto_generate_plots, 1.0)
+        
         return accordion
+    
+    def auto_generate_plots(self, dt):
+        """Automatically generate plots when the screen loads"""
+        Logger.info("TargetDetailScreen: Auto-generating plots")
+        self.generate_plots(None)  # Pass None since we don't have a button instance
     
     def generate_plots(self, instance):
         """Generate plots for the current target"""
@@ -561,8 +606,7 @@ class TargetDetailScreen(Screen):
                 self.plan_btn.background_color = (0.2, 0.8, 0.2, 1.0)
             
             # Show/hide mosaic button
-            is_mosaic_candidate = getattr(self.current_target, 'is_mosaic_candidate', 
-                                        self.current_target.get('is_mosaic_candidate', False))
+            is_mosaic_candidate = self.get_target_attribute(self.current_target, 'is_mosaic_candidate', False)
             self.mosaic_btn.disabled = not is_mosaic_candidate
             
         except Exception as e:
@@ -572,8 +616,8 @@ class TargetDetailScreen(Screen):
     def get_size_info(self):
         """Get size information for the target"""
         try:
-            size_major = getattr(self.current_target, 'size_major', self.current_target.get('size_major'))
-            size_minor = getattr(self.current_target, 'size_minor', self.current_target.get('size_minor'))
+            size_major = self.get_target_attribute(self.current_target, 'size_major', None)
+            size_minor = self.get_target_attribute(self.current_target, 'size_minor', None)
             
             if size_major and size_minor:
                 return f'Size: {size_major:.1f}\' × {size_minor:.1f}\''
@@ -597,6 +641,13 @@ class TargetDetailScreen(Screen):
             if self.app and self.app.app_state.current_location:
                 location = self.app.app_state.current_location
                 
+                # Get location coordinates using safe attribute getter
+                lat = self.get_target_attribute(location, 'latitude', None) or self.get_target_attribute(location, 'lat', None)
+                lon = self.get_target_attribute(location, 'longitude', None) or self.get_target_attribute(location, 'lon', None)
+                
+                if lat is None or lon is None:
+                    return "Location coordinates missing"
+                
                 # Find time of highest altitude tonight
                 best_time = datetime.now().replace(hour=22, minute=0, second=0, microsecond=0)
                 best_alt = 0
@@ -606,21 +657,26 @@ class TargetDetailScreen(Screen):
                     if hour >= 24:
                         test_time += timedelta(days=1)
                     
-                    alt, az = calculate_altaz(
-                        self.current_target,
-                        test_time,
-                        location['latitude'],
-                        location['longitude']
-                    )
-                    
-                    if alt > best_alt:
-                        best_alt = alt
-                        best_time = test_time
+                    try:
+                        alt, az = calculate_altaz(
+                            self.current_target,
+                            test_time,
+                            float(lat),
+                            float(lon)
+                        )
+                        
+                        if alt > best_alt:
+                            best_alt = alt
+                            best_time = test_time
+                    except Exception as e:
+                        # Skip this time point if calculation fails
+                        continue
                 
                 return f"{best_time.strftime('%H:%M')} (Alt: {best_alt:.1f}°)"
             
-            return "Unknown"
-        except:
+            return "Location not available"
+        except Exception as e:
+            Logger.error(f"TargetDetailScreen: Error calculating best time: {e}")
             return "Error calculating"
     
     def calculate_recommended_exposure(self):
@@ -637,12 +693,10 @@ class TargetDetailScreen(Screen):
     def get_mosaic_info(self):
         """Get mosaic information"""
         try:
-            is_mosaic = getattr(self.current_target, 'is_mosaic_candidate', 
-                              self.current_target.get('is_mosaic_candidate', False))
+            is_mosaic = self.get_target_attribute(self.current_target, 'is_mosaic_candidate', False)
             
             if is_mosaic:
-                panels = getattr(self.current_target, 'required_panels', 
-                               self.current_target.get('required_panels', 1))
+                panels = self.get_target_attribute(self.current_target, 'required_panels', 1)
                 return f"Mosaic recommended: {panels} panels"
             else:
                 return "Single frame suitable"
@@ -652,7 +706,7 @@ class TargetDetailScreen(Screen):
     def calculate_difficulty_rating(self):
         """Calculate imaging difficulty rating"""
         try:
-            magnitude = getattr(self.current_target, 'magnitude', self.current_target.get('magnitude', 10))
+            magnitude = self.get_target_attribute(self.current_target, 'magnitude', 10)
             
             if magnitude < 8:
                 return "Easy ⭐"
@@ -668,7 +722,7 @@ class TargetDetailScreen(Screen):
     def get_imaging_notes(self):
         """Get special imaging notes"""
         try:
-            obj_type = getattr(self.current_target, 'object_type', self.current_target.get('object_type', ''))
+            obj_type = self.get_target_attribute(self.current_target, 'object_type', '')
             
             if 'nebula' in obj_type.lower():
                 return "Consider narrowband filters for enhanced contrast"
@@ -684,8 +738,8 @@ class TargetDetailScreen(Screen):
     def get_catalog_info(self):
         """Get catalog information"""
         try:
-            catalog = getattr(self.current_target, 'catalog', self.current_target.get('catalog', 'Unknown'))
-            catalog_id = getattr(self.current_target, 'catalog_id', self.current_target.get('catalog_id', ''))
+            catalog = self.get_target_attribute(self.current_target, 'catalog', 'Unknown')
+            catalog_id = self.get_target_attribute(self.current_target, 'catalog_id', '')
             
             if catalog_id:
                 return f"Catalog: {catalog} {catalog_id}"
@@ -756,3 +810,13 @@ class TargetDetailScreen(Screen):
     def on_enter(self):
         """Called when screen is entered"""
         self.update_display()
+
+    def get_target_attribute(self, target, attr_name, default_value='Unknown'):
+        """Safely get attribute from target (handles both objects and dicts)"""
+        try:
+            if isinstance(target, dict):
+                return target.get(attr_name, default_value)
+            else:
+                return getattr(target, attr_name, default_value)
+        except Exception:
+            return default_value

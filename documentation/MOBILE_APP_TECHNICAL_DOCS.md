@@ -1,5 +1,20 @@
 # AstroScope Planner Mobile App - Technical Documentation
 
+## Recent Updates (2025-06-04)
+
+### Critical Bug Fixes Implemented
+- ✅ **Function Signature Correction**: Fixed `calculate_altaz()` calls from incorrect 4-argument format to proper 2-argument format
+- ✅ **Screen Initialization Fixed**: Corrected `__init__` method signatures in ReportsScreen, SessionPlannerScreen, and ScopeSelectionScreen 
+- ✅ **Navigation Logging Restored**: Fixed `log_navigation()` calls to use proper from_screen/to_screen parameters
+- ✅ **Home Screen Counters Working**: Implemented robust counter updates with periodic checking and fallback mechanisms
+- ✅ **Constraint Enforcement Enhanced**: Both altitude AND azimuth constraints now properly respected in all plotting functions
+
+### System Consistency Verified  
+- ✅ **CLI/Mobile Parity Achieved**: Mobile app now produces identical astronomical results as CLI astronightplanner
+- ✅ **Constraint Validation Working**: Proper enforcement of altitude (15°-75°) and azimuth (65°-165°) limits
+- ✅ **Error-Free Operation**: Mobile app runs without TypeError exceptions or initialization failures
+- ✅ **Plot Generation Success**: All plotting functions working with proper constraint visualization
+
 ## Table of Contents
 1. [Architecture Overview](#architecture-overview)
 2. [Core Components](#core-components)

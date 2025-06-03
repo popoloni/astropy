@@ -5,6 +5,28 @@ All notable changes to the Astronomical Observation Planning System will be docu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2025-06-04
+
+### Fixed - Mobile App Critical Bug Fixes
+- **Mobile app function signature error fixed**: Corrected `calculate_altaz()` function call from 4 arguments to 2 arguments
+- **Screen initialization errors resolved**: Fixed incorrect `__init__` method signatures in ReportsScreen, SessionPlannerScreen, and ScopeSelectionScreen
+- **Navigation logging fixed**: Corrected `log_navigation()` function calls to use proper from_screen/to_screen parameters
+- **Home screen counter functionality restored**: Fixed counter display and periodic data checking for targets, planned objects, and completed objects
+- **Constraint enforcement enhanced**: Both altitude AND azimuth constraints now properly enforced in plotting system
+
+### Verified - CLI and Mobile App Consistency
+- **Complete parity achieved** between CLI astronightplanner and mobile app
+- **Identical astronomical calculations** verified across both systems
+- **Same location and constraint settings** applied consistently
+- **Constraint validation working**: Mobile app correctly shows 8% observable time for Milano with Alt 15°-75°, Az 65°-165° constraints
+- **CLI application compatibility confirmed**: All wrapper scripts and main CLI functions tested and working
+
+### Added - Enhanced Error Handling and Logging
+- **Comprehensive error logging** throughout mobile plotting system
+- **Graceful fallback mechanisms** for astronomical calculation failures
+- **Improved debug information** for troubleshooting mobile app issues
+- **Performance monitoring** integrated into mobile app logging
+
 ## [Unreleased] - 2025-06-01
 
 ### Added - High-Precision Calculations

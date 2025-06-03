@@ -24,9 +24,9 @@ except ImportError as e:
 class ReportsScreen(Screen):
     """Screen for viewing and managing reports"""
     
-    def __init__(self, **kwargs):
+    def __init__(self, app=None, **kwargs):
         super().__init__(**kwargs)
-        self.app = None
+        self.app = app
         self.current_report = None
         self.build_ui()
     
