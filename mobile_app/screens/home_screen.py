@@ -374,7 +374,7 @@ class HomeScreen(Screen):
         
         try:
             # Get visible targets for tonight
-            visible_targets = self.app.app_state.visible_objects[:10]  # Top 10
+            visible_targets = self.app.app_state.all_visible_objects[:10]  # Top 10
             location = self.app.app_state.current_location
             
             if not visible_targets or not location:

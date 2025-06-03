@@ -630,7 +630,7 @@ def transform_coordinates(dt, observer_lat, observer_lon, input_coords, input_sy
     if input_system == 'equatorial' and output_system == 'horizontal':
         ra = input_coords['ra']
         dec = input_coords['dec']
-        return calculate_altaz(dt, observer_lat, observer_lon, ra, dec, 
+        return calculate_altaz_precise(dt, observer_lat, observer_lon, ra, dec, 
                              precision_mode='standard', include_refraction=include_corrections)
     
     elif input_system == 'horizontal' and output_system == 'equatorial':

@@ -73,7 +73,25 @@ def get_moon_phase(date):
         try:
             # Use high precision moon phase calculation
             phase_data = calculate_high_precision_moon_phase(date)
-            return phase_data['phase']  # Normalized 0-1
+            # Handle different possible return structures
+            if isinstance(phase_data, dict):
+                # Try different possible keys
+                if 'phase' in phase_data:
+                    return phase_data['phase']
+                elif 'illumination' in phase_data:
+                    return phase_data['illumination']
+                elif 'phase_fraction' in phase_data:
+                    return phase_data['phase_fraction']
+                else:
+                    # If it's a dict but no recognized keys, use first numeric value
+                    for value in phase_data.values():
+                        if isinstance(value, (int, float)):
+                            return float(value)
+            elif isinstance(phase_data, (int, float)):
+                # Direct numeric return
+                return float(phase_data)
+            else:
+                raise ValueError(f"Unexpected moon phase data type: {type(phase_data)}")
         except Exception as e:
             print(f"High precision moon phase failed, using standard: {e}")
     
@@ -101,7 +119,13 @@ def calculate_moon_position(date, hour_offset=0):
             # Use high precision moon position calculation
             adjusted_date = date + timedelta(hours=hour_offset)
             moon_data = calculate_high_precision_moon_position(adjusted_date)
-            return moon_data['ra'], moon_data['dec']
+            # Handle different possible return structures
+            if isinstance(moon_data, dict):
+                if 'ra' in moon_data and 'dec' in moon_data:
+                    return moon_data['ra'], moon_data['dec']
+                elif 'right_ascension' in moon_data and 'declination' in moon_data:
+                    return moon_data['right_ascension'], moon_data['declination']
+            raise ValueError(f"Unexpected moon position data structure: {moon_data}")
         except Exception as e:
             print(f"High precision moon position failed, using standard: {e}")
     
@@ -128,21 +152,32 @@ def is_moon_interference(obj_ra, obj_dec, moon_ra, moon_dec, moon_illumination, 
     
     # Moon interference depends on illumination and separation
     # For astrophotography, moon affects wider areas than visual observation
-    if moon_illumination < 0.1:  # New moon area (very dark)
-        interference_threshold = 20
-    elif moon_illumination < 0.3:  # Thin crescent
-        interference_threshold = 30
-    elif moon_illumination < 0.5:  # Quarter moon
-        interference_threshold = 45
-    elif moon_illumination < 0.7:  # Gibbous moon
-        interference_threshold = 60
-    elif moon_illumination < 0.9:  # Nearly full
-        interference_threshold = 90
-    else:  # Full moon - affects almost entire sky for astrophotography
-        interference_threshold = 120
+    # BUT we need to be more realistic about when objects are actually usable
     
-    # Additional sky brightness penalty for very bright moon
-    sky_brightness_penalty = moon_illumination > 0.8
+    if moon_illumination < 0.05:  # Very new moon (dark)
+        interference_threshold = 5
+        sky_brightness_penalty = False
+    elif moon_illumination < 0.15:  # Thin crescent
+        interference_threshold = 10
+        sky_brightness_penalty = False
+    elif moon_illumination < 0.3:  # Quarter moon
+        interference_threshold = 20
+        sky_brightness_penalty = False
+    elif moon_illumination < 0.5:  # Half to gibbous
+        interference_threshold = 30
+        sky_brightness_penalty = False
+    elif moon_illumination < 0.75:  # Gibbous moon
+        interference_threshold = 45
+        # Only apply sky brightness penalty if moon is very close
+        sky_brightness_penalty = (separation < 15)
+    elif moon_illumination < 0.9:  # Nearly full
+        interference_threshold = 60
+        # Apply sky brightness penalty for closer objects
+        sky_brightness_penalty = (separation < 30)
+    else:  # Full moon - affects most of sky but some distant objects still usable
+        interference_threshold = 90
+        # Apply broader penalty for full moon
+        sky_brightness_penalty = (separation < 45)
     
     is_interfered = separation < interference_threshold or sky_brightness_penalty
     
@@ -399,6 +434,28 @@ def check_object_visibility_in_config_window(obj, twilight_evening, twilight_mor
     
     return meets_min_duration, total_duration
 
+def safe_find_precise_twilight(date, observer_lat_rad, observer_lon_rad, twilight_type, event_type):
+    """
+    Safe wrapper for find_precise_astronomical_twilight that handles timezone issues.
+    """
+    try:
+        # Ensure input date is timezone-naive (as expected by the function)
+        if date.tzinfo is not None:
+            date = date.replace(tzinfo=None)
+        
+        # Call the high precision function
+        result = find_precise_astronomical_twilight(date, observer_lat_rad, observer_lon_rad, twilight_type, event_type)
+        
+        # Ensure result is timezone-naive to match our workflow
+        if hasattr(result, 'tzinfo') and result.tzinfo is not None:
+            result = result.replace(tzinfo=None)
+            
+        return result
+        
+    except Exception as e:
+        # If high precision fails, fall back to standard calculation
+        raise Exception(f"High precision twilight failed: {e}")
+
 def analyze_weekly_conditions(objects, week_date):
     """Analyze conditions for a specific week"""
     # Get Bortle index from config
@@ -408,22 +465,44 @@ def analyze_weekly_conditions(objects, week_date):
     except:
         bortle_index = 6  # Default moderate sky
     
+    # Ensure week_date is timezone-naive
+    if week_date.tzinfo is not None:
+        week_date = week_date.replace(tzinfo=None)
+    
     # Calculate twilight times using high precision when available
     if HIGH_PRECISION_AVAILABLE:
         try:
             # Get location from config
-            observer_lat = DEFAULT_LOCATION.get('latitude', 40.7128)
-            observer_lon = DEFAULT_LOCATION.get('longitude', -74.0060)
-            # Calculate evening and morning twilight separately
-            twilight_evening = find_precise_astronomical_twilight(week_date, observer_lat, observer_lon, 'astronomical', 'sunset')
-            # For morning twilight, use next day
+            observer_lat_deg = DEFAULT_LOCATION.get('latitude', 40.7128)
+            observer_lon_deg = DEFAULT_LOCATION.get('longitude', -74.0060)
+            
+            # Convert to radians for high precision functions
+            observer_lat_rad = math.radians(observer_lat_deg)
+            observer_lon_rad = math.radians(observer_lon_deg)
+            
+            # Calculate evening and morning twilight separately using safe wrapper
+            twilight_evening = safe_find_precise_twilight(week_date, observer_lat_rad, observer_lon_rad, 'astronomical', 'sunset')
+            # For morning twilight, use next day and 'sunrise' event type
             next_day = week_date + timedelta(days=1)
-            twilight_morning = find_precise_astronomical_twilight(next_day, observer_lat, observer_lon, 'astronomical', 'sunrise')
+            twilight_morning = safe_find_precise_twilight(next_day, observer_lat_rad, observer_lon_rad, 'astronomical', 'sunrise')
+            
+            # Results should already be timezone-naive from the wrapper
+            
         except Exception as e:
             print(f"High precision twilight failed, using standard: {e}")
             twilight_evening, twilight_morning = find_astronomical_twilight(week_date)
+            # Ensure standard twilight times are also timezone-naive
+            if hasattr(twilight_evening, 'tzinfo') and twilight_evening.tzinfo is not None:
+                twilight_evening = twilight_evening.replace(tzinfo=None)
+            if hasattr(twilight_morning, 'tzinfo') and twilight_morning.tzinfo is not None:
+                twilight_morning = twilight_morning.replace(tzinfo=None)
     else:
         twilight_evening, twilight_morning = find_astronomical_twilight(week_date)
+        # Ensure standard twilight times are timezone-naive
+        if hasattr(twilight_evening, 'tzinfo') and twilight_evening.tzinfo is not None:
+            twilight_evening = twilight_evening.replace(tzinfo=None)
+        if hasattr(twilight_morning, 'tzinfo') and twilight_morning.tzinfo is not None:
+            twilight_morning = twilight_morning.replace(tzinfo=None)
     
     print(f"  Analyzing visibility for {week_date.strftime('%Y-%m-%d')} night...")
     print(f"  Twilight: {twilight_evening.strftime('%H:%M')} - {twilight_morning.strftime('%H:%M')}")
@@ -460,10 +539,12 @@ def analyze_weekly_conditions(objects, week_date):
     moon_phase = get_moon_phase(week_date)
     moon_illumination = get_moon_illumination(moon_phase)
     
-    # Calculate moon position for middle of the night
+    # Calculate moon position for middle of the night - ensure timezone-naive arithmetic
     night_middle = twilight_evening + (twilight_morning - twilight_evening) / 2
-    night_middle_naive = night_middle.replace(tzinfo=None)
+    # Ensure all datetime objects are timezone-naive for calculations
     week_date_naive = week_date.replace(tzinfo=None) if week_date.tzinfo else week_date
+    night_middle_naive = night_middle.replace(tzinfo=None) if hasattr(night_middle, 'tzinfo') and night_middle.tzinfo else night_middle
+    
     moon_ra, moon_dec = calculate_moon_position(week_date_naive, 
                                               (night_middle_naive - week_date_naive).total_seconds() / 3600)
     

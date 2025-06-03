@@ -54,9 +54,29 @@ def get_objects_from_csv():
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
     from astronightplanner import parse_ra, parse_dec
     
+        
+    # Resolve catalog path intelligently
+    # If CATALOGNAME is relative, make it relative to the main astropy directory
+    catalog_path = CATALOGNAME
+    if not os.path.isabs(catalog_path):
+        # Find the main astropy directory (should contain config.json)
+        current_dir = os.getcwd()
+        astropy_dir = current_dir
+        
+        # Look for config.json to identify the main astropy directory
+        while astropy_dir and astropy_dir != os.path.dirname(astropy_dir):
+            if os.path.exists(os.path.join(astropy_dir, 'config.json')):
+                break
+            astropy_dir = os.path.dirname(astropy_dir)
+        
+        if os.path.exists(os.path.join(astropy_dir, 'config.json')):
+            # Resolve catalog path relative to astropy_dir
+            catalog_path = os.path.join(astropy_dir, catalog_path)
+        # If we can't find config.json, try the original path as fallback
+    
     csv_objects = []
     try:
-        with open(CATALOGNAME, 'r', encoding='utf-8') as file:
+        with open(catalog_path, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file, delimiter=';')
             for row in reader:
                 # Extract primary name before any dash
@@ -96,6 +116,9 @@ def get_objects_from_csv():
                 
     except Exception as e:
         print(f"Error reading CSV file: {e}")
+        # Add debug information
+        print(f"Attempted path: {catalog_path}")
+        print(f"Current working directory: {os.getcwd()}")
         # Don't return immediately, continue with merging if enabled
     
     # If merge is enabled or CSV read failed, get built-in catalog

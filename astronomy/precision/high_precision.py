@@ -545,7 +545,8 @@ def find_precise_astronomical_twilight(dt: datetime, observer_lat: float, observ
         target_altitude = twilight_angles[twilight_type]
         
         # Determine initial guess based on event type
-        base_date = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Ensure base_date is timezone-naive to avoid mixing timezone-aware and naive datetimes
+        base_date = dt.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
         
         if event_type in ['sunset', 'dusk']:
             # Start search around 6 PM for all sunset twilights
@@ -614,7 +615,7 @@ def find_precise_astronomical_twilight(dt: datetime, observer_lat: float, observ
             
             # Calculate midpoint
             mid_seconds = (start_time.timestamp() + end_time.timestamp()) / 2
-            mid_time = datetime.fromtimestamp(mid_seconds, tz=pytz.UTC)
+            mid_time = datetime.fromtimestamp(mid_seconds)  # Remove tz=pytz.UTC to keep it timezone-naive
             mid_alt = get_sun_altitude(mid_time)
             
             # Determine which half contains the root

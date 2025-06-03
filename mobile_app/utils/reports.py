@@ -13,7 +13,20 @@ from kivy.logger import Logger
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 try:
-    from analysis.reporting import ReportGenerator, generate_report, print_combined_report
+    from astronightplanner import (
+        plot_object_trajectory, plot_visibility_chart, plot_quarterly_trajectories,
+        create_mosaic_trajectory_plot, create_mosaic_grid_plot
+    )
+    from astroseasonplanner import plot_weekly_analysis
+    from astronomy import calculate_altaz, find_visibility_window
+    from analysis.reporting import ReportGenerator
+    ASTROPY_AVAILABLE = True
+except ImportError as e:
+    Logger.warning(f"PlottingUtils: Astropy modules not available: {e}")
+    ASTROPY_AVAILABLE = False
+
+try:
+    from analysis.reporting import ReportGenerator
     REPORTING_AVAILABLE = True
 except ImportError as e:
     Logger.warning(f"MobileReports: Reporting modules not available: {e}")
@@ -23,23 +36,25 @@ class MobileReportGenerator:
     """Generate mobile-optimized reports"""
     
     def __init__(self):
-        self.report_generator = None
-        if REPORTING_AVAILABLE:
-            self.report_generator = ReportGenerator()
+        # Don't create ReportGenerator instance here - create it when needed with proper arguments
+        pass
     
     def generate_session_report(self, app_state):
         """Generate a session report for mobile display"""
-        if not REPORTING_AVAILABLE or not self.report_generator:
+        if not REPORTING_AVAILABLE:
             return self._create_fallback_report(app_state)
         
         try:
             # Get current session data
             location = app_state.current_location
-            visible_objects = app_state.visible_objects
+            visible_objects = app_state.all_visible_objects
             planned_objects = app_state.planned_objects
             
             if not location or not visible_objects:
                 return "No data available for report generation."
+            
+            # Create ReportGenerator with proper arguments
+            report_generator = ReportGenerator(datetime.now(), location)
             
             # Generate report using existing functionality
             report_data = {
@@ -61,13 +76,16 @@ class MobileReportGenerator:
     
     def generate_target_report(self, target, app_state):
         """Generate a detailed report for a specific target"""
-        if not REPORTING_AVAILABLE or not self.report_generator:
+        if not REPORTING_AVAILABLE:
             return self._create_fallback_target_report(target, app_state)
         
         try:
             location = app_state.current_location
             if not location:
                 return "Location required for target report."
+            
+            # Create ReportGenerator with proper arguments
+            report_generator = ReportGenerator(datetime.now(), location)
             
             # Generate target-specific report
             report_data = {
@@ -149,10 +167,10 @@ class MobileReportGenerator:
         # Session Statistics
         stats = report_data['session_stats']
         lines.append("SESSION STATISTICS:")
-        lines.append(f"  Total Targets: {stats['total_targets']}")
-        lines.append(f"  Visible Tonight: {stats['visible_count']}")
-        lines.append(f"  Planned Objects: {stats['planned_count']}")
-        lines.append(f"  Completed: {stats['completed_count']}")
+        lines.append(f"  Total Targets: {stats.get('total_targets', 0)}")
+        lines.append(f"  Visible Tonight: {len(report_data['visible_objects'])}")
+        lines.append(f"  Planned Objects: {stats.get('planned_count', 0)}")
+        lines.append(f"  Completed: {stats.get('completed_count', 0)}")
         lines.append("")
         
         # Top Visible Objects
@@ -162,7 +180,7 @@ class MobileReportGenerator:
         
         for i, obj in enumerate(visible_objects, 1):
             name = getattr(obj, 'name', f'Object {i}')
-            obj_type = getattr(obj, 'type', 'Unknown')
+            obj_type = getattr(obj, 'object_type', getattr(obj, 'type', 'Unknown'))
             score = getattr(obj, 'score', 0)
             lines.append(f"{i:2d}. {name:<20} ({obj_type}) Score: {score:.1f}")
         
@@ -176,7 +194,7 @@ class MobileReportGenerator:
             
             for i, obj in enumerate(planned_objects, 1):
                 name = getattr(obj, 'name', f'Planned {i}')
-                obj_type = getattr(obj, 'type', 'Unknown')
+                obj_type = getattr(obj, 'object_type', getattr(obj, 'type', 'Unknown'))
                 lines.append(f"{i:2d}. {name} ({obj_type})")
             
             lines.append("")
@@ -274,9 +292,9 @@ class MobileReportGenerator:
         
         stats = app_state.get_session_stats()
         lines.append("SESSION SUMMARY:")
-        lines.append(f"  Total Targets: {stats['total_targets']}")
-        lines.append(f"  Visible Tonight: {stats['visible_count']}")
-        lines.append(f"  Planned Objects: {stats['planned_count']}")
+        lines.append(f"  Total Targets: {stats.get('total_targets', 0)}")
+        lines.append(f"  Visible Tonight: {len(app_state.all_visible_objects)}")
+        lines.append(f"  Planned Objects: {stats.get('planned_count', 0)}")
         lines.append("")
         
         lines.append("Note: Full reporting features require astropy modules.")

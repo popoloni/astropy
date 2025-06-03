@@ -494,10 +494,6 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         # Plot moon-affected segments if any
         if hasattr(obj, 'moon_influence_periods'):
             for start_idx, end_idx in obj.moon_influence_periods:
-                # Skip if using datetime objects (newer format)
-                if isinstance(start_idx, datetime):
-                    continue
-                    
                 # Validate that moon is actually above horizon during this segment
                 valid_segment = True
                 for i in range(start_idx, min(end_idx+1, len(moon_alts))):
@@ -765,13 +761,18 @@ def _plot_object_visibility_bars_no_legend(ax, index, obj, start_time, end_time,
                    
             # Then overlay the moon interference segments
             for start_idx, end_idx in obj.moon_influence_periods:
-                # Handle both datetime objects and minute indices
-                if isinstance(start_idx, datetime):
+                # Handle both integer indices and datetime objects
+                if isinstance(start_idx, datetime) and isinstance(end_idx, datetime):
+                    # Direct datetime objects - use them as-is
                     moon_start = start_idx
                     moon_end = end_idx
-                else:
+                elif isinstance(start_idx, int) and isinstance(end_idx, int):
+                    # Integer indices - convert to datetime
                     moon_start = period_start + timedelta(minutes=start_idx)
                     moon_end = period_start + timedelta(minutes=end_idx)
+                else:
+                    # Skip mixed or invalid types
+                    continue
                 
                 # Convert to local timezone
                 moon_start_local = moon_start.astimezone(milan_tz)
@@ -852,13 +853,18 @@ def _plot_visibility_with_moon_interference(ax, index, obj, period_start, period
     # Convert moon influence periods to actual times
     moon_times = []
     for start_idx, end_idx in obj.moon_influence_periods:
-        # Handle both datetime objects and minute indices
-        if isinstance(start_idx, datetime):
+        # Handle both integer indices and datetime objects
+        if isinstance(start_idx, datetime) and isinstance(end_idx, datetime):
+            # Direct datetime objects - use them as-is
             moon_start = start_idx
             moon_end = end_idx
-        else:
+        elif isinstance(start_idx, int) and isinstance(end_idx, int):
+            # Integer indices - convert to datetime
             moon_start = period_start + timedelta(minutes=start_idx)
             moon_end = period_start + timedelta(minutes=end_idx)
+        else:
+            # Skip mixed or invalid types
+            continue
         
         # Only consider this period if it was properly checked for moon visibility earlier
         # If it's in moon_influence_periods, we trust that it was properly filtered
@@ -1250,23 +1256,27 @@ def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, exist
     # Plot moon-affected segments if any
     if hasattr(obj, 'moon_influence_periods'):
         for start_idx, end_idx in obj.moon_influence_periods:
-            # Skip if using datetime objects (newer format)
-            if isinstance(start_idx, datetime):
+            # Handle both integer indices and datetime objects
+            if isinstance(start_idx, datetime) and isinstance(end_idx, datetime):
+                # Convert datetime objects to indices if needed
+                # This is a simplified approach - for quarters view we skip detailed moon segments
                 continue
+            elif isinstance(start_idx, int) and isinstance(end_idx, int):
+                # Original integer-based approach
+                valid_segment = True
+                for i in range(start_idx, min(end_idx+1, len(moon_alts))):
+                    if moon_alts[i] < 0:
+                        valid_segment = False
+                        break
                 
-            valid_segment = True
-            for i in range(start_idx, min(end_idx+1, len(moon_alts))):
-                if moon_alts[i] < 0:
-                    valid_segment = False
-                    break
-            
-            if valid_segment:
-                ax.plot(azs[start_idx:end_idx+1], 
-                       alts[start_idx:end_idx+1], 
-                       line_style,
-                       color=MOON_INTERFERENCE_COLOR,
-                       linewidth=2,
-                       zorder=2)
+                if valid_segment:
+                    ax.plot(azs[start_idx:end_idx+1], 
+                           alts[start_idx:end_idx+1], 
+                           line_style,
+                           color=MOON_INTERFERENCE_COLOR,
+                           linewidth=2,
+                           zorder=2)
+            # Skip mixed types or invalid data
     
     # Add hour markers
     for t, az, alt in zip(hour_times, hour_azs, hour_alts):
