@@ -39,7 +39,7 @@ class ConstellationVisualizer:
         """Load and parse JSON file"""
         file_path = self.catalogs_path / filename
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except FileNotFoundError:
             print(f"Error: Could not find {file_path}")
@@ -395,6 +395,9 @@ Examples:
             print(f"{const_id}", end="  ")
             if (i + 1) % 10 == 0:  # New line every 10 items
                 print()
+            use_dso_colors = not args.no_colors_for_dso
+            show_ellipses = not args.no_ellipses
+            visualizer.plot_constellation(const_id, use_dso_colors, show_ellipses)
         print()
         return
     
