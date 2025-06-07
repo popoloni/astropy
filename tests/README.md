@@ -92,7 +92,7 @@ All tests have been verified to work correctly after the reorganization:
 - ✅ Precision tests: Working (some require pytest)
 - ✅ Legacy tests: Working
 - ✅ Import paths: Fixed and verified
-- ✅ Main astropy.py functionality: Preserved
+- ✅ Main astronightplanner.py functionality: Preserved
 
 ## Adding New Tests
 

@@ -27,9 +27,8 @@ from utilities.time_sim import get_current_datetime
 # Load configuration
 CONFIG = load_config()
 
-# Get mosaic FOV from configuration
-MOSAIC_FOV_WIDTH = CONFIG['imaging']['scope']['mosaic_fov_width']
-MOSAIC_FOV_HEIGHT = CONFIG['imaging']['scope']['mosaic_fov_height']
+# Get mosaic FOV from settings (which loads from scope_data.json)
+from config.settings import MOSAIC_FOV_WIDTH, MOSAIC_FOV_HEIGHT
 
 def calculate_angular_separation(obj1, obj2):
     """

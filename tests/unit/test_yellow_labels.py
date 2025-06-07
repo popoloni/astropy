@@ -23,14 +23,14 @@ def main():
     
     try:
         # Import astropy after setting up path
-        import astropy
+        import astronightplanner
         
         # Set up arguments for full mode to show yellow labels
         original_argv = sys.argv.copy()
-        sys.argv = ['astropy.py', '--quarters']
+        sys.argv = ['astroastronightplanner.py', '--quarters']
         
         # Run the main astropy function
-        astropy.main()
+        astroastronightplanner.main()
         
         # Restore original argv
         sys.argv = original_argv

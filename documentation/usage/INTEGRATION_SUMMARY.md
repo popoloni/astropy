@@ -2,7 +2,7 @@
 
 ## 🎯 Mission Accomplished
 
-Successfully integrated advanced functionalities from `astropy.py` into `plot_mosaic_trajectories.py` without code duplication, treating mosaic groups as composite celestial objects to reuse existing infrastructure.
+Successfully integrated advanced functionalities from `astronightplanner.py` into `plot_mosaic_trajectories.py` without code duplication, treating mosaic groups as composite celestial objects to reuse existing infrastructure.
 
 ## 📊 Test Results
 
@@ -79,22 +79,22 @@ Successfully integrated advanced functionalities from `astropy.py` into `plot_mo
 
 ```bash
 # View all strategies (original functionality)
-python3 astropy.py --report-only
+python3 astronightplanner.py --report-only
 
 # Analyze mosaic opportunities
-python3 astropy.py --mosaic --report-only
+python3 astronightplanner.py --mosaic --report-only
 
 # Focus on mosaic groups only
-python3 astropy.py --mosaic-only --report-only
+python3 astronightplanner.py --mosaic-only --report-only
 
 # Use mosaic prioritization strategy
-python3 astropy.py --schedule mosaic_groups --report-only
+python3 astronightplanner.py --schedule mosaic_groups --report-only
 
 # Generate mosaic-specific plots
-python3 astropy.py --mosaic
+python3 astronightplanner.py --mosaic
 
 # Use any traditional strategy
-python3 astropy.py --schedule max_objects --report-only
+python3 astronightplanner.py --schedule max_objects --report-only
 ```
 
 ## 🔍 Integration Quality

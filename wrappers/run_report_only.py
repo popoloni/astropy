@@ -21,14 +21,14 @@ def main():
     
     try:
         # Import astropy after setting up path
-        import astropy
+        import astronightplanner
         
         # Set up arguments for report-only mode
         original_argv = sys.argv.copy()
-        sys.argv = ['astropy.py', '--report-only']
+        sys.argv = ['astronightplanner.py', '--report-only']
         
         # Run the main astropy function
-        astropy.main()
+        astronightplanner.main()
         
         # Restore original argv
         sys.argv = original_argv

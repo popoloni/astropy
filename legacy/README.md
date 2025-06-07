@@ -1,17 +1,17 @@
 # Legacy Scripts
 
-This folder contains scripts that are no longer actively used in the main astropy system but are preserved for reference and compatibility.
+This folder contains scripts that are no longer actively used in the main astronightplanner system but are preserved for reference and compatibility.
 
 ## Contents
 
 ### `astropy_legacy.py`
-- **Purpose**: The original astropy.py file before the mosaic integration
-- **Status**: Superseded by the main astropy.py with integrated mosaic functionality
+- **Purpose**: The original astronightplanner.py file before the mosaic integration
+- **Status**: Superseded by the main astronightplanner.py with integrated mosaic functionality
 - **Use case**: Reference implementation for comparison and rollback if needed
 
 ### `plot_mosaic_trajectories.py`
 - **Purpose**: Original standalone mosaic trajectory plotting script
-- **Status**: Functionality integrated into main astropy.py
+- **Status**: Functionality integrated into main astronightplanner.py
 - **Use case**: Reference for the original mosaic-only approach
 
 ### `test_mosaic_integration.py`
@@ -21,7 +21,7 @@ This folder contains scripts that are no longer actively used in the main astrop
 
 ## Migration Notes
 
-All functionality from these legacy scripts has been integrated into the main `astropy.py` system:
+All functionality from these legacy scripts has been integrated into the main `astronightplanner.py` system:
 
 - **Mosaic analysis**: Now available via `--mosaic`, `--mosaic-only`, and `--schedule mosaic_groups`
 - **Trajectory plotting**: Integrated with enhanced mosaic-specific plots

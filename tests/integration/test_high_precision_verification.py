@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Verification test to ensure high precision calculations are actually being used
-in the main astropy.py application
+in the main astroastronightplanner.py application
 """
 
 import sys
@@ -15,11 +15,11 @@ from datetime import datetime
 import pytz
 
 def test_precision_in_astropy():
-    """Test that astropy.py is using high precision calculations"""
+    """Test that astroastronightplanner.py is using high precision calculations"""
     
     print("🔬 HIGH PRECISION VERIFICATION TEST")
     print("=" * 60)
-    print("Verifying that astropy.py uses high precision calculations")
+    print("Verifying that astroastronightplanner.py uses high precision calculations")
     print()
     
     # Check current configuration
@@ -96,18 +96,18 @@ def test_precision_in_astropy():
     
     print()
     
-    # Test astropy.py output with precision indicators
+    # Test astroastronightplanner.py output with precision indicators
     print("🎯 ASTROPY.PY PRECISION VERIFICATION")
     print("-" * 30)
     
     try:
-        # Run astropy.py with report-only to capture timing calculations
+        # Run astroastronightplanner.py with report-only to capture timing calculations
         # Change to astropy root directory first
         original_cwd = os.getcwd()
         os.chdir(astropy_root)
         
         result = subprocess.run(
-            [sys.executable, "astropy.py", "--report-only", "--date", "2025-06-15"],
+            [sys.executable, "astroastronightplanner.py", "--report-only", "--date", "2025-06-15"],
             capture_output=True,
             text=True,
             timeout=30
@@ -148,13 +148,13 @@ def test_precision_in_astropy():
                 print("✅ Sunset timing calculated (using high precision)")
             
         else:
-            print(f"❌ astropy.py failed with return code: {result.returncode}")
+            print(f"❌ astroastronightplanner.py failed with return code: {result.returncode}")
             if result.stderr:
                 print(f"Error: {result.stderr[:200]}")
             return False
             
     except Exception as e:
-        print(f"❌ Error running astropy.py: {e}")
+        print(f"❌ Error running astroastronightplanner.py: {e}")
         return False
     
     print()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script for mosaic integration in astropy.py
+Test script for mosaic integration in astroastronightplanner.py
 """
 
 import sys
@@ -9,7 +9,7 @@ import os
 # Add astropy root directory to path (two levels up from tests/legacy/)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from astropy import (
+from astronightplanner import (
     get_combined_catalog, get_current_datetime, get_local_timezone,
     find_astronomical_twilight, filter_visible_objects,
     create_mosaic_groups, combine_objects_and_groups,

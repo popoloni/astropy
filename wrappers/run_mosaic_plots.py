@@ -4,7 +4,7 @@ Mosaic Trajectory Plot Wrapper for Pythonista
 ==============================================
 Simple wrapper to run mosaic trajectory plotting with your Vespera Passenger.
 Shows only objects that can be photographed together in mosaic groups.
-Uses the integrated mosaic functionality in astropy.py.
+Uses the integrated mosaic functionality in astronightplanner.py.
 
 The --no-duplicates flag can be used to exclude individual objects that are
 already part of mosaic groups from standalone display.
@@ -27,21 +27,20 @@ def main():
     
     try:
         # Import astropy after setting up path
-        import astropy
+        import astronightplanner
         
-        # Get scope configuration
-        scope_name = astropy.CONFIG['imaging']['scope']['name']
-        mosaic_fov_w = astropy.CONFIG['imaging']['scope']['mosaic_fov_width']
-        mosaic_fov_h = astropy.CONFIG['imaging']['scope']['mosaic_fov_height']
-        print(f"{scope_name} Mosaic FOV: {mosaic_fov_w}° × {mosaic_fov_h}°")
+        # Get scope configuration from settings
+        from config.settings import SCOPE_NAME, MOSAIC_FOV_WIDTH, MOSAIC_FOV_HEIGHT
+        print(f"🔭 {SCOPE_NAME}")
+        print(f"📐 Mosaic FOV: {MOSAIC_FOV_WIDTH}° × {MOSAIC_FOV_HEIGHT}°")
         print()
         
         # Set up arguments for mosaic plotting with no duplicates
         original_argv = sys.argv.copy()
-        sys.argv = ['astropy.py', '--mosaic', '--no-duplicates']
+        sys.argv = ['astronightplanner.py', '--mosaic', '--no-duplicates']
         
         # Run the main astropy function with mosaic plotting
-        astropy.main()
+        astronightplanner.main()
         
         # Restore original argv
         sys.argv = original_argv
