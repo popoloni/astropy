@@ -74,6 +74,25 @@ def get_objects_from_csv():
             catalog_path = os.path.join(astropy_dir, catalog_path)
         # If we can't find config.json, try the original path as fallback
     
+    # Resolve catalog path intelligently
+    # If CATALOGNAME is relative, make it relative to the main astropy directory
+    catalog_path = CATALOGNAME
+    if not os.path.isabs(catalog_path):
+        # Find the main astropy directory (should contain config.json)
+        current_dir = os.getcwd()
+        astropy_dir = current_dir
+        
+        # Look for config.json to identify the main astropy directory
+        while astropy_dir and astropy_dir != os.path.dirname(astropy_dir):
+            if os.path.exists(os.path.join(astropy_dir, 'config.json')):
+                break
+            astropy_dir = os.path.dirname(astropy_dir)
+        
+        if os.path.exists(os.path.join(astropy_dir, 'config.json')):
+            # Resolve catalog path relative to astropy_dir
+            catalog_path = os.path.join(astropy_dir, catalog_path)
+        # If we can't find config.json, try the original path as fallback
+    
     csv_objects = []
     try:
         with open(catalog_path, 'r', encoding='utf-8') as file:
