@@ -63,6 +63,14 @@ This astronomical observation planning system provides intelligent automation fo
 - **Performance Optimization**: Intelligent caching and benchmarking systems
 - **Time Simulation**: Test schedules for any date/time with microsecond precision
 
+### 🌌 **Constellation Visualization**
+- **Vector SVG Output**: Scalable graphics with infinite zoom capability for detailed study
+- **Interactive Viewing**: Browser-based viewing on macOS, native WebView on iOS/Pythonista
+- **Astronomical Accuracy**: Proper coordinate orientation with corrected RA/Dec system
+- **Rich Data Display**: 88 constellations, 695 stars, 374 deep sky objects with boundaries
+- **Color-Coded Objects**: Smart classification (blue galaxies, purple nebulae, orange clusters)
+- **Professional Quality**: Publication-ready vector graphics ideal for education and research
+
 ---
 
 ## 🏗️ **Architecture**
@@ -75,6 +83,9 @@ astropy/
 ├── 🌟 astroseasonplanner.py  # Multi-night astrophotography planner
 ├── 📄 config.json             # Main configuration file with locations and settings
 ├── 📄 scope_data.json         # Telescope/scope configuration database
+├── 📁 images/             # SVG constellation visualization output
+│   ├── celestial_grid.svg # Full-sky constellation map
+│   └── constellation_*.svg # Individual constellation views
 ├── 📁 astronomy/           # Core astronomical calculations
 │   ├── celestial.py        # Position calculations, coordinate transforms
 │   ├── coordinates.py      # Coordinate system conversions
@@ -113,6 +124,9 @@ astropy/
 ├── 📁 config/             # Configuration management
 │   └── settings.py       # Settings loading and validation
 ├── 📁 utilities/          # Helper functions and tools
+│   ├── show_all_constellations.py # SVG constellation visualizer (main tool)
+│   ├── show_all.py       # Legacy matplotlib constellation visualizer
+│   ├── constellation_visualizer.py # Core constellation functions
 │   ├── time_sim.py       # Time simulation capabilities
 │   ├── analyze_mosaic_groups.py # Mosaic analysis utilities
 │   ├── convert_json.py   # Data conversion utilities
@@ -177,6 +191,9 @@ astropy/
     ├── usage/            # User guides and tutorials
     ├── user-guides/      # Detailed user guides
     ├── development/      # Development and phase reports
+    ├── visualization/    # Constellation visualization documentation
+    │   ├── CONSTELLATION_VISUALIZER_GUIDE.md # Complete user guide
+    │   └── README.md     # Visualization documentation index
     ├── mobile-app/       # Mobile app documentation
     │   ├── README.md     # Mobile app overview and setup
     │   ├── SETUP_GUIDE.md # Detailed setup instructions
@@ -327,6 +344,25 @@ python astronightplanner.py --mosaic --schedule mosaic_groups
 
 # Simulate observations for a specific date
 python astronightplanner.py --date 2024-08-15 --schedule max_objects
+```
+
+### **🌌 Constellation Visualization**
+```bash
+# Full-sky constellation map (all 88 constellations)
+python utilities/show_all_constellations.py
+
+# Individual constellations with rich detail
+python utilities/show_all_constellations.py Ori    # Orion
+python utilities/show_all_constellations.py Cyg    # Cygnus
+python utilities/show_all_constellations.py And    # Andromeda
+
+# List all available constellation IDs
+python utilities/show_all_constellations.py --all
+
+# Customization options
+python utilities/show_all_constellations.py Ori --no-colors-for-dso    # Classic red DSOs
+python utilities/show_all_constellations.py And --no-ellipses          # Hide boundaries
+python utilities/show_all_constellations.py Cyg --show-star-names      # Show bright star names
 ```
 
 ### **📱 iOS Pythonista Implementation**
@@ -621,11 +657,13 @@ Comprehensive documentation is available in the `documentation/` folder:
 - **🏗️ [Architecture](documentation/architecture/)** - System design and modules
 - **⚙️ [API Documentation](documentation/api/)** - Function and class references
 - **🔧 [Development](documentation/development/)** - Contributing and phase reports
+- **🌌 [Visualization](documentation/visualization/)** - Constellation visualization guides and technical docs
 - **📱 [Mobile App Features](documentation/mobile-app/)** - iOS Pythonista compatibility & experimental mobile app
 
 ### **Quick References**
 - **[Quick Start Guide](documentation/usage/QUICK_START.md)** - Get up and running fast
 - **🌟 [Trajectory Analysis Guide](documentation/user-guides/trajectory_analysis_quick_reference.md)** - Multi-night planning strategies
+- **🌌 [Constellation Visualization Guide](documentation/visualization/CONSTELLATION_VISUALIZER_GUIDE.md)** - Complete SVG constellation visualizer guide
 - **[Configuration Guide](documentation/usage/README.md)** - Detailed setup instructions
 - **📱 [Mobile App Setup](documentation/mobile-app/SETUP_GUIDE.md)** - iOS Pythonista setup (current mobile solution)
 
@@ -917,6 +955,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 **Support**
 
 - **📖 Documentation**: [./documentation/](./documentation/)
+- **🌌 Constellation Visualization**: [./documentation/visualization/](./documentation/visualization/)
 - **🐛 Issues**: Use GitHub issues for bug reports
 - **💡 Feature Requests**: Discussion welcome in issues
 - **❓ Questions**: Check the [usage documentation](./documentation/usage/) first
