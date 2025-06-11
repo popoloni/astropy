@@ -57,7 +57,8 @@ def import_astronomy_modules():
         modules.update({
             'filter_visible_objects': lazy_import('astronightplanner', 'filter_visible_objects'),
             'generate_observation_schedule': lazy_import('astronightplanner', 'generate_observation_schedule'),
-            'get_combined_catalog': lazy_import('astronightplanner', 'get_combined_catalog'),
+            'get_objects_from_catalog': lazy_import('catalogs', 'get_objects_from_catalog'),
+            'get_catalog_info': lazy_import('catalogs', 'get_catalog_info'),
             'find_astronomical_twilight': lazy_import('astronightplanner', 'find_astronomical_twilight'),
             'calculate_moon_phase': lazy_import('astronightplanner', 'calculate_moon_phase'),
             'get_moon_phase_icon': lazy_import('astronightplanner', 'get_moon_phase_icon'),
@@ -368,16 +369,19 @@ class AstroScopePlannerApp(App):
                 Logger.warning("AstroScope: No location set, using default")
                 location = self.astronomy_modules['DEFAULT_LOCATION']
             
-            # Get the catalog
-            catalog_func = self.astronomy_modules.get('get_combined_catalog')
+            # Get the catalog using new configurable system
+            catalog_func = self.astronomy_modules.get('get_objects_from_catalog')
+            catalog_info_func = self.astronomy_modules.get('get_catalog_info')
+            
             if not catalog_func:
                 Logger.error("AstroScope: No catalog function available")
                 return
             
             try:
-                # Get the full catalog of objects
+                # Get catalog info and objects
+                catalog_info = catalog_info_func() if catalog_info_func else {"type": "unknown", "count": 0}
                 catalog = catalog_func()
-                Logger.info(f"AstroScope: Loaded catalog with {len(catalog)} objects")
+                Logger.info(f"AstroScope: Loaded {catalog_info['type']} catalog with {len(catalog)} objects")
                 
                 # Filter visible objects
                 filter_func = self.astronomy_modules.get('filter_visible_objects')

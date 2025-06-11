@@ -34,9 +34,10 @@
         "search_interval_minutes": 1
     },
     "catalog": {
-        "use_csv_catalog": true,
+        "use_csv_catalog": false,
         "catalog_name": "catalogs/objects.csv",
-        "merge": true
+        "merge": true,
+        "comment": "Set use_csv_catalog=true to use CSV catalog, false for enhanced JSON catalog"
     },
     "scheduling": {
         "strategy": "max_objects",

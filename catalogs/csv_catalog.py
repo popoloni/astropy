@@ -6,7 +6,7 @@ import csv
 from models import CelestialObject
 from config import CATALOGNAME, MIN_TOTAL_AREA, MERGING_CATALOGS
 from .object_utils import enrich_object_name
-from .catalog_manager import get_combined_catalog, merge_catalogs
+from .combined_catalog import get_combined_catalog, merge_catalogs
 
 
 def get_object_type(type_str):

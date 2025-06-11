@@ -130,11 +130,14 @@ def test_astropy_integration():
     
     try:
         from datetime import datetime, timedelta
-        from astronightplanner import get_combined_catalog, find_astronomical_twilight
+        from astronightplanner import find_astronomical_twilight
         from astronomy import filter_visible_objects
+        from catalogs import get_objects_from_catalog, get_catalog_info
         
-        # Get catalog
-        all_objects = get_combined_catalog()
+        # Get catalog using new configurable system
+        catalog_info = get_catalog_info()
+        all_objects = get_objects_from_catalog()
+        print(f"  ✓ Using {catalog_info['type']} catalog ({catalog_info['source']})")
         assert isinstance(all_objects, list)
         assert len(all_objects) > 0
         print(f"  ✓ Loaded {len(all_objects)} objects from catalog")
