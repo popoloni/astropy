@@ -24,9 +24,6 @@ from astronightplanner import (
     find_visibility_window, calculate_visibility_duration
 )
 
-# Import plotting functions from plots module
-from plots.weekly import plot_weekly_analysis
-
 # Import high precision functions
 try:
     from astronomy.precision import (
@@ -844,6 +841,94 @@ def get_period_description(period_type, period_value):
             return f"month {period_value}"
     else:
         return "selected period"
+
+def plot_weekly_analysis(weekly_results, period_desc="analysis period"):
+    """Create comprehensive plots for weekly analysis"""
+    weeks = sorted(weekly_results.keys())
+    
+    # Extract data for plotting
+    observable_objects = [weekly_results[w]['observable_objects'] for w in weeks]
+    config_compliant = [weekly_results[w]['sufficient_time_objects'] for w in weeks]
+    moon_illuminations = [weekly_results[w]['moon_illumination'] * 100 for w in weeks]
+    moon_free_counts = [len(weekly_results[w]['moon_free_objects']) for w in weeks]
+    mosaic_counts = [len(weekly_results[w]['mosaic_groups']) for w in weeks]
+    scores = [weekly_results[w]['score'] for w in weeks]
+    
+    # Create subplots
+    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+    fig.suptitle(f'Weekly Astrophotography Analysis - {period_desc.title()}', fontsize=16)
+    
+    # Plot 1: Observable objects by week
+    ax1 = axes[0, 0]
+    scatter = ax1.scatter(weeks, observable_objects, c=scores, cmap='viridis', s=100, alpha=0.7)
+    ax1.set_xlabel('Week Number')
+    ax1.set_ylabel('Observable Objects')
+    ax1.set_title('Observable Objects by Week')
+    ax1.grid(True, alpha=0.3)
+    plt.colorbar(scatter, ax=ax1, label='Week Score')
+    
+    # Plot 2: Moon-free objects by week
+    ax2 = axes[0, 1]
+    bars = ax2.bar(weeks, moon_free_counts, alpha=0.7, color='green')
+    ax2.set_xlabel('Week Number')
+    ax2.set_ylabel('Moon-Free Objects')
+    ax2.set_title('Moon-Free Objects by Week')
+    ax2.grid(True, alpha=0.3)
+    
+    # Plot 3: Mosaic opportunities
+    ax3 = axes[0, 2]
+    ax3.bar(weeks, mosaic_counts, alpha=0.7, color='orange')
+    ax3.set_xlabel('Week Number')
+    ax3.set_ylabel('Mosaic Groups')
+    ax3.set_title('Mosaic Opportunities by Week')
+    ax3.grid(True, alpha=0.3)
+    
+    # Plot 4: Week scores
+    ax4 = axes[1, 0]
+    score_bars = ax4.bar(weeks, scores, alpha=0.7, color='purple')
+    ax4.set_xlabel('Week Number')
+    ax4.set_ylabel('Astrophotography Score')
+    ax4.set_title('Weekly Astrophotography Scores')
+    ax4.grid(True, alpha=0.3)
+    
+    # Highlight best week
+    if weeks:
+        best_week = max(weeks, key=lambda w: weekly_results[w]['score'])
+        best_week_idx = weeks.index(best_week)
+        score_bars[best_week_idx].set_color('gold')
+    
+    # Plot 5: Moon phase throughout weeks
+    ax5 = axes[1, 1]
+    moon_phases = [weekly_results[w]['moon_phase'] * 100 for w in weeks]
+    ax5.plot(weeks, moon_phases, 'o-', color='blue', linewidth=2, markersize=8)
+    ax5.set_xlabel('Week Number')
+    ax5.set_ylabel('Moon Phase (%)')
+    ax5.set_title('Moon Phase by Week')
+    ax5.grid(True, alpha=0.3)
+    ax5.axhline(y=50, color='red', linestyle='--', alpha=0.5, label='Full Moon')
+    ax5.axhline(y=0, color='black', linestyle='--', alpha=0.5, label='New Moon')
+    ax5.legend()
+    
+    # Plot 6: Objects distribution with config compliance
+    ax6 = axes[1, 2]
+    moon_affected_counts = [len(weekly_results[w]['moon_affected_objects']) for w in weeks]
+    
+    width = 0.25
+    x = np.arange(len(weeks))
+    ax6.bar(x - width, config_compliant, width, label='Config-Compliant', alpha=0.7, color='blue')
+    ax6.bar(x, moon_free_counts, width, label='Moon-Free', alpha=0.7, color='green')
+    ax6.bar(x + width, moon_affected_counts, width, label='Moon-Affected', alpha=0.7, color='red')
+    
+    ax6.set_xlabel('Week Number')
+    ax6.set_ylabel('Object Count')
+    ax6.set_title('Object Distribution by Week')
+    ax6.set_xticks(x)
+    ax6.set_xticklabels([str(w) for w in weeks])
+    ax6.legend()
+    ax6.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    return fig
 
 def print_weekly_summary(weekly_results, period_desc="analysis period"):
     """Print comprehensive weekly analysis summary"""
