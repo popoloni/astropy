@@ -686,7 +686,7 @@ Comprehensive documentation is available in the `documentation/` folder:
 - **📖 [User Guides](documentation/usage/)** - Complete usage tutorials
 - **🏗️ [Architecture](documentation/architecture/)** - System design and modules
 - **⚙️ [API Documentation](documentation/api/)** - Function and class references
-- **🔧 [Development](documentation/development/)** - Contributing and phase reports
+- **🔧 [Development](documentation/development/)** - Contributing, refactoring documentation, and phase reports
 - **🌌 [Visualization](documentation/visualization/)** - Constellation visualization guides and technical docs
 - **📱 [Mobile App Features](documentation/mobile-app/)** - iOS Pythonista compatibility & experimental mobile app
 
@@ -697,6 +697,10 @@ Comprehensive documentation is available in the `documentation/` folder:
 - **🌌 [Constellation Visualization Guide](documentation/visualization/CONSTELLATION_VISUALIZER_GUIDE.md)** - Complete SVG constellation visualizer guide
 - **[Configuration Guide](documentation/usage/README.md)** - Detailed setup instructions
 - **📱 [Mobile App Setup](documentation/mobile-app/SETUP_GUIDE.md)** - iOS Pythonista setup (current mobile solution)
+
+### **Development Documentation**
+- **🔧 [Refactoring Plan](documentation/development/refactoring_plan.md)** - Complete 6-phase refactoring strategy and implementation details
+- **✅ [Refactoring Summary](documentation/development/REFACTORING_COMPLETE_SUMMARY.md)** - Final results and achievements of the modular architecture transformation
 
 ---
 
