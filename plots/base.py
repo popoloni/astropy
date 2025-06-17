@@ -6,11 +6,16 @@ This module provides common plotting functions and configurations used across di
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
+from matplotlib.patches import Rectangle
+from matplotlib.ticker import MultipleLocator
 from typing import Tuple, Optional, Dict, Any
 import logging
 
 # Import configuration constants
-from config.settings import COLOR_MAP
+from config.settings import (
+    COLOR_MAP, MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ, 
+    FIGURE_SIZE, GRID_ALPHA, VISIBLE_REGION_ALPHA
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -58,7 +63,7 @@ def setup_plot(config: Optional[PlotConfig] = None) -> Tuple[Figure, plt.Axes]:
 
 def setup_altaz_plot(config: Optional[PlotConfig] = None) -> Tuple[Figure, plt.Axes]:
     """
-    Set up an Alt-Az plot with proper axis labels and grid.
+    Setup basic altitude-azimuth plot matching the legacy implementation.
     
     Args:
         config: PlotConfig object with plot settings
@@ -66,16 +71,37 @@ def setup_altaz_plot(config: Optional[PlotConfig] = None) -> Tuple[Figure, plt.A
     Returns:
         Tuple of (Figure, Axes) objects
     """
-    fig, ax = setup_plot(config)
+    # Create figure with appropriate size
+    fig = plt.figure(figsize=FIGURE_SIZE)  # Use config FIGURE_SIZE
     
-    # Set up Alt-Az specific properties
-    ax.set_xlabel('Azimuth (degrees)', fontsize=config.font_size if config else DEFAULT_FONT_SIZE)
-    ax.set_ylabel('Altitude (degrees)', fontsize=config.font_size if config else DEFAULT_FONT_SIZE)
-    ax.grid(True, linestyle='--', alpha=0.7)
+    # Use GridSpec for better control over spacing
+    gs = fig.add_gridspec(1, 1)
+    # Adjust margins to accommodate axis labels and legend
+    gs.update(left=0.1, right=0.85, top=0.95, bottom=0.1)
     
-    # Set axis limits
-    ax.set_xlim(0, 360)
-    ax.set_ylim(0, 90)
+    ax = fig.add_subplot(gs[0, 0])
+    
+    # Set axis limits and labels using config constants with margins
+    ax.set_xlim(MIN_AZ-10, MAX_AZ+10)
+    ax.set_ylim(MIN_ALT-10, MAX_ALT+10)
+    ax.set_xlabel('Azimuth (degrees)')
+    ax.set_ylabel('Altitude (degrees)')
+    ax.grid(True, alpha=GRID_ALPHA)
+    
+    # Add visible region rectangle
+    visible_region = Rectangle((MIN_AZ, MIN_ALT), 
+                             MAX_AZ - MIN_AZ, 
+                             MAX_ALT - MIN_ALT,
+                             facecolor='green', 
+                             alpha=VISIBLE_REGION_ALPHA,
+                             label='Visible Region')
+    ax.add_patch(visible_region)
+    
+    # Configure grid with major and minor ticks
+    ax.xaxis.set_major_locator(MultipleLocator(10))
+    ax.xaxis.set_minor_locator(MultipleLocator(5))
+    ax.yaxis.set_major_locator(MultipleLocator(10))
+    ax.yaxis.set_minor_locator(MultipleLocator(5))
     
     return fig, ax
 

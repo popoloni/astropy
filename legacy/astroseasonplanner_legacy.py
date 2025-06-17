@@ -15,6 +15,9 @@ import math
 from typing import List, Dict, Tuple, Optional
 import argparse
 
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Import from the main astronightplanner module (now in same directory)
 from astronightplanner import (
     get_objects_from_csv, get_combined_catalog, filter_visible_objects,

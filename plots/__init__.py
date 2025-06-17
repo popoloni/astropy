@@ -60,6 +60,15 @@ from .weekly import (
     plot_weekly_analysis_mobile
 )
 
+from .constellation import (
+    ConstellationPlotter,
+    plot_constellation_map,
+    plot_constellation_stars,
+    plot_constellation_lines,
+    plot_deep_sky_objects,
+    plot_nebula_paths
+)
+
 from .utils import (
     PlotVerifier,
     get_abbreviated_name,
@@ -123,6 +132,14 @@ __all__ = [
     "create_mobile_simple_weekly_plot",
     "create_mobile_weekly_summary_plot",
     "plot_weekly_analysis_mobile",
+    
+    # Constellation functions
+    "ConstellationPlotter",
+    "plot_constellation_map",
+    "plot_constellation_stars",
+    "plot_constellation_lines",
+    "plot_deep_sky_objects",
+    "plot_nebula_paths",
     
     # Utility functions
     "get_abbreviated_name",

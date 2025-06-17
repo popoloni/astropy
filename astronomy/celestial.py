@@ -8,7 +8,7 @@ with configurable precision modes and graceful fallback capabilities.
 import math
 import pytz
 import logging
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any, Union, List, Tuple
 from .time_utils import calculate_julian_date
 
 # Import precision modules
@@ -663,4 +663,43 @@ def transform_coordinates(dt, observer_lat, observer_lon, input_coords, input_sy
         }
     
     else:
-        raise ValueError(f"Transformation from {input_system} to {output_system} not implemented in standard mode") 
+        raise ValueError(f"Transformation from {input_system} to {output_system} not implemented in standard mode")
+
+
+def normalize_ra(ra: float) -> float:
+    """Normalize RA to 0-360 range"""
+    return ra % 360
+
+
+def get_dso_color_and_category(obj: Dict, use_colors: bool = True) -> Tuple[str, str]:
+    """Get color and category name for a DSO object"""
+    if not use_colors:
+        return '#FF0000', 'Deep Sky Objects'
+    
+    category = obj.get("category", "unknown").lower()
+    
+    if any(x in category for x in ['galaxy']):
+        return '#4682B4', 'Galaxies'
+    elif any(x in category for x in ['nebula']):
+        return '#BA55D3', 'Nebulae'  
+    elif any(x in category for x in ['cluster']):
+        return '#FFA500', 'Clusters'
+    else:
+        return '#FF8C00', 'Other Objects'
+
+
+def separate_stars_and_dso(objects: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
+    """Separate star objects from actual deep sky objects"""
+    stars_in_objects = []
+    actual_dso = []
+    
+    for obj in objects:
+        category = obj.get("category", "").lower()
+        obj_type = obj.get("type", "").lower()
+        
+        if "star" in category or obj_type == "star":
+            stars_in_objects.append(obj)
+        else:
+            actual_dso.append(obj)
+    
+    return stars_in_objects, actual_dso 

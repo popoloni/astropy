@@ -20,35 +20,16 @@ from astronomy import (
     get_local_timezone
 )
 
-def get_abbreviated_name(full_name):
-    """Get abbreviated name (catalog designation) from full name"""
-    import re
-    # First try to find Messier number
-    m_match = re.match(r'M(\d+)', full_name)
-    if m_match:
-        return f"M{m_match.group(1)}"
-    
-    # Then try NGC number
-    ngc_match = re.match(r'NGC\s*(\d+)', full_name)
-    if ngc_match:
-        return f"NGC{ngc_match.group(1)}"
-    
-    # Then try IC number
-    ic_match = re.match(r'IC\s*(\d+)', full_name)
-    if ic_match:
-        return f"IC{ic_match.group(1)}"
-    
-    # If no catalog number found, return first word
-    return full_name.split()[0]
+# Import utility functions
+from ..utils.common import get_abbreviated_name
+
+# Import configuration constants
+from config.settings import (
+    MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ, GRID_ALPHA, VISIBLE_REGION_ALPHA
+)
 
 # Constants for visibility plotting
 FIGURE_SIZE = (15, 10)
-MIN_ALT = 30
-MAX_ALT = 85
-MIN_AZ = 0
-MAX_AZ = 360
-GRID_ALPHA = 0.3
-VISIBLE_REGION_ALPHA = 0.1
 MOON_INTERFERENCE_COLOR_RECOMMENDED = '#DAA520'  # Goldenrod for recommended objects
 MOON_INTERFERENCE_COLOR_NON_RECOMMENDED = '#F0E68C'  # Khaki for non-recommended objects
 SCHEDULED_COLOR = 'red'

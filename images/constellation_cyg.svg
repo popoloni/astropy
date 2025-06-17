@@ -89,14 +89,20 @@
   <text x="126.22266666666664" y="200.11733333333333" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">NGC6894</text>
   <ellipse cx="120.49844444444453" cy="164.08899999999997" rx="0.39629629629629626" ry="0.5944444444444443" transform="rotate(1e-10 120.49844444444453 164.08899999999997)" fill="none" stroke="#FFA500" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
   <text x="122.49844444444453" y="166.08899999999997" fill="#FFA500" font-size="3.5" font-weight="bold" opacity="0.9">NGC6910</text>
-  <ellipse cx="119.33333333333334" cy="158.99999999999994" rx="0.1111111111111111" ry="0.16666666666666666" transform="rotate(1e-10 119.33333333333334 158.99999999999994)" fill="none" stroke="#BA55D3" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <g transform="translate(119.33333333333334,158.99999999999994) scale(0.5)">
+    <line x1="-2" y1="0" x2="2" y2="0" stroke="#BA55D3" stroke-width="0.5"/>
+    <line x1="0" y1="-2" x2="0" y2="2" stroke="#BA55D3" stroke-width="0.5"/>
+  </g>
   <text x="121.33333333333334" y="160.99999999999994" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">NGC6914</text>
   <ellipse cx="113.95977777777784" cy="99.48766666666661" rx="0.42518518518518517" ry="0.5955555555555556" transform="rotate(1e-10 113.95977777777784 99.48766666666661)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
   <text x="115.95977777777784" y="101.48766666666661" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC6946</text>
   <text x="110.0" y="199.64000000000001" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">NGC6960</text>
   <text x="103.80444444444446" y="197.45333333333335" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">NGC6992</text>
   <text x="102.66000000000005" y="156.68533333333332" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">NGC7000</text>
-  <ellipse cx="99.69888888888896" cy="118.18866666666669" rx="0.05285185185185185" ry="0.07927777777777778" transform="rotate(90.0000000001 99.69888888888896 118.18866666666669)" fill="none" stroke="#BA55D3" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <g transform="translate(99.69888888888896,118.18866666666669) scale(0.5)">
+    <line x1="-2" y1="0" x2="2" y2="0" stroke="#BA55D3" stroke-width="0.5"/>
+    <line x1="0" y1="-2" x2="0" y2="2" stroke="#BA55D3" stroke-width="0.5"/>
+  </g>
   <text x="101.69888888888896" y="120.18866666666669" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">NGC7008</text>
   <text x="135.38" y="184.41000000000003" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">SH2-101</text>
   <g transform="translate(118.0766666666667,175.41133333333335) scale(0.5)">

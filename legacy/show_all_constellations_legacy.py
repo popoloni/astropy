@@ -654,77 +654,209 @@ class MacOSBrowserView:
 
 class SVGConstellationVisualizer:
     def __init__(self, catalogs_path=None):
-        # Add parent directory to path for imports
-        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        if catalogs_path is None:
+            script_dir = Path(__file__).parent
+            # Since we're now in legacy/, go up two levels to reach catalogs/
+            self.catalogs_path = script_dir.parent / "catalogs"
+        else:
+            self.catalogs_path = Path(catalogs_path)
         
-        # Use shared ConstellationPlotter for data access
-        from plots.constellation import ConstellationPlotter
-        self.plotter = ConstellationPlotter(catalogs_path)
-        
-        # Access data through shared plotter
-        self.constellations = self.plotter.constellations
-        self.objects = self.plotter.objects
-        self.nebula_paths = self.plotter.nebula_paths
-        self.simbad_objects = self.plotter.simbad_objects
+        # Load all data catalogs
+        self.constellations = self._load_json("constellations.json")
+        self.objects = self._load_json("objects.json")
+        self.nebula_paths = self._load_json("nebula-paths.json")
+        self.simbad_objects = self._load_json("simbad-objects.json")
         
         # Initialize live viewer (Pythonista or macOS browser)
         if PYTHONISTA_AVAILABLE:
             self.live_viewer = PythonistaWebView()
         else:
             self.live_viewer = MacOSBrowserView()
+        
+    def _load_json(self, filename: str) -> List[Dict]:
+        """Load and parse JSON file with error handling"""
+        file_path = self.catalogs_path / filename
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            print(f"Error: Could not find {file_path}")
+            return []
+        except json.JSONDecodeError:
+            print(f"Error: Invalid JSON in {file_path}")
+            return []
+        except UnicodeDecodeError as e:
+            print(f"Error: Unicode decode error in {file_path}: {e}")
+            return []
     
     def find_constellation(self, constellation_id: str) -> Optional[Dict]:
         """Find constellation data by ID"""
-        return self.plotter.find_constellation(constellation_id)
+        for constellation in self.constellations:
+            if constellation["id"].lower() == constellation_id.lower():
+                return constellation
+        return None
     
     def get_constellation_objects(self, constellation_id: str) -> List[Dict]:
         """Get all deep sky objects for a constellation"""
-        return self.plotter.get_constellation_objects(constellation_id)
+        return [obj for obj in self.objects 
+                if obj.get("constellation", "").lower() == constellation_id.lower()]
     
     def get_nebula_paths_for_objects(self, object_ids: List[str]) -> List[Dict]:
         """Get nebula paths for given object IDs"""
-        return self.plotter.get_nebula_paths_for_objects(object_ids)
+        return [nebula for nebula in self.nebula_paths 
+                if nebula["objectId"] in object_ids]
     
     @staticmethod
     def normalize_ra(ra: float) -> float:
         """Normalize RA to 0-360 range"""
-        from astronomy.celestial import normalize_ra
-        return normalize_ra(ra)
+        return ra % 360
     
     def get_dso_color_and_category(self, obj: Dict, use_colors: bool = True) -> Tuple[str, str]:
         """Get color and category name for a DSO object"""
-        from astronomy.celestial import get_dso_color_and_category
-        return get_dso_color_and_category(obj, use_colors)
+        if not use_colors:
+            return '#FF0000', 'Deep Sky Objects'
+        
+        category = obj.get("category", "unknown").lower()
+        
+        if any(x in category for x in ['galaxy']):
+            return '#4682B4', 'Galaxies'
+        elif any(x in category for x in ['nebula']):
+            return '#BA55D3', 'Nebulae'  
+        elif any(x in category for x in ['cluster']):
+            return '#FFA500', 'Clusters'
+        else:
+            return '#FF8C00', 'Other Objects'
     
     def find_simbad_ellipse(self, object_id: str, min_size: float = 0.0167) -> Optional[Dict]:
         """Find SIMBAD ellipse data for an object"""
-        ellipse_data = self.plotter.find_simbad_ellipse(object_id)
-        if ellipse_data:
-            a, b = ellipse_data.get('a', 0), ellipse_data.get('b', 0)
-            if max(a, b) > min_size:
-                return ellipse_data
+        for simbad_obj in self.simbad_objects:
+            if (simbad_obj.get('catalogId') == object_id or 
+                simbad_obj.get('commonName') == object_id or
+                simbad_obj.get('idNgc') == object_id):
+                
+                ellipse_data = simbad_obj.get('ellipse')
+                if ellipse_data:
+                    a, b = ellipse_data.get('a', 0), ellipse_data.get('b', 0)
+                    if max(a, b) > min_size:
+                        return ellipse_data
         return None
     
     def normalize_constellation_coordinates(self, constellation: Dict, objects: List[Dict]):
         """Normalize coordinates and handle RA wraparound"""
-        return self.plotter.normalize_constellation_coordinates(constellation, objects)
+        # Normalize all RA coordinates 
+        for star in constellation["stars"]:
+            star["ra"] = self.normalize_ra(star["ra"])
+        
+        for obj in objects:
+            obj["ra"] = self.normalize_ra(obj["ra"])
+        
+        # Handle RA wraparound
+        star_ras = [star["ra"] for star in constellation["stars"]]
+        object_ras = [obj["ra"] for obj in objects]
+        all_ras = star_ras + object_ras
+        
+        if len(all_ras) > 1:
+            ra_range = max(all_ras) - min(all_ras)
+            if ra_range > 180:
+                for item in constellation["stars"] + objects:
+                    if item["ra"] > 180:
+                        item["ra"] -= 360
     
     def separate_stars_and_dso(self, objects: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
         """Separate star objects from actual deep sky objects"""
-        from astronomy.celestial import separate_stars_and_dso
-        return separate_stars_and_dso(objects)
+        stars_in_objects = []
+        actual_dso = []
+        
+        for obj in objects:
+            category = obj.get("category", "").lower()
+            obj_type = obj.get("type", "").lower()
+            
+            if "star" in category or obj_type == "star":
+                stars_in_objects.append(obj)
+            else:
+                actual_dso.append(obj)
+        
+        return stars_in_objects, actual_dso
     
     def coord_to_svg(self, ra: float, de: float, config: VectorConfig, 
                     bounds: Tuple[float, float, float, float]) -> Tuple[float, float]:
         """Convert celestial coordinates to SVG coordinates"""
-        from plots.constellation.svg import coord_to_svg
-        return coord_to_svg(ra, de, config, bounds)
+        min_ra, max_ra, min_de, max_de = bounds
+        
+        # Convert to SVG coordinates 
+        # For astronomical displays: RA increases right to left (east to west)
+        # So we flip the RA coordinate transformation
+        x = config.width * (1 - (ra - min_ra) / (max_ra - min_ra))
+        # SVG Y axis is inverted compared to celestial coordinates
+        y = config.height * (1 - (de - min_de) / (max_de - min_de))
+        
+        return x, y
     
     def create_svg_output(self, config: VectorConfig, bounds: Tuple[float, float, float, float], 
                          elements: List[str], stats: ObjectStats) -> str:
         """Create complete SVG document"""
-        from plots.constellation.svg import create_svg_output
-        return create_svg_output(config, bounds, elements, stats)
+        min_ra, max_ra, min_de, max_de = bounds
+        
+        # SVG header with proper scaling
+        svg_content = f'''<?xml version="1.0" encoding="UTF-8"?>
+<svg width="{config.width}" height="{config.height}" 
+     viewBox="0 0 {config.width} {config.height}"
+     xmlns="http://www.w3.org/2000/svg"
+     style="background-color: {config.background_color};">
+     
+  <!-- Scalable constellation visualization -->
+  <defs>
+    <!-- Star symbol -->
+    <g id="star">
+      <polygon points="0,-1 0.3,-0.3 1,0 0.3,0.3 0,1 -0.3,0.3 -1,0 -0.3,-0.3" 
+               fill="currentColor" stroke="none"/>
+    </g>
+    
+    <!-- Bright star symbol -->
+    <g id="bright-star">
+      <polygon points="0,-1.2 0.35,-0.35 1.2,0 0.35,0.35 0,1.2 -0.35,0.35 -1.2,0 -0.35,-0.35" 
+               fill="currentColor" stroke="none"/>
+    </g>
+  </defs>
+  
+  <!-- Grid lines -->
+  <g id="grid" stroke="#333" stroke-width="0.1" opacity="0.3">
+'''
+        
+        # Add coordinate grid for reference
+        if max_ra - min_ra > 90:  # Large area - add grid
+            for ra in range(int(min_ra), int(max_ra) + 30, 30):
+                x, _ = self.coord_to_svg(ra, 0, config, bounds)
+                svg_content += f'    <line x1="{x}" y1="0" x2="{x}" y2="{config.height}"/>\n'
+            
+            for de in range(int(min_de), int(max_de) + 30, 30):
+                _, y = self.coord_to_svg(0, de, config, bounds)
+                svg_content += f'    <line x1="0" y1="{y}" x2="{config.width}" y2="{y}"/>\n'
+        
+        svg_content += '  </g>\n\n'
+        
+        # Add all plot elements
+        svg_content += '  <!-- Constellation elements -->\n'
+        svg_content += '\n'.join(elements)
+        
+        # Add title and info
+        title = f"Celestial Sky ({stats.constellations} constellations)" if stats.constellations > 1 else "Constellation View"
+        svg_content += f'''
+  
+  <!-- Title and info -->
+  <text x="{config.width/2}" y="25" text-anchor="middle" 
+        fill="white" font-size="{config.constellation_font_size * 1.5}" font-weight="bold">
+    {title}
+  </text>
+  
+  <text x="10" y="{config.height - 10}" fill="white" font-size="{config.font_size}">
+    RA: {min_ra:.1f}° to {max_ra:.1f}° | DE: {min_de:.1f}° to {max_de:.1f}° | 
+    Stars: {stats.stars} | DSO: {stats.dso} | Vector SVG
+  </text>
+  
+</svg>'''
+        
+        return svg_content
     
     # [Previous plotting methods remain the same - plot_stars_svg, plot_constellation_lines_svg, etc.]
     # [I'll include the key ones here but the full implementation would include all]
@@ -732,39 +864,195 @@ class SVGConstellationVisualizer:
     def plot_stars_svg(self, stars: List[Dict], config: VectorConfig, 
                       bounds: Tuple[float, float, float, float]) -> Tuple[List[str], Dict[str, Tuple[float, float]]]:
         """Generate SVG elements for constellation stars"""
-        from plots.constellation.svg import plot_stars_svg
-        return plot_stars_svg(stars, config, bounds)
+        elements = []
+        star_positions = {}
+        
+        for star in stars:
+            ra, de = star["ra"], star["de"]
+            magnitude = star.get("visualMagnitude", 5)
+            star_id = star["id"]
+            
+            x, y = self.coord_to_svg(ra, de, config, bounds)
+            
+            # Size based on magnitude
+            size = max(0.5, config.star_base_size / (magnitude + 1))
+            
+            # Create star element
+            elements.append(f'  <use href="#star" x="{x}" y="{y}" '
+                          f'transform="scale({size})" fill="{config.star_color}" opacity="0.9"/>')
+            
+            star_positions[star_id] = (x, y)
+            
+            # Add star names for bright stars if requested
+            if config.show_star_names and magnitude < 2.5:
+                star_name = star.get("name", star_id)
+                elements.append(f'  <text x="{x + 3}" y="{y - 3}" fill="#87CEEB" '
+                              f'font-size="{config.font_size * 0.8}" opacity="0.8">{star_name}</text>')
+        
+        return elements, star_positions
     
     def plot_constellation_lines_svg(self, constellation: Dict, star_positions: Dict[str, Tuple[float, float]], 
                                    config: VectorConfig) -> List[str]:
         """Generate SVG elements for constellation lines"""
-        from plots.constellation.svg import plot_constellation_lines_svg
-        return plot_constellation_lines_svg(constellation, star_positions, config)
+        elements = []
+        
+        for shape in constellation.get("shapes", []):
+            if len(shape) == 2:
+                star1_id, star2_id = shape
+                if star1_id in star_positions and star2_id in star_positions:
+                    x1, y1 = star_positions[star1_id]
+                    x2, y2 = star_positions[star2_id]
+                    
+                    # Skip wraparound lines
+                    if abs(x2 - x1) <= config.width * 0.7:  # Reasonable threshold
+                        elements.append(f'  <line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" '
+                                      f'stroke="{config.line_color}" stroke-width="{config.line_width}" '
+                                      f'opacity="0.8"/>')
+        
+        return elements
     
     def plot_bright_stars_svg(self, bright_stars: List[Dict], config: VectorConfig, 
                             bounds: Tuple[float, float, float, float]) -> List[str]:
         """Generate SVG elements for bright stars"""
-        from plots.constellation.svg import plot_bright_stars_svg
-        return plot_bright_stars_svg(bright_stars, config, bounds)
+        elements = []
+        
+        for obj in bright_stars:
+            ra, de = obj["ra"], obj["de"]
+            name = obj["id"]
+            magnitude = obj.get("magnitude", 5)
+            
+            x, y = self.coord_to_svg(ra, de, config, bounds)
+            
+            # Size based on magnitude
+            size = max(0.8, config.bright_star_base_size / (magnitude + 1))
+            
+            # Create bright star element
+            elements.append(f'  <use href="#bright-star" x="{x}" y="{y}" '
+                          f'transform="scale({size})" fill="{config.bright_star_color}" opacity="0.95"/>')
+            
+            # Add label
+            elements.append(f'  <text x="{x + 3}" y="{y - 3}" fill="{config.bright_star_color}" '
+                          f'font-size="{config.font_size * 0.9}" font-weight="bold">{name}</text>')
+        
+        return elements
     
     def plot_dso_objects_svg(self, dso_objects: List[Dict], nebula_path_ids: set, 
                            config: VectorConfig, bounds: Tuple[float, float, float, float], 
                            stats: ObjectStats) -> List[str]:
         """Generate SVG elements for deep sky objects"""
-        from plots.constellation.svg import plot_dso_objects_svg
-        return plot_dso_objects_svg(dso_objects, nebula_path_ids, config, bounds, stats, self)
+        elements = []
+        
+        for obj in dso_objects:
+            ra, de = obj["ra"], obj["de"]
+            name = obj["id"]
+            magnitude = obj.get("magnitude", 10)
+            
+            x, y = self.coord_to_svg(ra, de, config, bounds)
+            
+            # Get color and track categories
+            color, category = self.get_dso_color_and_category(obj, config.use_dso_colors)
+            if category not in stats.dso_categories:
+                stats.dso_categories[category] = {'color': color, 'count': 0}
+            stats.dso_categories[category]['count'] += 1
+            
+            # Check for ellipse
+            has_ellipse = False
+            if config.show_ellipses and name not in nebula_path_ids:
+                ellipse_data = self.find_simbad_ellipse(name)
+                if ellipse_data:
+                    # Convert ellipse to SVG coordinates
+                    a = ellipse_data['a'] * config.width / 360  # Scale to SVG
+                    b = ellipse_data['b'] * config.height / 180
+                    angle = ellipse_data['r']
+                    
+                    elements.append(f'  <ellipse cx="{x}" cy="{y}" rx="{a}" ry="{b}" '
+                                  f'transform="rotate({angle} {x} {y})" '
+                                  f'fill="none" stroke="{color}" stroke-width="0.2" '
+                                  f'stroke-dasharray="2,1" opacity="0.7"/>')
+                    stats.ellipses += 1
+                    has_ellipse = True
+            
+            # Plot center marker if appropriate
+            if name not in nebula_path_ids and (not has_ellipse or not config.show_ellipses):
+                size = max(0.5, config.dso_base_size / (magnitude + 1)) if magnitude < 15 else 0.5
+                
+                if config.show_ellipses and not has_ellipse:
+                    # Plus marker
+                    elements.append(f'  <g transform="translate({x},{y}) scale({size})">')
+                    elements.append(f'    <line x1="-2" y1="0" x2="2" y2="0" stroke="{color}" stroke-width="0.5"/>')
+                    elements.append(f'    <line x1="0" y1="-2" x2="0" y2="2" stroke="{color}" stroke-width="0.5"/>')
+                    elements.append('  </g>')
+                else:
+                    # Circle marker
+                    elements.append(f'  <circle cx="{x}" cy="{y}" r="{size}" '
+                                  f'fill="{color}" stroke="{color}" stroke-width="0.1" opacity="0.9"/>')
+            
+            # Add label
+            label_color = '#FF0000' if not config.use_dso_colors else color
+            elements.append(f'  <text x="{x + 2}" y="{y + 2}" fill="{label_color}" '
+                          f'font-size="{config.font_size * 0.7}" font-weight="bold" opacity="0.9">{name}</text>')
+        
+        return elements
     
     def plot_nebula_paths_svg(self, nebula_paths: List[Dict], config: VectorConfig, 
                             bounds: Tuple[float, float, float, float]) -> List[str]:
         """Generate SVG elements for nebula paths"""
-        from plots.constellation.svg import plot_nebula_paths_svg
-        return plot_nebula_paths_svg(nebula_paths, config, bounds)
+        elements = []
+        
+        for nebula in nebula_paths:
+            path_coords = nebula["path"]
+            if len(path_coords) > 2:
+                # Convert coordinates to SVG path
+                svg_path = "M "
+                for i, coord in enumerate(path_coords):
+                    x, y = self.coord_to_svg(coord[0], coord[1], config, bounds)
+                    if i == 0:
+                        svg_path += f"{x},{y} "
+                    else:
+                        svg_path += f"L {x},{y} "
+                svg_path += "Z"  # Close path
+                
+                # Add filled path
+                elements.append(f'  <path d="{svg_path}" fill="#FF0000" fill-opacity="0.1" '
+                              f'stroke="#FF0000" stroke-width="0.3" stroke-opacity="0.7"/>')
+        
+        return elements
     
     def calculate_bounds(self, constellation_data_list: List[Tuple[Dict, str]], 
                         objects_dict: Dict[str, List[Dict]]) -> Tuple[float, float, float, float]:
         """Calculate bounding box for all data"""
-        from plots.constellation.svg import calculate_bounds
-        return calculate_bounds(constellation_data_list, objects_dict)
+        all_ras, all_des = [], []
+        
+        for constellation, constellation_id in constellation_data_list:
+            for star in constellation["stars"]:
+                all_ras.append(star["ra"])
+                all_des.append(star["de"])
+            
+            for obj in objects_dict.get(constellation_id, []):
+                all_ras.append(obj["ra"])
+                all_des.append(obj["de"])
+        
+        if not all_ras:
+            return 0, 360, -90, 90
+        
+        min_ra, max_ra = min(all_ras), max(all_ras)
+        min_de, max_de = min(all_des), max(all_des)
+        
+        # Add padding
+        ra_range = max_ra - min_ra
+        de_range = max_de - min_de
+        
+        if ra_range > 180:  # Full sky view
+            return 0, 360, -90, 90
+        
+        # Add 10% padding, minimum 5 degrees
+        ra_padding = max(ra_range * 0.1, 5.0)
+        de_padding = max(de_range * 0.1, 5.0)
+        
+        return (max(min_ra - ra_padding, 0), 
+               min(max_ra + ra_padding, 360),
+               max(min_de - de_padding, -90), 
+               min(max_de + de_padding, 90))
     
     def plot_vector_visualization(self, constellation_data_list: List[Tuple[Dict, str]], 
                                 config: VectorConfig, is_grid_view: bool = True) -> ObjectStats:

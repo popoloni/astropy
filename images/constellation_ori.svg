@@ -74,7 +74,10 @@
   <text x="375.7626955352814" y="465.03656615699845" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">M42</text>
   <text x="371.17584487458186" y="461.5563235791087" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">M43</text>
   <text x="298.44149868349245" y="382.1380841514713" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">M78</text>
-  <ellipse cx="557.1554691801227" cy="430.83162614760795" rx="0.07407407407407408" ry="0.1111111111111111" transform="rotate(1e-10 557.1554691801227 430.83162614760795)" fill="none" stroke="#BA55D3" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <g transform="translate(557.1554691801227,430.83162614760795) scale(0.5)">
+    <line x1="-2" y1="0" x2="2" y2="0" stroke="#BA55D3" stroke-width="0.5"/>
+    <line x1="0" y1="-2" x2="0" y2="2" stroke="#BA55D3" stroke-width="0.5"/>
+  </g>
   <text x="559.1554691801227" y="432.83162614760795" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">NGC1788</text>
   <text x="373.3591857890749" y="454.8915843591328" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">NGC1977</text>
   <text x="331.09987538767166" y="410.3982513504726" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">NGC2024</text>

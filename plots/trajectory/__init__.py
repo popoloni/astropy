@@ -6,7 +6,9 @@ This module provides trajectory plotting functions for both desktop and mobile p
 from .desktop import (
     plot_object_trajectory,
     plot_moon_trajectory,
-    plot_quarterly_trajectories
+    plot_quarterly_trajectories,
+    plot_moon_trajectory_no_legend,
+    plot_object_trajectory_no_legend
 )
 
 from .mobile import (
@@ -21,6 +23,8 @@ __all__ = [
     "plot_object_trajectory",
     "plot_moon_trajectory", 
     "plot_quarterly_trajectories",
+    "plot_moon_trajectory_no_legend",
+    "plot_object_trajectory_no_legend",
     
     # Mobile functions
     "MobileTrajectoryPlotter",

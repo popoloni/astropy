@@ -18,6 +18,11 @@ import matplotlib.dates as mdates
 from enum import Enum
 import argparse
 
+# Add parent directory to path for imports
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Import time simulation module
 from models import SchedulingStrategy, CelestialObject, Observer, MosaicGroup
 from config.settings import load_config, get_default_location, _import_mosaic_functions
