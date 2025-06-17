@@ -53,10 +53,48 @@ def _calculate_total_area(fov_str):
 
 
 class Observer:
-    """Class to represent the observer's location"""
-    def __init__(self, lat, lon):
+    """
+    Class to represent the observer's location with improved coordinate handling
+    
+    IMPROVEMENTS MADE:
+    - Added elevation/height support
+    - Coordinate validation
+    - Better coordinate management
+    - Support for both radians and degrees
+    """
+    def __init__(self, lat, lon, elevation=0.0):
+        """
+        Initialize observer location
+        
+        Args:
+            lat: Latitude in degrees
+            lon: Longitude in degrees  
+            elevation: Elevation above sea level in meters (default: 0.0)
+        """
+        # Validate coordinates
+        if not -90 <= lat <= 90:
+            raise ValueError(f"Latitude must be between -90 and 90 degrees, got {lat}")
+        if not -180 <= lon <= 180:
+            raise ValueError(f"Longitude must be between -180 and 180 degrees, got {lon}")
+        if elevation < -500:  # Allow below sea level but not too extreme
+            raise ValueError(f"Elevation must be >= -500 meters, got {elevation}")
+        
+        # Store coordinates in both formats for convenience
+        self.lat_deg = float(lat)
+        self.lon_deg = float(lon)
+        self.elevation = float(elevation)
+        
+        # Store in radians for astronomical calculations
         self.lat = math.radians(lat)
         self.lon = math.radians(lon)
+    
+    def __repr__(self):
+        return f"Observer(lat={self.lat_deg:.3f}°, lon={self.lon_deg:.3f}°, elevation={self.elevation}m)"
+    
+    def __str__(self):
+        lat_dir = "N" if self.lat_deg >= 0 else "S"
+        lon_dir = "E" if self.lon_deg >= 0 else "W"
+        return f"{abs(self.lat_deg):.3f}°{lat_dir}, {abs(self.lon_deg):.3f}°{lon_dir}, {self.elevation}m"
 
 
 class CelestialObject:

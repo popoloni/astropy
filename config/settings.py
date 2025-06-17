@@ -17,12 +17,30 @@ def load_config():
 
 
 def get_default_location(config):
-    """Get the default location from config"""
+    """Get the default location from config with validation"""
     for loc_id, loc_data in config['locations'].items():
         if loc_data.get('default', False):
+            # Validate location data
+            if 'latitude' not in loc_data or 'longitude' not in loc_data:
+                raise ValueError(f"Location {loc_id} missing latitude or longitude")
+            if not -90 <= loc_data['latitude'] <= 90:
+                raise ValueError(f"Invalid latitude for {loc_id}: {loc_data['latitude']}")
+            if not -180 <= loc_data['longitude'] <= 180:
+                raise ValueError(f"Invalid longitude for {loc_id}: {loc_data['longitude']}")
             return loc_id, loc_data
+    
     # If no default is set, use the first location
     first_loc = next(iter(config['locations'].items()))
+    loc_id, loc_data = first_loc
+    
+    # Validate first location too
+    if 'latitude' not in loc_data or 'longitude' not in loc_data:
+        raise ValueError(f"Location {loc_id} missing latitude or longitude")
+    if not -90 <= loc_data['latitude'] <= 90:
+        raise ValueError(f"Invalid latitude for {loc_id}: {loc_data['latitude']}")
+    if not -180 <= loc_data['longitude'] <= 180:
+        raise ValueError(f"Invalid longitude for {loc_id}: {loc_data['longitude']}")
+    
     return first_loc
 
 
@@ -37,8 +55,11 @@ LATITUDE = DEFAULT_LOCATION['latitude']
 LONGITUDE = DEFAULT_LOCATION['longitude']
 TIMEZONE = DEFAULT_LOCATION['timezone']
 
-# Create observer object
-OBSERVER = Observer(LATITUDE, LONGITUDE)
+# Get elevation if available, default to 0
+ELEVATION = DEFAULT_LOCATION.get('elevation', 0.0)
+
+# Create observer object with elevation support
+OBSERVER = Observer(LATITUDE, LONGITUDE, ELEVATION)
 
 # Visibility Constraints
 MIN_ALT = DEFAULT_LOCATION['min_altitude']
