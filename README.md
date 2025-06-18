@@ -64,6 +64,7 @@ This astronomical observation planning system provides intelligent automation fo
 
 ### 🔬 **Scientific Accuracy**
 - **High-Precision Calculations**: Advanced VSOP87/ELP2000 theories for 60x improved accuracy
+- **🆕 Astronomically Accurate Moon Phase Calculations**: Completely rewritten algorithm using Jean Meeus elongation-based calculations with orbital perturbation corrections
 - **Atmospheric Modeling**: Multiple refraction models with weather corrections
 - **Parallax Corrections**: Earth-based parallax for enhanced positional accuracy
 - **Performance Optimization**: Intelligent caching and benchmarking systems

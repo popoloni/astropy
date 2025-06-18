@@ -531,7 +531,7 @@ def apply_enhanced_atmospheric_refraction(altitude_deg, observer_elevation_m=0.0
 def calculate_moon_phase(dt):
     """
     Calculate moon phase (0-1) where 0=new moon, 0.5=full moon, 1=new moon again
-    Using a more accurate algorithm based on astronomical calculations
+    Using the standard astronomical algorithm based on elongation
     """
     # Ensure we're working with UTC
     if dt.tzinfo is None:
@@ -541,35 +541,74 @@ def calculate_moon_phase(dt):
     
     jd = calculate_julian_date(dt)
     
-    # Meeus first approximation
-    T = (jd - 2451545.0) / 36525  # Time in Julian centuries since J2000.0
+    # Time in Julian centuries since J2000.0
+    T = (jd - 2451545.0) / 36525.0
     
-    # Sun's mean elongation
-    D = 297.8502042 + 445267.1115168 * T - 0.0016300 * T**2 + T**3 / 545868 - T**4 / 113065000
+    # Calculate Sun's mean longitude (degrees)
+    L_sun = (280.4664567 + 36000.76982779 * T + 
+             0.0003032028 * T**2 + T**3 / 49931.0 - 
+             T**4 / 15299.0 - T**4 / 1988000.0) % 360
     
+    # Calculate Moon's mean longitude (degrees)
+    L_moon = (218.3164591 + 481267.88134236 * T - 
+              0.0013268 * T**2 + T**3 / 538841.0 - 
+              T**4 / 65194000.0) % 360
+    
+    # Calculate the elongation (angular distance between Sun and Moon)
+    elongation = (L_moon - L_sun) % 360
+    
+    # Convert elongation to phase
+    # 0° elongation = New Moon (phase = 0)
+    # 90° elongation = First Quarter (phase = 0.25)  
+    # 180° elongation = Full Moon (phase = 0.5)
+    # 270° elongation = Last Quarter (phase = 0.75)
+    # 360° elongation = New Moon (phase = 1.0)
+    
+    if elongation <= 180:
+        # Waxing: 0° to 180° maps to phase 0.0 to 0.5
+        phase = elongation / 360.0
+    else:
+        # Waning: 180° to 360° maps to phase 0.5 to 1.0
+        phase = elongation / 360.0
+    
+    # Apply corrections for better accuracy
     # Sun's mean anomaly
-    M = 357.5291092 + 35999.0502909 * T - 0.0001536 * T**2 + T**3 / 24490000
+    M_sun = math.radians((357.5291 + 35999.0503 * T - 
+                         0.0001536 * T**2 + T**3 / 24490000.0) % 360)
     
     # Moon's mean anomaly
-    Mm = 134.9634114 + 477198.8676313 * T - 0.0089970 * T**2 + T**3 / 69699 - T**4 / 14712000
+    M_moon = math.radians((134.9634 + 477198.8675 * T + 
+                          0.0087414 * T**2 + T**3 / 69699.0 - 
+                          T**4 / 14712000.0) % 360)
     
     # Moon's argument of latitude
-    F = 93.2720993 + 483202.0175273 * T - 0.0034029 * T**2 - T**3 / 3526000 + T**4 / 863310000
+    F = math.radians((93.2721 + 483202.0175 * T - 
+                     0.0036539 * T**2 - T**3 / 3526000.0 + 
+                     T**4 / 863310000.0) % 360)
     
-    # Corrections for perturbations
-    dE = 1.0 - 0.002516 * T - 0.0000074 * T**2  # Correction for eccentricity
+    # Apply periodic corrections to elongation
+    elongation_rad = math.radians(elongation)
     
-    # Convert to radians for calculations
-    D = math.radians(D % 360)
-    M = math.radians(M % 360)
-    Mm = math.radians(Mm % 360)
-    F = math.radians(F % 360)
+    # Major periodic terms (in degrees)
+    correction = 0
+    correction += -6.289 * math.sin(M_moon)
+    correction += 2.100 * math.sin(M_sun)
+    correction += -1.274 * math.sin(2*elongation_rad - M_moon)
+    correction += -0.658 * math.sin(2*elongation_rad)
+    correction += -0.214 * math.sin(2*M_moon)
+    correction += -0.110 * math.sin(elongation_rad)
     
-    # Calculate phase angle
-    phase_angle = 180 - D * 180/math.pi - 6.289 * math.sin(Mm) + 2.100 * math.sin(M) - 1.274 * math.sin(2*D - Mm) - 0.658 * math.sin(2*D) - 0.214 * math.sin(2*Mm) - 0.110 * math.sin(D)
+    # Apply correction to elongation
+    corrected_elongation = (elongation + correction) % 360
     
-    # Convert phase angle to illuminated fraction
-    phase = (1 + math.cos(math.radians(phase_angle))) / 2
+    # Convert corrected elongation to phase
+    if corrected_elongation <= 180:
+        phase = corrected_elongation / 360.0
+    else:
+        phase = corrected_elongation / 360.0
+    
+    # Ensure phase is in [0, 1] range
+    phase = max(0.0, min(1.0, phase))
     
     return phase
 
@@ -763,26 +802,31 @@ def get_moon_phase_icon(phase):
     Get moon phase icon and name based on phase value.
     Phase is a decimal from 0.0 to 1.0, where:
     0.0 = New Moon
-    0.25 = First Quarter
     0.5 = Full Moon
-    0.75 = Last Quarter
-    1.0 = New Moon (again)
+    1.0 = New Moon (completing the cycle)
+    
+    The phase represents the progression through the lunar cycle:
+    - 0.0 to 0.5: Waxing (increasing illumination)
+    - 0.5 to 1.0: Waning (decreasing illumination)
     """
-    if phase < 0.0625 or phase >= 0.9375:
+    # Normalize phase to [0, 1] range
+    phase = phase % 1.0
+    
+    if phase < 0.03125 or phase >= 0.96875:  # New Moon ±1/32
         return "🌑", "New Moon"
-    elif phase < 0.1875:
+    elif phase < 0.21875:  # Waxing Crescent (1/32 to 7/32)
         return "🌒", "Waxing Crescent"
-    elif phase < 0.3125:
+    elif phase < 0.28125:  # First Quarter (7/32 to 9/32)
         return "🌓", "First Quarter"
-    elif phase < 0.4375:
+    elif phase < 0.46875:  # Waxing Gibbous (9/32 to 15/32)
         return "🌔", "Waxing Gibbous"
-    elif phase < 0.5625:
+    elif phase < 0.53125:  # Full Moon (15/32 to 17/32)
         return "🌕", "Full Moon"
-    elif phase < 0.6875:
+    elif phase < 0.71875:  # Waning Gibbous (17/32 to 23/32)
         return "🌖", "Waning Gibbous"
-    elif phase < 0.8125:
+    elif phase < 0.78125:  # Last Quarter (23/32 to 25/32)
         return "🌗", "Last Quarter"
-    else:
+    else:  # Waning Crescent (25/32 to 31/32)
         return "🌘", "Waning Crescent"
 
 
