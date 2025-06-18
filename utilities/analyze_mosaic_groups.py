@@ -30,6 +30,9 @@ CONFIG = load_config()
 # Get mosaic FOV from settings (which loads from scope_data.json)
 from config.settings import MOSAIC_FOV_WIDTH, MOSAIC_FOV_HEIGHT
 
+# Use a lower threshold for mosaics since efficiency gains justify shorter sessions
+MOSAIC_MIN_VISIBILITY_HOURS = max(0.8, MIN_VISIBILITY_HOURS * 0.5)  # 50% of regular requirement, minimum 0.8h
+
 def calculate_angular_separation(obj1, obj2):
     """
     Calculate angular separation between two objects using spherical trigonometry.
@@ -81,9 +84,13 @@ def can_fit_in_mosaic(objects_list):
     # Calculate declination span
     dec_span_deg = math.degrees(max(dec_coords) - min(dec_coords))
     
-    # Check if objects fit within mosaic FOV with 10% margin for positioning
-    fits_ra = ra_span_deg <= MOSAIC_FOV_WIDTH * 0.9
-    fits_dec = dec_span_deg <= MOSAIC_FOV_HEIGHT * 0.9
+    # Check if objects fit within mosaic FOV with adaptive margin
+    # Use smaller margin for close pairs that are near the limit
+    ra_margin = 0.98 if ra_span_deg <= MOSAIC_FOV_WIDTH * 0.98 else 0.95  
+    dec_margin = 0.98 if dec_span_deg <= MOSAIC_FOV_HEIGHT * 0.98 else 0.95
+    
+    fits_ra = ra_span_deg <= MOSAIC_FOV_WIDTH * ra_margin
+    fits_dec = dec_span_deg <= MOSAIC_FOV_HEIGHT * dec_margin
     
     return fits_ra and fits_dec
 
@@ -131,65 +138,101 @@ def objects_visible_simultaneously(objects_list, start_time, end_time):
 def analyze_object_groups(objects, start_time, end_time):
     """
     Analyze which objects can be grouped together for mosaic photography.
+    Uses an improved algorithm that finds all possible pairs first.
     """
     print("MOSAIC GROUP ANALYSIS")
     print("=" * 50)
     print(f"Mosaic Field of View: {MOSAIC_FOV_WIDTH}° × {MOSAIC_FOV_HEIGHT}°")
     print(f"Analysis period: {start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}")
+    print(f"Minimum visibility for mosaics: {MOSAIC_MIN_VISIBILITY_HOURS:.1f} hours")
     print()
     
+    # Step 1: Find all possible pairs that fit spatially and temporally
+    print("Finding all possible object pairs...")
+    valid_pairs = []
+    
+    for i, obj1 in enumerate(objects):
+        for j, obj2 in enumerate(objects[i+1:], i+1):
+            # Check spatial fit
+            if can_fit_in_mosaic([obj1, obj2]):
+                # Check temporal overlap
+                overlap_periods = objects_visible_simultaneously([obj1, obj2], start_time, end_time)
+                if overlap_periods:
+                    total_overlap = sum(
+                        (period[1] - period[0]).total_seconds() / 3600
+                        for period in overlap_periods
+                    )
+                    
+                    if total_overlap >= MOSAIC_MIN_VISIBILITY_HOURS:
+                        separation = calculate_angular_separation(obj1, obj2)
+                        valid_pairs.append({
+                            'objects': [obj1, obj2],
+                            'overlap_periods': overlap_periods,
+                            'total_overlap': total_overlap,
+                            'separation': separation
+                        })
+    
+    print(f"Found {len(valid_pairs)} valid object pairs")
+    
+    # Sort pairs by separation (closest first)
+    valid_pairs.sort(key=lambda x: x['separation'])
+    
+    # Print the closest pairs for debugging
+    print("Closest pairs found:")
+    for pair in valid_pairs[:10]:  # Show top 10 closest pairs
+        obj1_name = pair['objects'][0].name.split('/')[0]
+        obj2_name = pair['objects'][1].name.split('/')[0]
+        print(f"  {obj1_name} - {obj2_name}: {pair['separation']:.2f}° ({pair['total_overlap']:.1f}h overlap)")
+    
+    # Step 2: Try to expand pairs into larger groups
+    print(f"\nExpanding pairs into larger groups...")
     groups_found = []
     used_objects = set()
     
-    # Try to find groups of 2-4 objects that can fit together
-    for group_size in range(4, 1, -1):  # Start with larger groups
-        for i, obj1 in enumerate(objects):
-            if obj1.name in used_objects:
+    for pair in valid_pairs:
+        obj1, obj2 = pair['objects']
+        
+        # Skip if either object is already used
+        if obj1.name in used_objects or obj2.name in used_objects:
+            continue
+        
+        # Start with this pair
+        current_group = [obj1, obj2]
+        current_overlap = pair['overlap_periods']
+        
+        # Try to add more objects to this group
+        for obj3 in objects:
+            if obj3.name in used_objects or obj3 in current_group:
                 continue
-                
-            # Try to build a group starting with obj1
-            current_group = [obj1]
             
-            for j, obj2 in enumerate(objects):
-                if j <= i or obj2.name in used_objects:
-                    continue
-                    
-                # Test if we can add obj2 to the current group
-                test_group = current_group + [obj2]
-                
-                if len(test_group) > group_size:
-                    continue
-                    
-                # Check if objects fit spatially
-                if can_fit_in_mosaic(test_group):
-                    # Check if objects are visible simultaneously
-                    overlap_periods = objects_visible_simultaneously(test_group, start_time, end_time)
-                    if overlap_periods:
-                        # Calculate total overlap duration
-                        total_overlap = sum(
-                            (period[1] - period[0]).total_seconds() / 3600
-                            for period in overlap_periods
-                        )
-                        
-                        if total_overlap >= MIN_VISIBILITY_HOURS:
-                            current_group.append(obj2)
+            # Test if we can add obj3 to the current group
+            test_group = current_group + [obj3]
             
-            # If we found a group of at least 2 objects
-            if len(current_group) >= 2:
-                # Check final validity
-                if can_fit_in_mosaic(current_group):
-                    overlap_periods = objects_visible_simultaneously(current_group, start_time, end_time)
-                    if overlap_periods:
-                        total_overlap = sum(
-                            (period[1] - period[0]).total_seconds() / 3600
-                            for period in overlap_periods
-                        )
+            # Check spatial fit
+            if can_fit_in_mosaic(test_group):
+                # Check temporal overlap
+                test_overlap = objects_visible_simultaneously(test_group, start_time, end_time)
+                if test_overlap:
+                    test_total_overlap = sum(
+                        (period[1] - period[0]).total_seconds() / 3600
+                        for period in test_overlap
+                    )
+                    
+                    if test_total_overlap >= MOSAIC_MIN_VISIBILITY_HOURS:
+                        current_group.append(obj3)
+                        current_overlap = test_overlap
                         
-                        if total_overlap >= MIN_VISIBILITY_HOURS:
-                            groups_found.append((current_group, overlap_periods))
-                            for obj in current_group:
-                                used_objects.add(obj.name)
+                        # Limit group size to avoid overly complex mosaics
+                        if len(current_group) >= 4:
+                            break
+        
+        # Add the group (minimum 2 objects)
+        if len(current_group) >= 2:
+            groups_found.append((current_group, current_overlap))
+            for obj in current_group:
+                used_objects.add(obj.name)
     
+    print(f"Created {len(groups_found)} mosaic groups")
     return groups_found
 
 def print_group_analysis(groups):
@@ -300,7 +343,7 @@ def main():
         periods = find_visibility_window(obj, start_time, end_time, use_margins=True)
         if periods:
             duration = calculate_visibility_duration(periods)
-            if duration >= MIN_VISIBILITY_HOURS:
+            if duration >= MOSAIC_MIN_VISIBILITY_HOURS:
                 visible_objects.append(obj)
     
     if not visible_objects:

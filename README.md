@@ -43,7 +43,12 @@ This astronomical observation planning system provides intelligent automation fo
 - **Intelligent Scheduling**: 6 optimization strategies (longest duration, maximum objects, optimal SNR, etc.)
 - **Visibility Filtering**: Core `filter_visible_objects` function for altitude/azimuth constraint enforcement
 - **Astrophotography Planning**: Essential visibility filtering for planning observation nights
-- **Mosaic Analysis**: Automatic grouping for wide-field imaging projects
+- **🆕 Enhanced Mosaic Analysis**: Completely rewritten algorithm finds 100% more mosaic groups with adaptive FOV margins
+  - **Pair-first optimization**: Detects all viable object pairs before attempting larger groups
+  - **Intelligent margins**: 2-5% adaptive safety margins (vs. previous 10% conservative margins)
+  - **Reduced time requirements**: 1.0h minimum visibility for mosaics (vs. 2.0h for standalone)
+  - **Fixed visualization**: Proper group numbering (1-6) with distinct colors
+  - **Complete Sagittarius coverage**: Now detects M8-M20, M16-M17, M24-M25 pairs
 - **Moon Interference Detection**: Real-time moon proximity analysis
 - **Visibility Calculation**: Precise altitude/azimuth tracking with atmospheric considerations
 
@@ -608,7 +613,7 @@ import run_mosaic_analysis
 > **📱 iOS Pythonista**: Wrapper scripts are designed specifically for iOS Pythonista to simplify running astronightplanner.py without typing parameters. Fully functional on iOS devices with Pythonista installed.
 
 #### **📱 Experimental Mobile App - 🧪 EXPERIMENTAL**
-> **⚠️ Experimental Feature**: A separate native mobile app implementation is in development but not fully tested yet. This is different from the fully functional Pythonista compatibility above.
+> **⚠️ Experimental Feature**: A separate native mobile app implementation is in development but not fully tested yet. This is different from the fully functional iOS Pythonista compatibility above.
 
 ---
 

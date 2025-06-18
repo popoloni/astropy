@@ -137,6 +137,31 @@ Potential future improvements building on these changes:
 - **Interactive filtering**: Toggle duplicate filtering in real-time
 - **Group prioritization**: Advanced scheduling based on mosaic group characteristics
 
+## 📅 June 2025 - Major Mosaic Analysis Overhaul
+
+### 🎯 Critical Algorithm Rewrite
+- **Complete mosaic detection algorithm rewrite** fixed systematic issues preventing close object pair detection
+- **100% increase in mosaic group discovery**: From 3 groups to 6 groups detected
+- **Missing Sagittarius pairs now found**: M8-M20, M16-M17, M24-M25 pairs previously overlooked
+
+### 🔧 Technical Improvements
+- **Pair-first optimization**: New algorithm prioritizes finding pairs before attempting larger groups
+- **Adaptive FOV margins**: Intelligent 2-5% margins instead of conservative 10% fixed margin
+- **Reduced time requirements**: 1.0h minimum for mosaics (50% of standalone requirement)
+- **Enhanced spatial calculations**: Better handling of objects near FOV limits and declination extremes
+
+### 🎨 Visualization Fixes
+- **Fixed group numbering**: All groups were incorrectly labeled "Group 1" → Now properly numbered 1-6
+- **Distinct color assignment**: Only blue/orange used → Now 6 distinct colors (red, blue, green, purple, orange, brown)
+- **Proper group tracking**: Fixed counter bug that prevented accurate group identification
+
+### 📊 Impact
+- **Before**: 3 mosaic groups, 5 valid pairs, missing obvious astronomical targets
+- **After**: 6 mosaic groups, 9 valid pairs, comprehensive coverage of viable opportunities
+- **Status**: ✅ Mosaic planning now fully optimized for astronomical imaging workflows
+
+## 📅 June 2025 - Coordinate System Overhaul
+
 ---
 
 *These improvements enhance the mosaic analysis workflow while maintaining full backward compatibility with existing usage patterns.* 

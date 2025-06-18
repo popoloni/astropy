@@ -8,6 +8,10 @@ Uses the integrated mosaic functionality in astronightplanner.py.
 
 The --no-duplicates flag can be used to exclude individual objects that are
 already part of mosaic groups from standalone display.
+
+NOTE: This mosaic analysis includes ALL visible objects (even those with insufficient
+time for standalone imaging) since they might be perfect for mosaic groups.
+This is why you might see different object counts compared to regular planning.
 """
 
 import sys
@@ -23,6 +27,8 @@ def main():
     print("Creating trajectory plots for mosaic groups...")
     print("Using integrated astropy mosaic functionality...")
     print("📄 Note: Use --no-duplicates to hide individual objects that are part of mosaic groups")
+    print("🔍 Mosaic analysis includes ALL visible objects (even those with insufficient standalone time)")
+    print("   since objects unsuitable for standalone imaging might be perfect for mosaic groups.")
     print()
     
     try:

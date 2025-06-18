@@ -307,7 +307,10 @@ def main():
     
     if args.mosaic or args.mosaic_only or args.schedule == 'mosaic_groups':
         print("\nAnalyzing mosaic groups...")
-        mosaic_groups = create_mosaic_groups(visible_objects, start_time, end_time)
+        # Include both visible and insufficient objects in mosaic analysis
+        # Objects with insufficient time for standalone imaging might be perfect for mosaic groups
+        all_candidate_objects = visible_objects + insufficient_objects
+        mosaic_groups = create_mosaic_groups(all_candidate_objects, start_time, end_time)
         
         if mosaic_groups:
             print(f"Found {len(mosaic_groups)} mosaic groups.")
@@ -392,23 +395,45 @@ def main():
             print("Generating combined trajectory plot...")
             fig, ax = setup_altaz_plot()
             
-            # Generate colors for combined objects
-            colormap = plt.get_cmap(COLOR_MAP) 
-            colors = colormap(np.linspace(0, 1, len(combined_objects)))
+            # Include insufficient objects that aren't part of mosaic groups
+            all_objects_for_plot = combined_objects.copy()
+            if not EXCLUDE_INSUFFICIENT_TIME:
+                # Find insufficient objects that are NOT already included in mosaic groups
+                objects_in_groups = set()
+                for group in mosaic_groups:
+                    for obj in group.objects:
+                        objects_in_groups.add(obj.name)
+                
+                # Add insufficient objects that aren't in any mosaic group
+                for obj in insufficient_objects:
+                    if obj.name not in objects_in_groups:
+                        all_objects_for_plot.append(obj)
+            
+            # Generate colors for all objects to plot
+            colormap = plt.get_cmap(COLOR_MAP)
+            colors = colormap(np.linspace(0, 1, len(all_objects_for_plot)))
             
             # Plot moon trajectory first
             plot_moon_trajectory(ax, start_time, end_time)
             
             existing_positions = []
-            # Plot trajectories for combined objects
-            for obj, color in zip(combined_objects, colors):
+            group_counter = 1  # Track actual group numbers
+            # Plot trajectories for all objects
+            for obj, color in zip(all_objects_for_plot, colors):
                 if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
-                    # Plot mosaic group differently
+                    # Use distinct group colors instead of colormap
+                    group_colors = ['red', 'blue', 'green', 'purple', 'orange', 'brown', 'pink', 'olive']
+                    group_color = group_colors[(group_counter - 1) % len(group_colors)]
+                    
+                    # Plot mosaic group with correct group number and color
                     plot_mosaic_group_trajectory(ax, obj, start_time, end_time, 
-                                                color, len(existing_positions)+1, show_labels=True)
+                                                group_color, group_counter, show_labels=True)
+                    group_counter += 1
                 else:
+                    # Use pink color for insufficient time objects
+                    plot_color = 'pink' if obj in insufficient_objects else color
                     plot_object_trajectory(ax, obj, start_time, end_time, 
-                                         color, existing_positions, schedule)
+                                         plot_color, existing_positions, schedule)
             
             plt.title(f"Combined Objects and Mosaic Groups - {sunset.date()}")
             finalize_plot_legend(ax)
@@ -441,12 +466,18 @@ def main():
         plot_moon_trajectory(ax, start_time, end_time)
         
         existing_positions = []
+        group_counter = 1  # Track actual group numbers
         # Plot trajectories for combined objects
         for obj, color in zip(combined_objects, colors):
             if hasattr(obj, 'is_mosaic_group') and obj.is_mosaic_group:
-                # Plot mosaic group
+                # Use distinct group colors instead of colormap
+                group_colors = ['red', 'blue', 'green', 'purple', 'orange', 'brown', 'pink', 'olive']
+                group_color = group_colors[(group_counter - 1) % len(group_colors)]
+                
+                # Plot mosaic group with correct group number and color
                 plot_mosaic_group_trajectory(ax, obj, start_time, end_time, 
-                                            color, len(existing_positions)+1, show_labels=True)
+                                            group_color, group_counter, show_labels=True)
+                group_counter += 1
             else:
                 plot_object_trajectory(ax, obj, start_time, end_time, 
                                      color, existing_positions, schedule)
@@ -486,6 +517,17 @@ def main():
     chart_objects = combined_objects.copy()
     if not EXCLUDE_INSUFFICIENT_TIME and not args.mosaic_only:
         chart_objects.extend(insufficient_objects)
+    elif not EXCLUDE_INSUFFICIENT_TIME and args.mosaic:
+        # In mosaic mode, add insufficient objects that aren't in mosaic groups
+        objects_in_groups = set()
+        for group in mosaic_groups:
+            for obj in group.objects:
+                objects_in_groups.add(obj.name)
+        
+        # Add insufficient objects that aren't in any mosaic group
+        for obj in insufficient_objects:
+            if obj.name not in objects_in_groups:
+                chart_objects.append(obj)
     
     chart_title = "Object Visibility"
     if mosaic_groups:
