@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" 
+     viewBox="0 0 800 600"
+     xmlns="http://www.w3.org/2000/svg"
+     style="background-color: #000000;">
+     
+  <!-- Scalable constellation visualization -->
+  <defs>
+    <!-- Star symbol -->
+    <g id="star">
+      <polygon points="0,-1 0.3,-0.3 1,0 0.3,0.3 0,1 -0.3,0.3 -1,0 -0.3,-0.3" 
+               fill="currentColor" stroke="none"/>
+    </g>
+    
+    <!-- Bright star symbol -->
+    <g id="bright-star">
+      <polygon points="0,-1.2 0.35,-0.35 1.2,0 0.35,0.35 0,1.2 -0.35,0.35 -1.2,0 -0.35,-0.35" 
+               fill="currentColor" stroke="none"/>
+    </g>
+  </defs>
+  
+  <!-- Grid lines -->
+  <g id="grid" stroke="#333" stroke-width="0.1" opacity="0.3">
+  </g>
+
+  <!-- Constellation elements -->
+  <use href="#star" x="289.9913492963028" y="19.05449228159948" transform="scale(1.016949136104436)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="2644.7750427165147" y="410.37601397700143" transform="scale(0.983606495866213)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="2543.943106450488" y="470.4998891417662" transform="scale(0.75)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="2465.581399808204" y="316.1212848688749" transform="scale(0.5714285714285714)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="2353.3240048298535" y="368.90532489133454" transform="scale(0.5042016564280251)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="2257.6463210185366" y="206.233919994182" transform="scale(0.5769230451809602)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="2102.341347803777" y="88.40128366018601" transform="scale(0.5607476735471151)" fill="#FFFFFF" opacity="0.9"/>
+  <line x1="2102.341347803777" y1="88.40128366018601" x2="2257.6463210185366" y2="206.233919994182" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="2257.6463210185366" y1="206.233919994182" x2="2465.581399808204" y2="316.1212848688749" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="2465.581399808204" y1="316.1212848688749" x2="2353.3240048298535" y2="368.90532489133454" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="2353.3240048298535" y1="368.90532489133454" x2="2543.943106450488" y2="470.4998891417662" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="2543.943106450488" y1="470.4998891417662" x2="2644.7750427165147" y2="410.37601397700143" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="2644.7750427165147" y1="410.37601397700143" x2="2465.581399808204" y2="316.1212848688749" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <use href="#bright-star" x="240.4340947924104" y="28.15073409836286" transform="scale(1.0101010101010102)" fill="#FFD700" opacity="0.95"/>
+  <text x="243.4340947924104" y="25.15073409836286" fill="#FFD700" font-size="4.5" font-weight="bold">POLARIS</text>
+  <use href="#bright-star" x="284.88765093668616" y="18.976946245165436" transform="scale(1.0067114093959733)" fill="#FFD700" opacity="0.95"/>
+  <text x="287.88765093668616" y="15.976946245165436" fill="#FFD700" font-size="4.5" font-weight="bold">Polaris_Star</text>
+  
+  <!-- Title and info -->
+  <text x="400.0" y="25" text-anchor="middle" 
+        fill="white" font-size="12.0" font-weight="bold">
+    Constellation View
+  </text>
+  
+  <text x="10" y="590" fill="white" font-size="5.0">
+    RA: 0.0° to 59.6° | DE: 66.8° to 90.0° | 
+    Stars: 7 | DSO: 0 | Vector SVG
+  </text>
+  
+</svg>

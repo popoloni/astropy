@@ -1,5 +1,5 @@
 # astropy_experimental.py
-# This file is a copy of astropy.py with some experimental features added.
+# This file is a copy of astronightplanner.py with some experimental features added.
 # the experimental features are:
 # - high-precision calculations
 # - caching
@@ -8,7 +8,7 @@
 # - utility functions
 # - high-precision atmospheric refraction
 # what is still to be refined is:
-# - graphical output, suboptimal for now if compared to astropy.py
+# - graphical output, suboptimal for now if compared to astronightplanner.py
 
 import sys
 import os

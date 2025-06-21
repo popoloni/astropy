@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" 
+     viewBox="0 0 800 600"
+     xmlns="http://www.w3.org/2000/svg"
+     style="background-color: #000000;">
+     
+  <!-- Scalable constellation visualization -->
+  <defs>
+    <!-- Star symbol -->
+    <g id="star">
+      <polygon points="0,-1 0.3,-0.3 1,0 0.3,0.3 0,1 -0.3,0.3 -1,0 -0.3,-0.3" 
+               fill="currentColor" stroke="none"/>
+    </g>
+    
+    <!-- Bright star symbol -->
+    <g id="bright-star">
+      <polygon points="0,-1.2 0.35,-0.35 1.2,0 0.35,0.35 0,1.2 -0.35,0.35 -1.2,0 -0.35,-0.35" 
+               fill="currentColor" stroke="none"/>
+    </g>
+  </defs>
+  
+  <!-- Grid lines -->
+  <g id="grid" stroke="#333" stroke-width="0.1" opacity="0.3">
+    <line x1="800.0" y1="0" x2="800.0" y2="600"/>
+    <line x1="733.3333333333333" y1="0" x2="733.3333333333333" y2="600"/>
+    <line x1="666.6666666666667" y1="0" x2="666.6666666666667" y2="600"/>
+    <line x1="600.0" y1="0" x2="600.0" y2="600"/>
+    <line x1="533.3333333333334" y1="0" x2="533.3333333333334" y2="600"/>
+    <line x1="466.66666666666663" y1="0" x2="466.66666666666663" y2="600"/>
+    <line x1="400.0" y1="0" x2="400.0" y2="600"/>
+    <line x1="333.3333333333333" y1="0" x2="333.3333333333333" y2="600"/>
+    <line x1="266.6666666666667" y1="0" x2="266.6666666666667" y2="600"/>
+    <line x1="200.0" y1="0" x2="200.0" y2="600"/>
+    <line x1="133.33333333333331" y1="0" x2="133.33333333333331" y2="600"/>
+    <line x1="66.6666666666667" y1="0" x2="66.6666666666667" y2="600"/>
+    <line x1="0.0" y1="0" x2="0.0" y2="600"/>
+    <line x1="0" y1="600.0" x2="800" y2="600.0"/>
+    <line x1="0" y1="500.0" x2="800" y2="500.0"/>
+    <line x1="0" y1="400.00000000000006" x2="800" y2="400.00000000000006"/>
+    <line x1="0" y1="300.0" x2="800" y2="300.0"/>
+    <line x1="0" y1="200.00000000000003" x2="800" y2="200.00000000000003"/>
+    <line x1="0" y1="99.99999999999997" x2="800" y2="99.99999999999997"/>
+    <line x1="0" y1="0.0" x2="800" y2="0.0"/>
+  </g>
+
+  <!-- Constellation elements -->
+  <use href="#star" x="284.5423406033694" y="202.97895899521046" transform="scale(0.6451612770908873)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="281.70624091725546" y="195.47035497019397" transform="scale(0.5)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="280.72720866213876" y="210.95313079986485" transform="scale(0.9374999161809757)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="276.2557151606502" y="212.34655580116953" transform="scale(0.5940593835033989)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="272.4490398972158" y="213.10652343013365" transform="scale(0.540540521963978)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="268.00830045777025" y="210.40816747287164" transform="scale(0.588235305117351)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="265.8657723624063" y="200.49648388588537" transform="scale(0.5042016564280251)" fill="#FFFFFF" opacity="0.9"/>
+  <line x1="281.70624091725546" y1="195.47035497019397" x2="284.5423406033694" y2="202.97895899521046" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="284.5423406033694" y1="202.97895899521046" x2="280.72720866213876" y2="210.95313079986485" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="280.72720866213876" y1="210.95313079986485" x2="276.2557151606502" y2="212.34655580116953" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="276.2557151606502" y1="212.34655580116953" x2="272.4490398972158" y2="213.10652343013365" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="272.4490398972158" y1="213.10652343013365" x2="268.00830045777025" y2="210.40816747287164" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="268.00830045777025" y1="210.40816747287164" x2="265.8657723624063" y2="200.49648388588537" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <use href="#bright-star" x="266.9431111111111" y="213.5993333333334" transform="scale(0.8)" fill="#FFD700" opacity="0.95"/>
+  <text x="269.9431111111111" y="210.5993333333334" fill="#FFD700" font-size="4.5" font-weight="bold">T_Coronae_Borealis</text>
+  
+  <!-- Title and info -->
+  <text x="400.0" y="25" text-anchor="middle" 
+        fill="white" font-size="12.0" font-weight="bold">
+    Constellation View
+  </text>
+  
+  <text x="10" y="590" fill="white" font-size="5.0">
+    RA: 0.0° to 360.0° | DE: -90.0° to 90.0° | 
+    Stars: 7 | DSO: 0 | Vector SVG
+  </text>
+  
+</svg>

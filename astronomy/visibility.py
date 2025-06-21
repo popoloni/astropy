@@ -102,37 +102,6 @@ def find_sunset_sunrise(date):
     return utc_to_local(sunset), utc_to_local(sunrise)
 
 
-def find_astronomical_twilight(date):
-    """Find astronomical twilight times"""
-    # Import here to avoid circular imports during refactoring
-    from astronomy.time_utils import get_local_timezone, local_to_utc
-    from config.settings import SEARCH_INTERVAL_MINUTES
-    
-    milan_tz = get_local_timezone()
-    
-    if date.tzinfo is not None:
-        date = date.replace(tzinfo=None)
-    
-    noon = date.replace(hour=12, minute=0, second=0, microsecond=0)
-    noon = milan_tz.localize(noon)
-    noon_utc = local_to_utc(noon)
-    
-    current_time = noon_utc
-    alt, _ = calculate_sun_position(current_time)
-    
-    while alt > -18:
-        current_time += timedelta(minutes=SEARCH_INTERVAL_MINUTES)
-        alt, _ = calculate_sun_position(current_time)
-    twilight_evening = current_time
-    
-    while alt <= -18:
-        current_time += timedelta(minutes=SEARCH_INTERVAL_MINUTES)
-        alt, _ = calculate_sun_position(current_time)
-    twilight_morning = current_time
-    
-    return utc_to_local(twilight_evening), utc_to_local(twilight_morning)
-
-
 def find_best_objects(visibility_periods, max_overlapping=None):
     """Select objects with longest visibility periods and minimal overlap"""
     # Import here to avoid circular imports during refactoring

@@ -1,0 +1,83 @@
+{
+  "app_name": "AstroScope",
+  "export_timestamp": "2025-06-21T16:41:09.034923",
+  "error_summary": {
+    "total_errors": 6,
+    "errors_24h": 6,
+    "recent_errors": [
+      {
+        "timestamp": "2025-06-21T16:38:32.859442",
+        "message": "Error updating stats",
+        "exception": "object of type 'kivy.properties.ListProperty' has no len()",
+        "exception_type": "TypeError",
+        "context": null,
+        "critical": false,
+        "traceback": "Traceback (most recent call last):\n  File \"/Users/enricopapalini/Library/Mobile Documents/iCloud~com~omz-software~Pythonista3/Documents/astropy-app/mobile_app/screens/home_screen.py\", line 605, in update_display\n    total_targets = len(self.app.app_state.tonights_targets)\nTypeError: object of type 'kivy.properties.ListProperty' has no len()\n"
+      },
+      {
+        "timestamp": "2025-06-21T16:38:32.859575",
+        "message": "Error getting highlights content",
+        "exception": "'kivy.properties.ListProperty' object is not subscriptable",
+        "exception_type": "TypeError",
+        "context": null,
+        "critical": false,
+        "traceback": "Traceback (most recent call last):\n  File \"/Users/enricopapalini/Library/Mobile Documents/iCloud~com~omz-software~Pythonista3/Documents/astropy-app/mobile_app/screens/home_screen.py\", line 891, in get_highlights_content\n    top_targets = targets[:3]\nTypeError: 'kivy.properties.ListProperty' object is not subscriptable\n"
+      },
+      {
+        "timestamp": "2025-06-21T16:38:32.948048",
+        "message": "Error updating stats",
+        "exception": "object of type 'kivy.properties.ListProperty' has no len()",
+        "exception_type": "TypeError",
+        "context": null,
+        "critical": false,
+        "traceback": "Traceback (most recent call last):\n  File \"/Users/enricopapalini/Library/Mobile Documents/iCloud~com~omz-software~Pythonista3/Documents/astropy-app/mobile_app/screens/home_screen.py\", line 605, in update_display\n    total_targets = len(self.app.app_state.tonights_targets)\nTypeError: object of type 'kivy.properties.ListProperty' has no len()\n"
+      },
+      {
+        "timestamp": "2025-06-21T16:38:32.948195",
+        "message": "Error getting highlights content",
+        "exception": "'kivy.properties.ListProperty' object is not subscriptable",
+        "exception_type": "TypeError",
+        "context": null,
+        "critical": false,
+        "traceback": "Traceback (most recent call last):\n  File \"/Users/enricopapalini/Library/Mobile Documents/iCloud~com~omz-software~Pythonista3/Documents/astropy-app/mobile_app/screens/home_screen.py\", line 891, in get_highlights_content\n    top_targets = targets[:3]\nTypeError: 'kivy.properties.ListProperty' object is not subscriptable\n"
+      },
+      {
+        "timestamp": "2025-06-21T16:38:32.948536",
+        "message": "Error updating stats",
+        "exception": "object of type 'kivy.properties.ListProperty' has no len()",
+        "exception_type": "TypeError",
+        "context": null,
+        "critical": false,
+        "traceback": "Traceback (most recent call last):\n  File \"/Users/enricopapalini/Library/Mobile Documents/iCloud~com~omz-software~Pythonista3/Documents/astropy-app/mobile_app/screens/home_screen.py\", line 605, in update_display\n    total_targets = len(self.app.app_state.tonights_targets)\nTypeError: object of type 'kivy.properties.ListProperty' has no len()\n"
+      },
+      {
+        "timestamp": "2025-06-21T16:38:32.948667",
+        "message": "Error getting highlights content",
+        "exception": "'kivy.properties.ListProperty' object is not subscriptable",
+        "exception_type": "TypeError",
+        "context": null,
+        "critical": false,
+        "traceback": "Traceback (most recent call last):\n  File \"/Users/enricopapalini/Library/Mobile Documents/iCloud~com~omz-software~Pythonista3/Documents/astropy-app/mobile_app/screens/home_screen.py\", line 891, in get_highlights_content\n    top_targets = targets[:3]\nTypeError: 'kivy.properties.ListProperty' object is not subscriptable\n"
+      }
+    ],
+    "error_categories": {
+      "TypeError": 6
+    },
+    "critical_errors": []
+  },
+  "performance_summary": {},
+  "session_info": {
+    "total_errors": 6,
+    "log_files": [
+      "logs/AstroScope_20250611.log",
+      "logs/AstroScope_20250615.log",
+      "logs/AstroScope_performance_20250611.log",
+      "logs/AstroScope_errors_20250615.log",
+      "logs/AstroScope_errors_20250611.log",
+      "logs/AstroScope_performance_20250615.log",
+      "logs/AstroScope_errors_20250621.log",
+      "logs/AstroScope_performance_20250621.log",
+      "logs/AstroScope_20250621.log"
+    ]
+  }
+}

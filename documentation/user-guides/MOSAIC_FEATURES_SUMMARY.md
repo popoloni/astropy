@@ -1,4 +1,29 @@
-# Mosaic Photography Features for Vespera Passenger
+# Mosaic Features Summary
+
+## 🎯 **Major Update - Algorithm Overhaul (June 2025)**
+
+### 🚨 **Critical Improvements**
+The mosaic analysis system underwent a complete rewrite to fix systematic issues that prevented detection of close object pairs. The improvements represent a **revolution in mosaic planning capabilities**.
+
+### 📊 **Dramatic Results**
+- **100% increase in mosaic group discovery**: From 3 groups to **6 groups** detected
+- **Missing astronomical pairs found**: M8-M20, M16-M17, M24-M25 pairs now properly detected
+- **Enhanced visualization**: Fixed group numbering and color assignment bugs
+
+### 🔧 **Algorithm Revolution**
+- **Pair-first optimization**: New algorithm finds all possible pairs before attempting larger groups
+- **Adaptive FOV margins**: Intelligent 2-5% safety margins (vs. previous 10% conservative margins)
+- **Reduced time requirements**: 1.0h minimum visibility for mosaics (vs. 2.0h for standalone)
+- **Enhanced spatial calculations**: Better handling of objects near FOV limits
+
+### 🎨 **Visualization Fixes**
+- **Group numbering**: Fixed "Group 1" bug → Now properly numbered 1-6
+- **Color assignment**: Fixed blue/orange limitation → Now 6 distinct colors
+- **Group tracking**: Fixed counter logic preventing accurate identification
+
+---
+
+## 🌌 **Mosaic Photography Planning**
 
 ## Overview
 This update adds comprehensive mosaic photography planning capabilities specifically designed for the Vaonis Vespera Passenger smart telescope. The system identifies objects that can be photographed together within the same mosaic field of view and provides specialized planning tools.

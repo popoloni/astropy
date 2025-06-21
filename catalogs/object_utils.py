@@ -181,7 +181,7 @@ def sort_objects_by_altitude(objects, time=None):
         import sys
         import os
         sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-        from astropy import calculate_altaz
+        from astronightplanner import calculate_altaz
         alt, _ = calculate_altaz(obj, time)
         return alt
     
