@@ -36,7 +36,7 @@ from astronomy import (
     calculate_moon_phase, calculate_moon_position,
     calculate_moon_interference_radius, is_near_moon, get_moon_phase_icon,
     is_visible, find_visibility_window, calculate_visibility_duration,
-    find_sunset_sunrise, find_astronomical_twilight,
+    find_sunset_sunrise, find_configured_twilight,
     calculate_required_panels, calculate_required_exposure, is_object_imageable,
     filter_visible_objects
 )
@@ -176,11 +176,11 @@ def main():
     if current_date.hour < 12:
         yesterday = current_date - timedelta(days=1)
         sunset, next_sunrise = find_sunset_sunrise(yesterday)
-        twilight_evening, twilight_morning = find_astronomical_twilight(yesterday)
+        twilight_evening, twilight_morning = find_configured_twilight(yesterday)
     else:
         # We're in daytime (afternoon), calculate for upcoming night
         sunset, next_sunrise = find_sunset_sunrise(current_date)
-        twilight_evening, twilight_morning = find_astronomical_twilight(current_date)
+        twilight_evening, twilight_morning = find_configured_twilight(current_date)
 
     # Ensure twilight times are in the correct timezone
     local_tz = get_local_timezone()

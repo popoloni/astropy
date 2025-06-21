@@ -896,6 +896,150 @@ def calculate_altaz_precise(dt, observer_lat, observer_lon, ra, dec, precision_m
     }
 
 
+def find_configured_twilight(date, precision_mode=None):
+    """
+    Find twilight times using the configured twilight type.
+    
+    This function reads the twilight type from configuration and calculates
+    both evening and morning twilight times for the specified date.
+    
+    Args:
+        date: Date for twilight calculation (timezone-aware or naive)
+        precision_mode: Optional precision mode ('standard', 'high', 'auto')
+        
+    Returns:
+        Tuple of (evening_twilight, morning_twilight) as timezone-aware datetime objects
+    """
+    from .time_utils import get_local_timezone, local_to_utc, utc_to_local
+    
+    try:
+        # Import twilight type from settings
+        from config.settings import TWILIGHT_TYPE, DEFAULT_LOCATION
+        twilight_type = TWILIGHT_TYPE
+        
+        # Get observer location
+        observer_lat_rad = math.radians(DEFAULT_LOCATION['latitude'])
+        observer_lon_rad = math.radians(DEFAULT_LOCATION['longitude'])
+        
+    except ImportError:
+        # Fallback to astronomical twilight if config not available
+        twilight_type = 'astronomical'
+        observer_lat_rad = math.radians(45.5167)  # Milan
+        observer_lon_rad = math.radians(9.2167)
+    
+    # Ensure date is timezone-naive for calculations
+    if hasattr(date, 'tzinfo') and date.tzinfo is not None:
+        calc_date = date.replace(tzinfo=None)
+    else:
+        calc_date = date
+    
+    try:
+        # Calculate evening twilight (sunset to twilight)
+        evening_twilight_utc = find_twilight(
+            calc_date, observer_lat_rad, observer_lon_rad, 
+            twilight_type, 'sunset', precision_mode
+        )
+        
+        # Calculate morning twilight (twilight to sunrise) - use next day
+        from datetime import timedelta
+        next_day = calc_date + timedelta(days=1)
+        morning_twilight_utc = find_twilight(
+            next_day, observer_lat_rad, observer_lon_rad,
+            twilight_type, 'sunrise', precision_mode
+        )
+        
+        # Convert to local timezone
+        evening_twilight = utc_to_local(evening_twilight_utc)
+        morning_twilight = utc_to_local(morning_twilight_utc)
+        
+        return evening_twilight, morning_twilight
+        
+    except Exception as e:
+        # Fallback to the old method if high precision fails
+        logger.warning(f"Configured twilight calculation failed, using fallback: {e}")
+        return _find_twilight_fallback(calc_date, twilight_type)
+
+
+def _find_twilight_fallback(date, twilight_type='astronomical'):
+    """
+    Fallback twilight calculation using the original method.
+    
+    Args:
+        date: Date for twilight calculation (timezone-naive)
+        twilight_type: Type of twilight ('civil', 'nautical', 'astronomical')
+        
+    Returns:
+        Tuple of (evening_twilight, morning_twilight) as timezone-aware datetime objects
+    """
+    from .time_utils import get_local_timezone, local_to_utc, utc_to_local
+    from datetime import timedelta
+    
+    try:
+        from config.settings import SEARCH_INTERVAL_MINUTES, DEFAULT_LOCATION
+        search_interval = SEARCH_INTERVAL_MINUTES
+        
+        # Get observer location
+        observer_lat = DEFAULT_LOCATION['latitude']
+        observer_lon = DEFAULT_LOCATION['longitude']
+    except ImportError:
+        search_interval = 1
+        observer_lat = 45.5167  # Milan fallback
+        observer_lon = 9.2167
+    
+    # Define twilight angles
+    twilight_angles = {
+        'civil': -6.0,
+        'nautical': -12.0,
+        'astronomical': -18.0
+    }
+    
+    if twilight_type not in twilight_angles:
+        twilight_type = 'astronomical'  # Default fallback
+    
+    twilight_altitude = twilight_angles[twilight_type]
+    
+    local_tz = get_local_timezone()
+    
+    if date.tzinfo is not None:
+        date = date.replace(tzinfo=None)
+    
+    noon = date.replace(hour=12, minute=0, second=0, microsecond=0)
+    noon = local_tz.localize(noon)
+    noon_utc = local_to_utc(noon)
+    
+    current_time = noon_utc
+    alt, _ = calculate_sun_position(current_time)
+    
+    # Find evening twilight
+    while alt > twilight_altitude:
+        current_time += timedelta(minutes=search_interval)
+        alt, _ = calculate_sun_position(current_time)
+    twilight_evening = current_time
+    
+    # Find morning twilight
+    while alt <= twilight_altitude:
+        current_time += timedelta(minutes=search_interval)
+        alt, _ = calculate_sun_position(current_time)
+    twilight_morning = current_time
+    
+    return utc_to_local(twilight_evening), utc_to_local(twilight_morning)
+
+
+# Legacy function for backward compatibility
+def find_astronomical_twilight(date):
+    """
+    Legacy function for backward compatibility.
+    Now delegates to the configured twilight calculation.
+    
+    Args:
+        date: Date for twilight calculation
+        
+    Returns:
+        Tuple of (evening_twilight, morning_twilight)
+    """
+    return find_configured_twilight(date)
+
+
 def find_twilight(dt, observer_lat, observer_lon, twilight_type='civil', event_type='sunset', precision_mode=None):
     """
     Find twilight times with optional high precision.

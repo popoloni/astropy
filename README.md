@@ -60,6 +60,7 @@ This astronomical observation planning system provides intelligent automation fo
 ### 🎛️ **Flexible Configuration**
 - **Multiple Telescope Profiles**: Support for various telescope/camera combinations
 - **Location Management**: Global coordinate system with timezone handling
+- **🆕 Configurable Twilight Types**: Choose between civil (-6°), nautical (-12°), or astronomical (-18°) twilight for defining night observation windows
 - **Customizable Constraints**: Altitude limits, observing windows, exposure requirements
 
 ### 🔬 **Scientific Accuracy**
@@ -693,6 +694,29 @@ python astronightplanner.py --telescope dwarf_3 --report-only
 ```
 
 > **💡 Note**: The legacy `config.json` imaging section is still supported for backward compatibility, but `scope_data.json` is the recommended configuration method.
+
+### **🆕 Twilight Configuration**
+Choose your preferred twilight type for defining night observation windows:
+```json
+{
+  "visibility": {
+    "twilight_type": "astronomical",
+    "comment": "Options: 'civil' (-6°), 'nautical' (-12°), 'astronomical' (-18°)"
+  }
+}
+```
+
+#### **Twilight Types:**
+- **🌆 Civil (-6°)**: Sun 6° below horizon - Best for planetary observations, earlier start
+- **🌌 Nautical (-12°)**: Sun 12° below horizon - Balanced for general astronomy  
+- **⭐ Astronomical (-18°)**: Sun 18° below horizon - Darkest skies for deep-space imaging _(Default)_
+
+#### **Use Cases:**
+- **Planetary imaging**: Use `"civil"` for earlier observation start when planets are higher
+- **General astronomy**: Use `"nautical"` for balanced observation windows
+- **Deep-sky astrophotography**: Use `"astronomical"` for darkest possible conditions
+
+> **📖 Complete Documentation**: See [Configurable Twilight System Guide](documentation/features/CONFIGURABLE_TWILIGHT_SYSTEM.md) for detailed usage instructions and examples.
 
 ### **🆕 Configurable Catalog System**
 Choose between enhanced JSON or legacy CSV catalogs:

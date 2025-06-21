@@ -31,7 +31,9 @@
         "min_visibility_hours": 2,
         "min_total_area": 225,
         "trajectory_interval_minutes": 15,
-        "search_interval_minutes": 1
+        "search_interval_minutes": 1,
+        "twilight_type": "astronomical",
+        "comment": "twilight_type options: 'civil' (-6\u00b0), 'nautical' (-12\u00b0), 'astronomical' (-18\u00b0)"
     },
     "catalog": {
         "use_csv_catalog": false,
@@ -44,7 +46,6 @@
         "max_overlap_minutes": 15,
         "exclude_insufficient_time": false
     },
-
     "moon": {
         "proximity_radius": 30,
         "trajectory_color": "yellow",

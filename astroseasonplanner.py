@@ -18,7 +18,7 @@ import argparse
 # Import from the main astronightplanner module (now in same directory)
 from astronightplanner import (
     get_objects_from_csv, get_combined_catalog, filter_visible_objects,
-    find_astronomical_twilight, setup_altaz_plot, plot_object_trajectory,
+    find_configured_twilight, setup_altaz_plot, plot_object_trajectory,
     get_local_timezone, USE_CSV_CATALOG, DEFAULT_LOCATION, CONFIG,
     MIN_VISIBILITY_HOURS, MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ, is_visible,
     find_visibility_window, calculate_visibility_duration
@@ -493,14 +493,14 @@ def analyze_weekly_conditions(objects, week_date):
             
         except Exception as e:
             print(f"High precision twilight failed, using standard: {e}")
-            twilight_evening, twilight_morning = find_astronomical_twilight(week_date)
+            twilight_evening, twilight_morning = find_configured_twilight(week_date)
             # Ensure standard twilight times are also timezone-naive
             if hasattr(twilight_evening, 'tzinfo') and twilight_evening.tzinfo is not None:
                 twilight_evening = twilight_evening.replace(tzinfo=None)
             if hasattr(twilight_morning, 'tzinfo') and twilight_morning.tzinfo is not None:
                 twilight_morning = twilight_morning.replace(tzinfo=None)
     else:
-        twilight_evening, twilight_morning = find_astronomical_twilight(week_date)
+        twilight_evening, twilight_morning = find_configured_twilight(week_date)
         # Ensure standard twilight times are timezone-naive
         if hasattr(twilight_evening, 'tzinfo') and twilight_evening.tzinfo is not None:
             twilight_evening = twilight_evening.replace(tzinfo=None)

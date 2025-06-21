@@ -80,6 +80,7 @@ MIN_VISIBILITY_HOURS = CONFIG['visibility']['min_visibility_hours']
 MIN_TOTAL_AREA = CONFIG['visibility']['min_total_area']
 TRAJECTORY_INTERVAL_MINUTES = CONFIG['visibility']['trajectory_interval_minutes']
 SEARCH_INTERVAL_MINUTES = CONFIG['visibility']['search_interval_minutes']
+TWILIGHT_TYPE = CONFIG['visibility']['twilight_type']
 
 # Scheduling Configuration
 SCHEDULING_STRATEGY = SchedulingStrategy[CONFIG['scheduling']['strategy'].upper()]

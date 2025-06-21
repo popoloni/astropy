@@ -5,6 +5,48 @@ All notable changes to the Astronomical Observation Planning System will be docu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2025-06-21
+
+### Added - Configurable Twilight System ⭐
+- **🎯 NEW: Configurable twilight types** - Users can now choose between civil, nautical, or astronomical twilight for defining night observation windows
+- **🔧 Configuration options**:
+  - **Civil twilight (-6°)**: Sun 6° below horizon - earlier start, shorter nights
+  - **Nautical twilight (-12°)**: Sun 12° below horizon - balanced observation window  
+  - **Astronomical twilight (-18°)**: Sun 18° below horizon - darkest sky conditions (default)
+- **📍 Centralized twilight calculations**:
+  - New `find_configured_twilight()` function in `astronomy/celestial.py`
+  - Automatically reads twilight type from `config.json`
+  - Supports both high-precision and standard calculation modes
+  - Proper timezone handling and error fallbacks
+- **🔄 Backward compatibility maintained**:
+  - Legacy `find_astronomical_twilight()` function preserved
+  - All existing code continues to work unchanged
+  - Seamless integration with existing applications
+- **✅ Applications updated**:
+  - `astronightplanner.py` - Uses configured twilight type
+  - `astroseasonplanner.py` - Uses configured twilight type  
+  - `run_mosaic_plots.py` - Works through astronightplanner integration
+- **🧪 Comprehensive testing**:
+  - Configuration loading verified
+  - All twilight types tested and working
+  - Integration tests passing
+  - Precision calculation compatibility confirmed
+
+### Enhanced - Configuration Management
+- **New setting in config.json**: `"twilight_type": "astronomical"` in visibility section
+- **Automatic configuration loading**: Settings automatically read by all applications
+- **Documentation comments**: Inline configuration guidance with degree values
+- **Validation and fallbacks**: Graceful handling of invalid or missing configuration
+
+### Impact - Flexible Observation Planning
+- **Before**: Fixed astronomical twilight (-18°) for all observations
+- **After**: **User-configurable twilight types** allowing optimization for different observation goals
+- **Use cases**:
+  - **Civil twilight**: Planetary observations, bright object imaging
+  - **Nautical twilight**: Balanced visibility for general astronomy
+  - **Astronomical twilight**: Deep sky imaging requiring darkest conditions
+- **Status**: ✅ **TWILIGHT SYSTEM NOW FULLY CONFIGURABLE**
+
 ## [Unreleased] - 2025-06-18
 
 ### Fixed - Moon Phase Calculation Accuracy ⭐
