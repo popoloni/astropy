@@ -43,6 +43,7 @@ class AppState(EventDispatcher):
             self.scheduling_strategy = StringProperty('max_objects')
             self.show_mosaic_only = BooleanProperty(False)
             self.min_visibility_hours = NumericProperty(2.0)
+            self.twilight_type = StringProperty('astronomical')
             
             # UI state
             self.is_loading = BooleanProperty(False)
@@ -59,6 +60,7 @@ class AppState(EventDispatcher):
             self.scheduling_strategy = 'max_objects'
             self.show_mosaic_only = False
             self.min_visibility_hours = 2.0
+            self.twilight_type = 'astronomical'
             
             # UI state
             self.is_loading = False

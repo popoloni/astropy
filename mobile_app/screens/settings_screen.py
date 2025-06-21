@@ -19,6 +19,7 @@ from kivy.uix.popup import Popup
 from kivy.metrics import dp
 from kivy.logger import Logger
 from mobile_app.utils.app_logger import log_error, log_warning, log_debug, log_info
+from kivy.uix.spinner import Spinner
 
 class SettingsScreen(Screen):
     """Settings and configuration screen"""
@@ -255,7 +256,7 @@ class SettingsScreen(Screen):
         section = BoxLayout(
             orientation='vertical',
             size_hint_y=None,
-            height=dp(180),
+            height=dp(220),  # Increased height to accommodate twilight selector
             spacing=dp(10)
         )
         
@@ -271,6 +272,30 @@ class SettingsScreen(Screen):
         )
         title.bind(size=title.setter('text_size'))
         section.add_widget(title)
+        
+        # Twilight Type Selector - NEW FEATURE
+        twilight_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
+        twilight_layout.add_widget(Label(text='Twilight Type:', size_hint_x=None, width=dp(120)))
+        
+        self.twilight_spinner = Spinner(
+            text=self.get_current_twilight_type(),
+            values=['Civil (-6°)', 'Nautical (-12°)', 'Astronomical (-18°)'],
+            size_hint_x=0.7,
+            background_color=(0.3, 0.3, 0.3, 1.0)
+        )
+        twilight_layout.add_widget(self.twilight_spinner)
+        
+        # Info button for twilight explanation
+        twilight_info_btn = Button(
+            text='?',
+            size_hint_x=None,
+            width=dp(30),
+            background_color=(0.4, 0.4, 0.8, 1.0)
+        )
+        twilight_info_btn.bind(on_press=self.show_twilight_info)
+        twilight_layout.add_widget(twilight_info_btn)
+        
+        section.add_widget(twilight_layout)
         
         # Auto-refresh interval
         refresh_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
@@ -406,6 +431,22 @@ class SettingsScreen(Screen):
         """Get current auto-refresh interval"""
         return 15.0  # Default 15 minutes
     
+    def get_current_twilight_type(self):
+        """Get current twilight type"""
+        try:
+            if self.app and hasattr(self.app.app_state, 'twilight_type'):
+                twilight_type = self.app.app_state.twilight_type
+                # Convert internal format to display format
+                if twilight_type == 'civil':
+                    return 'Civil (-6°)'
+                elif twilight_type == 'nautical':
+                    return 'Nautical (-12°)'
+                elif twilight_type == 'astronomical':
+                    return 'Astronomical (-18°)'
+        except Exception:
+            pass
+        return "Astronomical (-18°)"  # Default to Astronomical
+    
     # Update label methods
     def update_min_altitude_label(self, instance, value):
         """Update minimum altitude label"""
@@ -447,6 +488,35 @@ class SettingsScreen(Screen):
                 log_info(f"Location saved: {name} ({lat}, {lon})")
             except ValueError:
                 log_error("Invalid latitude/longitude values")
+
+            # Save twilight type
+            try:
+                display_twilight = self.twilight_spinner.text
+                # Convert display format to internal format
+                if 'Civil' in display_twilight:
+                    internal_twilight = 'civil'
+                elif 'Nautical' in display_twilight:
+                    internal_twilight = 'nautical'
+                elif 'Astronomical' in display_twilight:
+                    internal_twilight = 'astronomical'
+                else:
+                    internal_twilight = 'astronomical'  # Default
+                
+                self.app.app_state.twilight_type = internal_twilight
+                
+                # Also update the main config file
+                self.update_main_config_twilight(internal_twilight)
+                
+                log_info(f"Twilight type saved: {internal_twilight}")
+            except Exception as e:
+                log_error(f"Error saving twilight type: {e}")
+                
+            # Save other preferences
+            try:
+                self.app.app_state.min_visibility_hours = self.min_visibility_slider.value
+                log_info(f"Min visibility saved: {self.min_visibility_slider.value}h")
+            except Exception as e:
+                log_error(f"Error saving visibility hours: {e}")
                 self.show_error_popup("Invalid location coordinates")
                 return
             
@@ -490,6 +560,9 @@ class SettingsScreen(Screen):
             self.theme_switch.active = True
             self.logging_switch.active = True
             
+            # Reset twilight type
+            self.twilight_spinner.text = "Civil (-6°)"
+            
             log_info("Settings reset to defaults")
             
         except Exception as e:
@@ -513,7 +586,8 @@ class SettingsScreen(Screen):
                 'preferences': {
                     'refresh_interval': self.refresh_slider.value,
                     'dark_theme': self.theme_switch.active,
-                    'logging_enabled': self.logging_switch.active
+                    'logging_enabled': self.logging_switch.active,
+                    'twilight_type': self.twilight_spinner.text
                 },
                 'export_date': datetime.now().isoformat()
             }
@@ -596,3 +670,65 @@ class SettingsScreen(Screen):
         """Called when screen is entered"""
         # Refresh current values when entering settings
         pass
+
+    def update_main_config_twilight(self, twilight_type):
+        """Update the main config.json file with the new twilight type"""
+        try:
+            import json
+            import os
+            
+            # Get the path to the main config file
+            main_config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config.json')
+            
+            if os.path.exists(main_config_path):
+                with open(main_config_path, 'r') as f:
+                    config = json.load(f)
+                
+                # Update twilight type
+                if 'visibility' not in config:
+                    config['visibility'] = {}
+                config['visibility']['twilight_type'] = twilight_type
+                
+                # Write back to file
+                with open(main_config_path, 'w') as f:
+                    json.dump(config, f, indent=4)
+                
+                log_info(f"Main config updated with twilight type: {twilight_type}")
+            else:
+                log_warning("Main config.json not found, twilight setting saved locally only")
+                
+        except Exception as e:
+            log_error(f"Error updating main config file: {e}")
+
+    def show_twilight_info(self, instance):
+        """Show twilight type explanation popup"""
+        info_text = """Twilight types define when night observations begin and end:
+
+🌆 Civil Twilight (-6°)
+• Sun 6° below horizon
+• Best for: Planets, Moon, bright stars
+• Earlier start, shorter nights
+
+🌌 Nautical Twilight (-12°)
+• Sun 12° below horizon  
+• Best for: General astronomy
+• Balanced observation window
+
+⭐ Astronomical Twilight (-18°)
+• Sun 18° below horizon
+• Best for: Deep-sky imaging
+• Darkest skies, longer waits"""
+        
+        content = Label(
+            text=info_text,
+            text_size=(dp(300), None),
+            halign='left',
+            valign='top'
+        )
+        
+        popup = Popup(
+            title='Twilight Types Explained',
+            content=content,
+            size_hint=(0.9, 0.7)
+        )
+        popup.open()

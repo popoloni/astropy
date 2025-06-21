@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 try:
     from astronightplanner import calculate_moon_phase, get_moon_phase_icon, find_astronomical_twilight
-    from astronomy import get_local_timezone, utc_to_local
+    from astronomy import find_configured_twilight, get_local_timezone, utc_to_local
 except ImportError as e:
     Logger.error(f"HomeScreen: Failed to import astronightplanner modules: {e}")
 
@@ -720,24 +720,51 @@ class HomeScreen(Screen):
             return "Moon: O --%"
     
     def get_twilight_info(self):
-        """Get twilight times"""
+        """Get twilight times using configured twilight type"""
         try:
-            # Use the correct function signature - only takes a date parameter
-            twilight_times = find_astronomical_twilight(datetime.now())
+            # Use the new centralized twilight function
+            twilight_times = find_configured_twilight(datetime.now())
             
             if twilight_times and len(twilight_times) == 2:
                 evening_twilight, morning_twilight = twilight_times
+                
+                # Get twilight type for display
+                twilight_type = "Astro"  # Default
+                try:
+                    if self.app and hasattr(self.app.app_state, 'twilight_type'):
+                        if self.app.app_state.twilight_type == 'civil':
+                            twilight_type = "Civil"
+                        elif self.app.app_state.twilight_type == 'nautical':
+                            twilight_type = "Nautical"
+                        elif self.app.app_state.twilight_type == 'astronomical':
+                            twilight_type = "Astro"
+                except:
+                    pass
+                
                 # Convert to local timezone if needed
                 try:
                     from astronomy import utc_to_local
                     evening_local = utc_to_local(evening_twilight)
-                    return f"Twilight: {evening_local.strftime('%H:%M')}"
+                    return f"{twilight_type} Twilight: {evening_local.strftime('%H:%M')}"
                 except:
-                    return f"Twilight: {evening_twilight.strftime('%H:%M')}"
+                    return f"{twilight_type} Twilight: {evening_twilight.strftime('%H:%M')}"
             
             return "Twilight: --:--"
         except Exception as e:
             Logger.error(f"HomeScreen: Error getting twilight info: {e}")
+            # Fallback to legacy function
+            try:
+                twilight_times = find_astronomical_twilight(datetime.now())
+                if twilight_times and len(twilight_times) == 2:
+                    evening_twilight, morning_twilight = twilight_times
+                    try:
+                        from astronomy import utc_to_local
+                        evening_local = utc_to_local(evening_twilight)
+                        return f"Twilight: {evening_local.strftime('%H:%M')}"
+                    except:
+                        return f"Twilight: {evening_twilight.strftime('%H:%M')}"
+            except:
+                pass
             return "Twilight: --:--"
     
     def get_location_info(self):

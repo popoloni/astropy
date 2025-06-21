@@ -60,6 +60,7 @@ def import_astronomy_modules():
             'get_objects_from_catalog': lazy_import('catalogs', 'get_objects_from_catalog'),
             'get_catalog_info': lazy_import('catalogs', 'get_catalog_info'),
             'find_astronomical_twilight': lazy_import('astronightplanner', 'find_astronomical_twilight'),
+            'find_configured_twilight': lazy_import('astronomy', 'find_configured_twilight'),
             'calculate_moon_phase': lazy_import('astronightplanner', 'calculate_moon_phase'),
             'get_moon_phase_icon': lazy_import('astronightplanner', 'get_moon_phase_icon'),
             'DEFAULT_LOCATION': lazy_import('astronightplanner', 'DEFAULT_LOCATION'),
@@ -786,6 +787,27 @@ class AstroScopePlannerApp(App):
                     self.app_state.show_mosaic_only = prefs.get('mosaic_only', False)
                 if hasattr(self.app_state, 'min_visibility_hours'):
                     self.app_state.min_visibility_hours = prefs.get('min_visibility', 2.0)
+                if hasattr(self.app_state, 'twilight_type'):
+                    self.app_state.twilight_type = prefs.get('twilight_type', 'astronomical')
+            
+            # Try to load twilight configuration from main config.json
+            try:
+                import json
+                import os
+                main_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.json')
+                if os.path.exists(main_config_path):
+                    with open(main_config_path, 'r') as f:
+                        main_config = json.load(f)
+                    
+                    if 'visibility' in main_config and 'twilight_type' in main_config['visibility']:
+                        if hasattr(self.app_state, 'twilight_type'):
+                            self.app_state.twilight_type = main_config['visibility']['twilight_type']
+                            log_info(f"Twilight type loaded from main config: {self.app_state.twilight_type}")
+            except Exception as e:
+                log_warning(f"Could not load twilight configuration from main config: {e}")
+                # Set default if not set
+                if hasattr(self.app_state, 'twilight_type') and not getattr(self.app_state, 'twilight_type', None):
+                    self.app_state.twilight_type = 'astronomical'
             
         except Exception as e:
             Logger.error(f"AstroScope: Error loading settings: {e}")
@@ -846,10 +868,18 @@ class AstroScopePlannerApp(App):
                 # Fallback to default if conversion fails
                 min_visibility_hours = 2.0
             
+            # Handle twilight_type
+            twilight_type = getattr(self.app_state, 'twilight_type', 'astronomical')
+            if hasattr(twilight_type, '_get'):
+                twilight_type = twilight_type._get(self.app_state)
+            else:
+                twilight_type = str(twilight_type)
+            
             preferences = {
                 'strategy': scheduling_strategy,
                 'mosaic_only': bool(show_mosaic_only),
-                'min_visibility': float(min_visibility_hours)
+                'min_visibility': float(min_visibility_hours),
+                'twilight_type': twilight_type
             }
             self.store.put('preferences', **preferences)
             
