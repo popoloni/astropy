@@ -418,7 +418,9 @@ def apply_proper_motion_correction(ra, dec, dt, obj):
     ra_corrected = ra_corrected % (2 * math.pi)
     dec_corrected = max(-math.pi/2, min(math.pi/2, dec_corrected))
     
-    logging.debug(f"Applied proper motion to {obj_name}: ΔRA={math.degrees(delta_ra)*3600:.1f}\", ΔDec={math.degrees(delta_dec)*3600:.1f}\"")
+    # Only log proper motion corrections for significant changes (> 1 arcsecond)
+    if abs(math.degrees(delta_ra)*3600) > 1.0 or abs(math.degrees(delta_dec)*3600) > 1.0:
+        logging.debug(f"Applied proper motion to {obj_name}: ΔRA={math.degrees(delta_ra)*3600:.1f}\", ΔDec={math.degrees(delta_dec)*3600:.1f}\"")
     
     return ra_corrected, dec_corrected
 

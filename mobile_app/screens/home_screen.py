@@ -602,20 +602,41 @@ class HomeScreen(Screen):
                     
                     # Get total targets from multiple sources with priority
                     if hasattr(self.app.app_state, 'tonights_targets') and self.app.app_state.tonights_targets:
-                        total_targets = len(self.app.app_state.tonights_targets)
+                        # Handle Kivy ListProperty properly
+                        targets_prop = self.app.app_state.tonights_targets
+                        if hasattr(targets_prop, '__len__'):
+                            total_targets = len(targets_prop)
+                        else:
+                            # It's a Kivy ListProperty, convert to list first
+                            total_targets = len(list(targets_prop))
                         log_debug(f"Found {total_targets} targets in tonights_targets")
                     elif hasattr(self.app.app_state, 'all_visible_objects') and self.app.app_state.all_visible_objects:
-                        total_targets = len(self.app.app_state.all_visible_objects)
+                        # Handle Kivy ListProperty properly
+                        objects_prop = self.app.app_state.all_visible_objects
+                        if hasattr(objects_prop, '__len__'):
+                            total_targets = len(objects_prop)
+                        else:
+                            total_targets = len(list(objects_prop))
                         log_debug(f"Found {total_targets} targets in all_visible_objects")
                     elif hasattr(self.app.app_state, 'catalog_objects') and self.app.app_state.catalog_objects:
                         # Fallback to catalog objects if nothing else is available
-                        total_targets = len(self.app.app_state.catalog_objects)
+                        # Handle Kivy ListProperty properly
+                        catalog_prop = self.app.app_state.catalog_objects
+                        if hasattr(catalog_prop, '__len__'):
+                            total_targets = len(catalog_prop)
+                        else:
+                            total_targets = len(list(catalog_prop))
                         log_debug(f"Found {total_targets} targets in catalog_objects (fallback)")
                     
                     # Get planned objects count
                     if hasattr(self.app.app_state, 'planned_objects'):
                         if self.app.app_state.planned_objects:
-                            planned_count = len(self.app.app_state.planned_objects)
+                            # Handle Kivy ListProperty properly
+                            planned_prop = self.app.app_state.planned_objects
+                            if hasattr(planned_prop, '__len__'):
+                                planned_count = len(planned_prop)
+                            else:
+                                planned_count = len(list(planned_prop))
                             log_debug(f"Found {planned_count} planned objects")
                         else:
                             planned_count = 0
@@ -623,7 +644,12 @@ class HomeScreen(Screen):
                     # Get completed objects count
                     if hasattr(self.app.app_state, 'completed_objects'):
                         if self.app.app_state.completed_objects:
-                            completed_count = len(self.app.app_state.completed_objects)
+                            # Handle Kivy ListProperty properly
+                            completed_prop = self.app.app_state.completed_objects
+                            if hasattr(completed_prop, '__len__'):
+                                completed_count = len(completed_prop)
+                            else:
+                                completed_count = len(list(completed_prop))
                             log_debug(f"Found {completed_count} completed objects")
                         else:
                             completed_count = 0
@@ -888,7 +914,14 @@ class HomeScreen(Screen):
                     return 'No location set.\nPlease set location in Settings first.'
             
             # Show top 3 targets for mobile
-            top_targets = targets[:3]
+            # Handle Kivy ListProperty properly
+            if hasattr(targets, '__getitem__'):
+                # It's subscriptable (regular list or similar)
+                top_targets = targets[:3]
+            else:
+                # It's a Kivy ListProperty, convert to list first
+                targets_list = list(targets)
+                top_targets = targets_list[:3]
             highlights = []
             
             for i, target in enumerate(top_targets, 1):
@@ -905,7 +938,12 @@ class HomeScreen(Screen):
             
             if highlights:
                 result = '\n'.join(highlights)
-                result += f'\n\nTap "View Tonight\'s Targets" to see all {len(targets)} targets'
+                # Handle Kivy ListProperty properly for length calculation
+                if hasattr(targets, '__len__'):
+                    targets_count = len(targets)
+                else:
+                    targets_count = len(list(targets))
+                result += f'\n\nTap "View Tonight\'s Targets" to see all {targets_count} targets'
                 return result
             else:
                 return 'Unable to load target highlights.\nPlease check targets list.'

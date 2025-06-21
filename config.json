@@ -32,7 +32,7 @@
         "min_total_area": 225,
         "trajectory_interval_minutes": 15,
         "search_interval_minutes": 1,
-        "twilight_type": "astronomical",
+        "twilight_type": "civil",
         "comment": "twilight_type options: 'civil' (-6\u00b0), 'nautical' (-12\u00b0), 'astronomical' (-18\u00b0)"
     },
     "catalog": {
