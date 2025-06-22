@@ -109,30 +109,111 @@ class MobilePlotGenerator:
             log_info(f"Creating visibility chart for {len(targets)} targets")
             self.configure_mobile_style()
             
-            if start_time is None:
-                start_time = datetime.now()
-            if end_time is None:
-                end_time = start_time + timedelta(hours=12)
-                
-            # Normalize all targets
-            normalized_targets = [self._normalize_target(target) for target in targets]
-            log_debug(f"Normalized {len(normalized_targets)} targets")
-                
-            # Create the plot
-            fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
+            # Use twilight times if not provided - CRITICAL: Use only twilight range, not extended range
+            if start_time is None or end_time is None:
+                try:
+                    from astronomy import find_configured_twilight
+                    today = datetime.now()  # Use datetime instead of date
+                    twilight_start, twilight_end = find_configured_twilight(today)
+                    if twilight_start and twilight_end:
+                        start_time = twilight_start
+                        end_time = twilight_end
+                        log_info(f"Using configured twilight times: {start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}")
+                    else:
+                        raise Exception("Twilight calculation returned None")
+                except Exception as e:
+                    log_error(f"Could not get twilight times: {e}")
+                    # Use precise astronomical twilight as fallback (not extended evening-to-morning)
+                    today = datetime.now()
+                    start_time = datetime.combine(today.date(), datetime.min.time().replace(hour=23, minute=55))
+                    end_time = datetime.combine(today.date() + timedelta(days=1), datetime.min.time().replace(hour=2, minute=57))
+                    log_info(f"Using astronomical twilight fallback: {start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}")
             
+            # IMPORTANT: Ensure we don't extend the time range beyond twilight times
+            # The chart should only show the actual observing window, not an extended range
+            log_info(f"Final chart time range: {start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}")
+            
+            # Use ALL targets - no mobile limits to match desktop functionality
+            # Normalize all targets
+            normalized_targets = []
+            for i, target in enumerate(targets):
+                normalized = self._normalize_target(target)
+                normalized_targets.append(normalized)
+                log_debug(f"Target {i}: {type(target)} -> {type(normalized)} (name: {getattr(normalized, 'name', 'Unknown')})")
+            log_info(f"Normalized {len(normalized_targets)} targets")
+                
+            # Use the desktop plotting function directly - it creates its own figure
             try:
-                plot_visibility_chart(normalized_targets, start_time, end_time, 
-                                    title="Tonight's Visibility", use_margins=True)
+                log_info(f"Attempting to create desktop-style visibility chart for {len(normalized_targets)} targets")
+                
+                # Try to generate a basic schedule for better visualization
+                schedule = None
+                try:
+                    from analysis import generate_observation_schedule
+                    from models import SchedulingStrategy
+                    schedule = generate_observation_schedule(
+                        normalized_targets, start_time, end_time,
+                        strategy=SchedulingStrategy.LONGEST_DURATION
+                    )
+                    log_info(f"Generated schedule with {len(schedule)} observations")
+                except Exception as e:
+                    log_warning(f"Could not generate schedule: {e}")
+                    import traceback
+                    log_warning(f"Schedule error traceback: {traceback.format_exc()}")
+                
+                # Check if plot_visibility_chart is available
+                if 'plot_visibility_chart' not in globals():
+                    raise ImportError("plot_visibility_chart function not available")
+                
+                log_info(f"Calling plot_visibility_chart with {len(normalized_targets)} targets, time range {start_time} to {end_time}")
+                
+                # CRITICAL: Pass the exact twilight time range to the plotting function
+                log_info(f"About to call plot_visibility_chart with:")
+                log_info(f"  - start_time: {start_time} (formatted: {start_time.strftime('%H:%M')})")
+                log_info(f"  - end_time: {end_time} (formatted: {end_time.strftime('%H:%M')})")
+                log_info(f"  - timezone: {start_time.tzinfo}")
+                
+                fig, ax = plot_visibility_chart(normalized_targets, start_time, end_time, 
+                                              schedule=schedule,
+                                              title="Tonight's Visibility", use_margins=False)
+                
+                if fig is None or ax is None:
+                    raise ValueError("plot_visibility_chart returned None")
+                
+                # Check what title was actually created
+                actual_title = ax.get_title()
+                log_info(f"Plot title created: {actual_title}")
+                
+                # CRITICAL FIX: Force correct x-axis limits to prevent timezone conversion issues
+                # The desktop plotting function may have timezone conversion issues, so we force the correct limits
+                ax.set_xlim(start_time, end_time)
+                log_info(f"Forced x-axis limits to correct twilight range: {start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}")
+                
+                # Apply mobile-specific sizing
+                fig.set_size_inches(self.figure_size)
+                fig.set_dpi(self.dpi)
+                
+                log_info("Successfully created visibility chart using desktop plotting function")
             except Exception as e:
-                log_error(f"Error in plot_visibility_chart", e, {'targets_count': len(normalized_targets)})
-                # Fallback: create simple chart
-                self._create_simple_visibility_chart(ax, normalized_targets, start_time, end_time)
+                log_error(f"Error in plot_visibility_chart: {type(e).__name__}: {str(e)}", e, {
+                    'targets_count': len(normalized_targets),
+                    'start_time': str(start_time),
+                    'end_time': str(end_time),
+                    'plot_function_available': 'plot_visibility_chart' in globals()
+                })
+                import traceback
+                log_error(f"Full traceback: {traceback.format_exc()}")
+                
+                # Fallback: create desktop-style horizontal bar chart instead of simple chart
+                log_info("Creating desktop-style bar chart as fallback")
+                fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
+                self._create_desktop_style_visibility_chart(ax, normalized_targets, start_time, end_time, schedule)
+                log_info("Created desktop-style fallback visibility chart")
             
             # Mobile-specific formatting
             plt.tight_layout()
             
-            return self._save_plot_to_temp(plt.gcf())
+            return self._save_plot_to_temp(fig)
             
         except Exception as e:
             log_error(f"Error creating visibility chart", e, {'targets_count': len(targets) if targets else 0})
@@ -528,22 +609,30 @@ class MobilePlotGenerator:
         """Normalize target object to ensure it has required attributes"""
         try:
             if isinstance(target, dict):
-                # Ensure dictionary has all required fields
-                normalized = {
-                    'name': target.get('name', 'Unknown'),
-                    'ra': float(target.get('ra', 0)),
-                    'dec': float(target.get('dec', 0)),
-                    'magnitude': float(target.get('magnitude', 10)),
-                    'object_type': target.get('object_type', 'Unknown'),
-                    'optimal_time': target.get('optimal_time'),
-                    'visibility_hours': float(target.get('visibility_hours', 4)),
-                    'near_moon': target.get('near_moon', False),  # Add missing attribute
-                    'score': float(target.get('score', 0)),
-                    'is_mosaic_candidate': target.get('is_mosaic_candidate', False),
-                    'size': target.get('size', 'Unknown'),
-                    'fov': target.get('fov', 'Unknown')
-                }
-                return normalized
+                # Create an object-like class that desktop functions can use
+                class TargetObject:
+                    def __init__(self, data):
+                        self.name = data.get('name', 'Unknown')
+                        self.ra = float(data.get('ra', 0))
+                        self.dec = float(data.get('dec', 0))
+                        self.magnitude = float(data.get('magnitude', 10))
+                        self.object_type = data.get('object_type', 'Unknown')
+                        self.optimal_time = data.get('optimal_time')
+                        self.visibility_hours = float(data.get('visibility_hours', 4))
+                        self.near_moon = data.get('near_moon', False)
+                        self.score = float(data.get('score', 0))
+                        self.is_mosaic_candidate = data.get('is_mosaic_candidate', False)
+                        self.size = data.get('size', 'Unknown')
+                        self.fov = data.get('fov', 'Unknown')
+                        self.sufficient_time = data.get('sufficient_time', True)
+                        self.moon_influence_periods = data.get('moon_influence_periods', [])
+                        
+                        # Add any additional attributes from the original dict
+                        for key, value in data.items():
+                            if not hasattr(self, key):
+                                setattr(self, key, value)
+                
+                return TargetObject(target)
             else:
                 # For object-style targets, ensure attributes exist
                 if not hasattr(target, 'near_moon'):
@@ -554,22 +643,29 @@ class MobilePlotGenerator:
                     target.is_mosaic_candidate = False
                 if not hasattr(target, 'visibility_hours'):
                     target.visibility_hours = 4.0
+                if not hasattr(target, 'sufficient_time'):
+                    target.sufficient_time = True
+                if not hasattr(target, 'moon_influence_periods'):
+                    target.moon_influence_periods = []
                 return target
                 
         except Exception as e:
             log_error(f"Error normalizing target", e, {'target': str(target)})
-            # Return minimal valid target
-            return {
-                'name': 'Unknown',
-                'ra': 0,
-                'dec': 0,
-                'magnitude': 10,
-                'object_type': 'Unknown',
-                'near_moon': False,
-                'score': 0,
-                'is_mosaic_candidate': False,
-                'visibility_hours': 4.0
-            }
+            # Return minimal valid object
+            class MinimalTarget:
+                def __init__(self):
+                    self.name = 'Unknown'
+                    self.ra = 0
+                    self.dec = 0
+                    self.magnitude = 10
+                    self.object_type = 'Unknown'
+                    self.near_moon = False
+                    self.score = 0
+                    self.is_mosaic_candidate = False
+                    self.visibility_hours = 4.0
+                    self.sufficient_time = True
+                    self.moon_influence_periods = []
+            return MinimalTarget()
     
     def _create_simple_altitude_plot(self, ax, target, start_time, end_time):
         """Create a simple altitude plot as fallback"""
@@ -605,8 +701,142 @@ class MobilePlotGenerator:
             log_error(f"Error creating simple altitude plot", e)
             ax.text(0.5, 0.5, 'Plot generation failed', ha='center', va='center', transform=ax.transAxes)
     
+    def _create_desktop_style_visibility_chart(self, ax, targets, start_time, end_time, schedule=None):
+        """Create a desktop-style horizontal bar visibility chart as fallback"""
+        try:
+            from matplotlib.dates import DateFormatter
+            import matplotlib.dates as mdates
+            
+            log_info(f"Creating desktop-style visibility chart for {len(targets)} targets")
+            
+            # Ensure times are timezone-aware
+            if start_time.tzinfo is None:
+                from astronomy import get_local_timezone
+                local_tz = get_local_timezone()
+                start_time = local_tz.localize(start_time)
+                end_time = local_tz.localize(end_time)
+            
+            # Get visibility periods for each target
+            target_periods = []
+            for target in targets:
+                try:
+                    if ASTROPY_AVAILABLE:
+                        from astronomy import find_visibility_window
+                        periods = find_visibility_window(target, start_time, end_time, use_margins=True)
+                        if periods:
+                            target_periods.append((target, periods))
+                    else:
+                        # Fallback: create dummy visibility period
+                        dummy_start = start_time + timedelta(hours=1)
+                        dummy_end = end_time - timedelta(hours=1)
+                        target_periods.append((target, [(dummy_start, dummy_end)]))
+                except Exception as e:
+                    log_warning(f"Could not get visibility for {target.get('name', 'Unknown')}: {e}")
+                    # Create a dummy period anyway
+                    dummy_start = start_time + timedelta(hours=1)
+                    dummy_end = end_time - timedelta(hours=1)
+                    target_periods.append((target, [(dummy_start, dummy_end)]))
+            
+            # Sort by visibility start time (reverse for chart display)
+            target_periods.sort(key=lambda x: x[1][0][0] if x[1] else start_time, reverse=True)
+            
+            # Plot horizontal bars for each target
+            y_positions = range(len(target_periods))
+            bar_height = 0.6
+            
+            for i, (target, periods) in enumerate(target_periods):
+                target_name = target.get('name', 'Unknown') if isinstance(target, dict) else getattr(target, 'name', 'Unknown')
+                
+                # Determine bar color based on target properties
+                if isinstance(target, dict):
+                    near_moon = target.get('near_moon', False)
+                    sufficient_time = target.get('sufficient_time', True)
+                else:
+                    near_moon = getattr(target, 'near_moon', False)
+                    sufficient_time = getattr(target, 'sufficient_time', True)
+                
+                # Choose color based on status
+                if not sufficient_time:
+                    color = 'pink'  # Insufficient time
+                    alpha = 0.6
+                elif near_moon:
+                    color = 'orange'  # Moon interference
+                    alpha = 0.8
+                else:
+                    color = 'lightblue'  # Normal visibility
+                    alpha = 0.8
+                
+                # Plot visibility periods as horizontal bars
+                for period_start, period_end in periods:
+                    # Ensure periods are within plot range
+                    plot_start = max(period_start, start_time)
+                    plot_end = min(period_end, end_time)
+                    
+                    if plot_start < plot_end:
+                        duration = plot_end - plot_start
+                        ax.barh(i, duration, left=plot_start, height=bar_height,
+                               color=color, alpha=alpha, edgecolor='black', linewidth=0.5)
+                
+                # Add scheduled observation overlay if available
+                if schedule:
+                    for sched_start, sched_end, sched_obj in schedule:
+                        sched_name = sched_obj.get('name', 'Unknown') if isinstance(sched_obj, dict) else getattr(sched_obj, 'name', 'Unknown')
+                        if sched_name == target_name:
+                            # Overlay scheduled period with hatching
+                            sched_duration = sched_end - sched_start
+                            ax.barh(i, sched_duration, left=sched_start, height=bar_height * 1.1,
+                                   color='none', edgecolor='red', hatch='///', linewidth=1.5, alpha=0.9)
+            
+            # Setup axes
+            ax.set_ylim(-0.5, len(target_periods) - 0.5)
+            ax.set_xlim(start_time, end_time)
+            
+            # Y-axis labels (target names)
+            target_names = [target.get('name', 'Unknown') if isinstance(target, dict) else getattr(target, 'name', 'Unknown')
+                           for target, _ in target_periods]
+            ax.set_yticks(y_positions)
+            ax.set_yticklabels(target_names, fontsize=8)
+            ax.set_ylabel('Objects', fontsize=10)
+            
+            # X-axis formatting
+            ax.set_xlabel('Local Time', fontsize=10)
+            ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+            ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval=30))
+            
+            # Grid
+            ax.grid(True, axis='x', alpha=0.3)
+            ax.set_axisbelow(True)
+            
+            # Title
+            ax.set_title("Tonight's Visibility", fontsize=12, fontweight='bold')
+            
+            # Create legend
+            legend_elements = [
+                plt.Rectangle((0, 0), 1, 1, facecolor='lightblue', alpha=0.8, label='Recommended'),
+                plt.Rectangle((0, 0), 1, 1, facecolor='pink', alpha=0.6, label='Insufficient Time'),
+                plt.Rectangle((0, 0), 1, 1, facecolor='orange', alpha=0.8, label='Moon Interference')
+            ]
+            
+            if schedule:
+                legend_elements.append(
+                    plt.Rectangle((0, 0), 1, 1, facecolor='none', edgecolor='red', 
+                                hatch='///', label='Scheduled Observation')
+                )
+            
+            ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
+            
+            log_info(f"Created desktop-style visibility chart with {len(target_periods)} targets")
+            
+        except Exception as e:
+            log_error(f"Error creating desktop-style visibility chart", e)
+            import traceback
+            log_error(f"Desktop-style chart error traceback: {traceback.format_exc()}")
+            # Ultimate fallback
+            ax.text(0.5, 0.5, 'Desktop-style chart generation failed', ha='center', va='center', transform=ax.transAxes)
+
     def _create_simple_visibility_chart(self, ax, targets, start_time, end_time):
-        """Create a simple visibility chart as fallback"""
+        """Create a simple visibility chart as fallback (altitude curves)"""
         try:
             colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'pink', 'gray']
             

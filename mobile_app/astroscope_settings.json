@@ -1,1 +1,1 @@
-{"location": {"name": "Milano", "latitude": 45.516667, "longitude": 9.216667}, "preferences": {"strategy": "<StringProperty name=>", "mosaic_only": true, "min_visibility": 2.0, "twilight_type": "civil"}}
+{"location": {"name": "Milano", "latitude": 45.516667, "longitude": 9.216667}, "preferences": {"strategy": "<StringProperty name=>", "mosaic_only": true, "min_visibility": 2.0, "twilight_type": "astronomical"}, "visibility": {"twilight_type": "astronomical"}}

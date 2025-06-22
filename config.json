@@ -28,7 +28,7 @@
         }
     },
     "visibility": {
-        "min_visibility_hours": 2,
+        "min_visibility_hours": 1.0,
         "min_total_area": 225,
         "trajectory_interval_minutes": 15,
         "search_interval_minutes": 1,
@@ -42,9 +42,11 @@
         "comment": "Set use_csv_catalog=true to use CSV catalog, false for enhanced JSON catalog"
     },
     "scheduling": {
-        "strategy": "max_objects",
-        "max_overlap_minutes": 15,
-        "exclude_insufficient_time": false
+        "strategy": "optimal_snr",
+        "exclude_insufficient_time": true,
+        "max_overlap_minutes": 20,
+        "multi_night_visual_indicator": "dashed_lines",
+        "multi_night_color": "pink"
     },
     "moon": {
         "proximity_radius": 30,
@@ -76,7 +78,7 @@
         "exclude_insufficient_time": true
     },
     "precision": {
-        "use_high_precision": true,
+        "use_high_precision": false,
         "atmospheric_refraction": true,
         "parallax_correction": true,
         "cache_calculations": true
@@ -90,5 +92,6 @@
             "catalog": "catalog.csv",
             "output": "output/"
         }
-    }
+    },
+    "twilight_type": "astronomical"
 }

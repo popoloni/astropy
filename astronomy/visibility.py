@@ -4,9 +4,23 @@ Object visibility and imaging calculations for astronomical observations.
 
 import math
 import re
+import os
 from datetime import timedelta
 from .celestial import calculate_altaz, calculate_sun_position
 from .time_utils import utc_to_local
+
+
+def get_twilight_angle():
+    """Get twilight angle from configuration"""
+    from config.settings import TWILIGHT_TYPE
+    
+    twilight_angles = {
+        'civil': -6.0,
+        'nautical': -12.0,
+        'astronomical': -18.0
+    }
+    
+    return twilight_angles.get(TWILIGHT_TYPE, -18.0)
 
 
 def is_visible(alt, az, use_margins=True):
@@ -41,8 +55,8 @@ def find_visibility_window(obj, start_time, end_time, use_margins=True):
         
         # Object is visible if:
         # 1. It's within visibility limits
-        # 2. The sun is below the horizon (altitude < -5)
-        is_currently_visible = is_visible(alt, az, use_margins) and sun_alt < -5
+        # 2. The sun is below the twilight threshold
+        is_currently_visible = is_visible(alt, az, use_margins) and sun_alt < get_twilight_angle()
         
         # Object becomes visible
         if is_currently_visible and not last_visible:
@@ -82,7 +96,9 @@ def find_sunset_sunrise(date):
     if date.tzinfo is not None:
         date = date.replace(tzinfo=None)
     
-    noon = date.replace(hour=12, minute=0, second=0, microsecond=0)
+    # Break replace() into multiple calls to avoid argument limit issues
+    noon = date.replace(hour=12, minute=0)
+    noon = noon.replace(second=0, microsecond=0)
     noon = milan_tz.localize(noon)
     noon_utc = local_to_utc(noon)
     
@@ -212,6 +228,11 @@ def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=N
     if exclude_insufficient is None:
         exclude_insufficient = EXCLUDE_INSUFFICIENT_TIME
     
+    # Check for environment variable override from run_mosaic_plots.py
+    # When FORCE_MULTI_NIGHT_MODE is true, include insufficient time objects (exclude_insufficient = False)
+    if os.environ.get('FORCE_MULTI_NIGHT_MODE', '').lower() == 'true':
+        exclude_insufficient = False
+    
     filtered_objects = []
     insufficient_objects = []
     
@@ -227,19 +248,36 @@ def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=N
                 if duration >= MIN_VISIBILITY_HOURS:
                     obj.sufficient_time = duration >= obj.required_exposure[0]
                     if obj.sufficient_time or not exclude_insufficient:
+                        # Mark objects for multi-night visualization when they have insufficient time
+                        # but are included due to exclude_insufficient=False (multi-night mode)
+                        if not exclude_insufficient and not obj.sufficient_time:
+                            obj.is_multi_night_candidate = True
+                        else:
+                            obj.is_multi_night_candidate = False
                         filtered_objects.append(obj)
                     else:
                         insufficient_objects.append(obj)
                 else:
                     obj.sufficient_time = False
-                    insufficient_objects.append(obj)
+                    if not exclude_insufficient:
+                        # Include objects with insufficient visibility time when multi-night mode enabled
+                        obj.is_multi_night_candidate = True
+                        filtered_objects.append(obj)
+                    else:
+                        insufficient_objects.append(obj)
             else:
                 # Object without magnitude - assume visible if duration meets minimum
                 if duration >= MIN_VISIBILITY_HOURS:
                     obj.sufficient_time = True
+                    obj.is_multi_night_candidate = False
                     filtered_objects.append(obj)
                 else:
                     obj.sufficient_time = False
-                    insufficient_objects.append(obj)
+                    if not exclude_insufficient:
+                        # Include short-visibility objects in multi-night mode
+                        obj.is_multi_night_candidate = True
+                        filtered_objects.append(obj)
+                    else:
+                        insufficient_objects.append(obj)
     
     return filtered_objects, insufficient_objects 

@@ -578,7 +578,16 @@ def find_precise_astronomical_twilight(dt: datetime, observer_lat: float, observ
         
         # Determine initial guess based on event type
         # Ensure base_date is timezone-naive to avoid mixing timezone-aware and naive datetimes
-        base_date = dt.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+        # Fix for environments where replace() doesn't accept all keyword arguments at once
+        if dt.tzinfo is not None:
+            base_date = dt.replace(tzinfo=None)
+        else:
+            base_date = dt
+        # Break replace() into multiple calls to avoid argument limit issues
+        base_date = base_date.replace(hour=0)
+        base_date = base_date.replace(minute=0)
+        base_date = base_date.replace(second=0)
+        base_date = base_date.replace(microsecond=0)
         
         if event_type in ['sunset', 'dusk']:
             # Start search around 6 PM for all sunset twilights
@@ -603,7 +612,8 @@ def find_precise_astronomical_twilight(dt: datetime, observer_lat: float, observ
         if event_type in ['sunset', 'dusk']:
             # For sunset twilight, search from afternoon to late evening
             start_time = base_date.replace(hour=15)  # 3 PM
-            end_time = base_date.replace(hour=23, minute=59)  # 11:59 PM
+            end_time = base_date.replace(hour=23)
+            end_time = end_time.replace(minute=59)  # 11:59 PM
         else:  # sunrise/dawn
             # For sunrise twilight, search from early morning to late morning
             # Start from early morning when sun is well below horizon

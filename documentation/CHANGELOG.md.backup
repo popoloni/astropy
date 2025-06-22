@@ -6,34 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased] - 2025-06-22
-## [Unreleased] - 2025-06-22
-
-### Changed - Documentation Reorganization & Mobile App Status Update 📚
-- **📁 Documentation restructuring**:
-  - Moved `DSO_SELECTION_UNIFICATION_PLAN.md` to `documentation/project/`
-  - Moved `CLEANUP_README.md` to `documentation/`
-  - All project documentation now properly organized under `documentation/` folder
-  - Updated README.md documentation references to reflect new structure
-- **🧹 Cleanup scripts reorganization**:
-  - Moved `clean_cache.py` and `clean.sh` to `utilities/` folder
-  - Updated cleanup scripts to work from new location
-  - Scripts maintain full functionality with automatic path resolution
-- **📱 Mobile app status clarification**:
-  - Enhanced experimental warnings throughout documentation
-  - Mobile app clearly marked as **🧪 EXPERIMENTAL** and **⚠️ UNSTABLE**
-  - Updated README.md to emphasize that iOS Pythonista wrappers are the recommended mobile solution
-  - All mobile app references now include appropriate experimental disclaimers
-
-### Technical Details
-- **Cleanup script improvements**:
-  - `clean.sh` now uses proper path resolution from utilities directory
-  - All 26 cleanup operations continue to work correctly
-  - Scripts can be run from any location within the project
-- **Documentation links updated**:
-  - All internal documentation references corrected
-  - Project structure documentation reflects new organization
-  - Mobile app documentation emphasizes experimental nature
-
 
 ### Changed - Documentation Reorganization & Mobile App Status Update 📚
 - **📁 Documentation restructuring**:

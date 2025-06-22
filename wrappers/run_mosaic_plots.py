@@ -43,10 +43,24 @@ def main():
         
         # Set up arguments for mosaic plotting with no duplicates
         original_argv = sys.argv.copy()
+        
+        # Enable multi-night mode by default for mosaic analysis
+        # Mosaic plots benefit from including ALL visible objects (even insufficient time)
+        # since objects unsuitable for standalone imaging might be perfect for mosaic groups
+        original_multi_night_env = os.environ.get('FORCE_MULTI_NIGHT_MODE')
+        os.environ['FORCE_MULTI_NIGHT_MODE'] = 'true'
+        
         sys.argv = ['astronightplanner.py', '--mosaic', '--no-duplicates']
         
-        # Run the main astropy function with mosaic plotting
-        astronightplanner.main()
+        try:
+            # Run the main astropy function with mosaic plotting
+            astronightplanner.main()
+        finally:
+            # Restore original environment
+            if original_multi_night_env is not None:
+                os.environ['FORCE_MULTI_NIGHT_MODE'] = original_multi_night_env
+            else:
+                os.environ.pop('FORCE_MULTI_NIGHT_MODE', None)
         
         # Restore original argv
         sys.argv = original_argv

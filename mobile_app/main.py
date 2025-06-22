@@ -4,8 +4,12 @@ AstroScope Planner - Mobile Astrophotography Planning App
 A Kivy-based mobile application for planning astrophotography sessions
 """
 
+# IMPORT SUPPRESSION MODULE FIRST - BEFORE ANYTHING ELSE
+from suppress_debug import *  # This must be first to suppress DEBUG messages
+
 import os
 import sys
+import logging
 from datetime import datetime, timedelta
 import json
 import time
@@ -57,14 +61,15 @@ def import_astronomy_modules():
         modules.update({
             'filter_visible_objects': lazy_import('astronightplanner', 'filter_visible_objects'),
             'generate_observation_schedule': lazy_import('astronightplanner', 'generate_observation_schedule'),
-            'get_objects_from_catalog': lazy_import('catalogs', 'get_objects_from_catalog'),
-            'get_catalog_info': lazy_import('catalogs', 'get_catalog_info'),
+            'get_objects_from_csv': lazy_import('astronightplanner', 'get_objects_from_csv'),
+            'get_combined_catalog': lazy_import('astronightplanner', 'get_combined_catalog'),
             'find_astronomical_twilight': lazy_import('astronightplanner', 'find_astronomical_twilight'),
             'find_configured_twilight': lazy_import('astronomy', 'find_configured_twilight'),
             'calculate_moon_phase': lazy_import('astronightplanner', 'calculate_moon_phase'),
             'get_moon_phase_icon': lazy_import('astronightplanner', 'get_moon_phase_icon'),
             'DEFAULT_LOCATION': lazy_import('astronightplanner', 'DEFAULT_LOCATION'),
             'CONFIG': lazy_import('astronightplanner', 'CONFIG'),
+            'USE_CSV_CATALOG': lazy_import('astronightplanner', 'USE_CSV_CATALOG'),
             'MIN_ALT': lazy_import('astronightplanner', 'MIN_ALT'),
             'MAX_ALT': lazy_import('astronightplanner', 'MAX_ALT')
         })
@@ -370,19 +375,32 @@ class AstroScopePlannerApp(App):
                 Logger.warning("AstroScope: No location set, using default")
                 location = self.astronomy_modules['DEFAULT_LOCATION']
             
-            # Get the catalog using new configurable system
-            catalog_func = self.astronomy_modules.get('get_objects_from_catalog')
-            catalog_info_func = self.astronomy_modules.get('get_catalog_info')
+            # Get the catalog using same approach as astroseasonplanner.py
+            get_objects_from_csv_func = self.astronomy_modules.get('get_objects_from_csv')
+            get_combined_catalog_func = self.astronomy_modules.get('get_combined_catalog')
+            use_csv_catalog = self.astronomy_modules.get('USE_CSV_CATALOG', False)
             
-            if not catalog_func:
-                Logger.error("AstroScope: No catalog function available")
+            if not get_objects_from_csv_func or not get_combined_catalog_func:
+                Logger.error("AstroScope: Required catalog functions not available")
                 return
             
             try:
-                # Get catalog info and objects
-                catalog_info = catalog_info_func() if catalog_info_func else {"type": "unknown", "count": 0}
-                catalog = catalog_func()
-                Logger.info(f"AstroScope: Loaded {catalog_info['type']} catalog with {len(catalog)} objects")
+                # Use same catalog selection logic as astroseasonplanner.py
+                if use_csv_catalog:
+                    catalog = get_objects_from_csv_func()
+                    if not catalog:
+                        catalog = get_combined_catalog_func()
+                        catalog_type = "combined (CSV fallback)"
+                    else:
+                        catalog_type = "CSV"
+                else:
+                    catalog = get_combined_catalog_func()
+                    catalog_type = "combined"
+                
+                Logger.info(f"AstroScope: Loaded {catalog_type} catalog with {len(catalog)} objects (same as astroseasonplanner)")
+                # Ensure catalog contains only DSO objects, not stars
+                if len(catalog) > 200:
+                    Logger.warning(f"AstroScope: Catalog has {len(catalog)} objects - this may include stars. Expected ~107 DSO objects.")
                 
                 # Filter visible objects
                 filter_func = self.astronomy_modules.get('filter_visible_objects')
@@ -390,37 +408,62 @@ class AstroScopePlannerApp(App):
                 
                 if filter_func and location:
                     try:
-                        # Call the actual function to filter visible objects
-                        session_start_time = current_date.replace(hour=20, minute=0, second=0)  # 8 PM start
-                        session_end_time = session_start_time + timedelta(hours=8)  # Until 4 AM
+                        # Use proper twilight calculation instead of hardcoded times
+                        session_start_time, session_end_time = self.get_session_times(current_date)
                         
-                        # Use correct function signature
-                        result = filter_func(catalog, session_start_time, session_end_time)
+                        # Configure visibility filtering parameters to match desktop exactly
+                        # Use the EXCLUDE_INSUFFICIENT_TIME setting from configuration
+                        try:
+                            from config.settings import EXCLUDE_INSUFFICIENT_TIME
+                            exclude_insufficient = EXCLUDE_INSUFFICIENT_TIME
+                            Logger.info(f"AstroScope: Using exclude_insufficient_time = {exclude_insufficient} from configuration")
+                        except ImportError:
+                            exclude_insufficient = True  # Fallback if config not available
+                            Logger.warning("AstroScope: Config not available, using exclude_insufficient_time = True as fallback")
                         
-                        # Handle the return value (might be tuple or list)
-                        if isinstance(result, tuple) and len(result) == 2:
-                            visible_objects, insufficient_objects = result
+                        # Filter objects based on visibility and exposure requirements
+                        visible_objects, insufficient_objects = filter_func(
+                            catalog, session_start_time, session_end_time, 
+                            exclude_insufficient=exclude_insufficient)
+                        
+                        # Handle the return value (should be tuple of visible and insufficient objects)
+                        if isinstance(visible_objects, tuple) and len(visible_objects) == 2:
+                            visible_objects, insufficient_objects = visible_objects
+                            Logger.info(f"AstroScope: Filtered to {len(visible_objects)} visible objects "
+                                      f"({len(insufficient_objects)} insufficient time)")
                         else:
-                            visible_objects = result if result else []
+                            visible_objects = visible_objects if visible_objects else []
+                            insufficient_objects = []
+                            Logger.info(f"AstroScope: Filtered to {len(visible_objects)} visible objects")
                         
-                        Logger.info(f"AstroScope: Filtered to {len(visible_objects)} visible objects")
+                        # CRITICAL: Respect the exclude_insufficient_time configuration setting
+                        # Do NOT automatically add insufficient time objects regardless of count
+                        Logger.info(f"AstroScope: Final count: {len(visible_objects)} objects (exclude_insufficient_time={exclude_insufficient})")
+                        
+                        # Apply mobile limit only if we have too many objects (keep top objects)
+                        if len(visible_objects) > 30:
+                            Logger.info(f"AstroScope: Limiting to top 30 objects from {len(visible_objects)} for mobile performance")
+                            visible_objects = visible_objects[:30]
                         
                     except Exception as e:
                         log_error("Error filtering objects", e)
                         Logger.error(f"AstroScope: Error filtering objects: {e}")
                         
-                        # Try basic filter as fallback
+                        # Fallback: use basic altitude filter or limit catalog
                         try:
                             # Use simpler filter if available
                             basic_filter = self.astronomy_modules.get('filter_by_altitude')
                             if basic_filter:
                                 visible_objects = basic_filter(catalog, location, current_date)
+                                Logger.info(f"AstroScope: Used basic filter, found {len(visible_objects)} objects")
                             else:
-                                visible_objects = catalog[:20] if catalog else []  # Just take first 20
+                                # Last resort: limit catalog to reasonable number
+                                visible_objects = catalog[:30] if catalog else []  # Limit to 30 objects
+                                Logger.warning(f"AstroScope: Using limited catalog fallback: {len(visible_objects)} objects")
                         except Exception as e2:
                             log_error("Basic filter also failed", e2)
                             Logger.error(f"AstroScope: Basic filter also failed: {e2}")
-                            visible_objects = []
+                            visible_objects = catalog[:20] if catalog else []  # Final fallback
                 
                 # Generate observation schedule
                 schedule = []
@@ -428,9 +471,9 @@ class AstroScopePlannerApp(App):
                 
                 if schedule_func and visible_objects:
                     try:
-                        session_start_time = current_date.replace(hour=20, minute=0, second=0)
-                        session_end_time = session_start_time + timedelta(hours=8)
+                        # Use proper twilight calculation instead of hardcoded times
                         strategy_prop = getattr(self.app_state, 'scheduling_strategy', 'max_objects')
+                        session_start_time, session_end_time = self.get_session_times(current_date)
                         
                         # Extract string value from Kivy StringProperty
                         strategy_name = 'max_objects'  # Default fallback
@@ -482,8 +525,8 @@ class AstroScopePlannerApp(App):
                         
                     except Exception as e:
                         Logger.error(f"AstroScope: Error generating schedule: {e}")
-                        # Fallback: just take the first 20 visible objects
-                        schedule = visible_objects[:20]
+                        # Fallback: use limited visible objects for mobile
+                        schedule = visible_objects[:30] if visible_objects else []  # Limit to 30 objects for mobile
                         Logger.info(f"AstroScope: Using fallback list of {len(schedule)} targets")
                 
                 # Ensure all objects have proper analysis attributes set
@@ -710,9 +753,9 @@ class AstroScopePlannerApp(App):
                 schedule = sample_targets
                 visible_objects = []
             
-            # Store in app state
+            # Store in app state - USE ALL OBJECTS like desktop
             if hasattr(self.app_state, 'tonights_targets'):
-                self.app_state.tonights_targets = schedule[:20]  # Top 20 targets
+                self.app_state.tonights_targets = schedule  # ALL targets - no mobile limit
             if hasattr(self.app_state, 'all_visible_objects'):  
                 self.app_state.all_visible_objects = visible_objects
             
@@ -724,8 +767,8 @@ class AstroScopePlannerApp(App):
                 success = True
                 log_info(f"Loaded {target_count} targets from schedule")
             elif visible_objects:
-                self.app_state.tonights_targets = visible_objects[:10]  # Limit for mobile
-                target_count = len(visible_objects[:10])
+                self.app_state.tonights_targets = visible_objects  # NO LIMIT - use all like desktop
+                target_count = len(visible_objects)
                 success = True
                 log_info(f"Loaded {target_count} visible objects")
             else:
@@ -766,6 +809,23 @@ class AstroScopePlannerApp(App):
                     self.app_state.tonights_targets = []
                 if hasattr(self.app_state, 'all_visible_objects'):
                     self.app_state.all_visible_objects = []
+    
+    def get_session_times(self, current_date):
+        """Get session start and end times using proper twilight calculation"""
+        twilight_func = self.astronomy_modules.get('find_configured_twilight')
+        if twilight_func:
+            try:
+                session_start_time, session_end_time = twilight_func(current_date)
+                Logger.info(f"AstroScope: Using twilight times {session_start_time.strftime('%H:%M')} - {session_end_time.strftime('%H:%M')}")
+                return session_start_time, session_end_time
+            except Exception as e:
+                Logger.warning(f"AstroScope: Twilight calculation failed: {e}, using fallback times")
+        
+        # Fallback to reasonable default times (astronomical twilight)
+        Logger.warning("AstroScope: Using default astronomical twilight times")
+        session_start_time = current_date.replace(hour=21, minute=12, second=0)
+        session_end_time = current_date.replace(hour=6, minute=48, second=0) + timedelta(days=1)
+        return session_start_time, session_end_time
     
     @error_boundary("load_settings", ErrorSeverity.LOW, ErrorCategory.DATA)
     def load_settings(self):

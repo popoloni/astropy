@@ -89,6 +89,10 @@ MAX_OVERLAP_MINUTES = CONFIG['scheduling']['max_overlap_minutes']
 # Visibility Filtering
 EXCLUDE_INSUFFICIENT_TIME = CONFIG['scheduling']['exclude_insufficient_time']
 
+# Multi-Night Mode Visual Configuration
+MULTI_NIGHT_VISUAL_INDICATOR = CONFIG['scheduling'].get('multi_night_visual_indicator', 'dashed_lines')
+MULTI_NIGHT_COLOR = CONFIG['scheduling'].get('multi_night_color', 'pink')
+
 # Imaging Configuration - Load from default scope in scope_data.json
 def _get_default_scope_config():
     """Get default scope configuration from scope_data.json"""

@@ -170,7 +170,7 @@ class SettingsScreen(Screen):
         section = BoxLayout(
             orientation='vertical',
             size_hint_y=None,
-            height=dp(250),
+            height=dp(370),  # Increased to accommodate new settings
             spacing=dp(10)
         )
         
@@ -191,8 +191,14 @@ class SettingsScreen(Screen):
         min_alt_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
         min_alt_layout.add_widget(Label(text='Min Altitude:', size_hint_x=None, width=dp(120)))
         
+        # Create slider with safe initialization
+        try:
+            min_alt_value = float(self.get_current_min_altitude())
+        except (ValueError, TypeError):
+            min_alt_value = 30.0
+            
         self.min_altitude_slider = Slider(
-            min=0, max=60, value=self.get_current_min_altitude(), step=5
+            min=0, max=60, value=min_alt_value, step=5
         )
         self.min_altitude_slider.bind(value=self.update_min_altitude_label)
         min_alt_layout.add_widget(self.min_altitude_slider)
@@ -205,12 +211,62 @@ class SettingsScreen(Screen):
         min_alt_layout.add_widget(self.min_altitude_label)
         section.add_widget(min_alt_layout)
         
+        # Maximum altitude
+        max_alt_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
+        max_alt_layout.add_widget(Label(text='Max Altitude:', size_hint_x=None, width=dp(120)))
+        
+        # Create slider with safe initialization
+        try:
+            max_alt_value = float(self.get_current_max_altitude())
+        except (ValueError, TypeError):
+            max_alt_value = 85.0
+            
+        self.max_altitude_slider = Slider(
+            min=60, max=90, value=max_alt_value, step=5
+        )
+        self.max_altitude_slider.bind(value=self.update_max_altitude_label)
+        max_alt_layout.add_widget(self.max_altitude_slider)
+        
+        self.max_altitude_label = Label(
+            text=f'{int(self.max_altitude_slider.value)}°',
+            size_hint_x=None,
+            width=dp(50)
+        )
+        max_alt_layout.add_widget(self.max_altitude_label)
+        section.add_widget(max_alt_layout)
+        
+        # Azimuth range (optional - can be disabled for most users)
+        azimuth_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
+        azimuth_layout.add_widget(Label(text='Azimuth Range:', size_hint_x=None, width=dp(120)))
+        
+        self.azimuth_range_label = Label(
+            text=f'{int(self.get_current_min_azimuth())}° - {int(self.get_current_max_azimuth())}°',
+            size_hint_x=0.7
+        )
+        azimuth_layout.add_widget(self.azimuth_range_label)
+        
+        azimuth_btn = Button(
+            text='Edit',
+            size_hint_x=None,
+            width=dp(60),
+            background_color=(0.4, 0.4, 0.8, 1.0)
+        )
+        azimuth_btn.bind(on_press=self.show_azimuth_editor)
+        azimuth_layout.add_widget(azimuth_btn)
+        section.add_widget(azimuth_layout)
+        
         # Minimum visibility hours
         min_vis_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
         min_vis_layout.add_widget(Label(text='Min Visibility:', size_hint_x=None, width=dp(120)))
         
+        # Create slider with safe initialization
+        try:
+            min_vis_value = float(self.get_current_min_visibility())
+        except (ValueError, TypeError):
+            min_vis_value = 2.0
+            
         self.min_visibility_slider = Slider(
-            min=0.5, max=8.0, value=self.get_current_min_visibility(), step=0.5
+            min=0.5, max=8.0, value=min_vis_value, step=0.5
         )
         self.min_visibility_slider.bind(value=self.update_min_visibility_label)
         min_vis_layout.add_widget(self.min_visibility_slider)
@@ -227,8 +283,14 @@ class SettingsScreen(Screen):
         moon_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
         moon_layout.add_widget(Label(text='Max Moon:', size_hint_x=None, width=dp(120)))
         
+        # Create slider with safe initialization
+        try:
+            max_moon_value = float(self.get_current_max_moon())
+        except (ValueError, TypeError):
+            max_moon_value = 50.0
+            
         self.max_moon_slider = Slider(
-            min=0, max=100, value=self.get_current_max_moon(), step=10
+            min=0, max=100, value=max_moon_value, step=10
         )
         self.max_moon_slider.bind(value=self.update_max_moon_label)
         moon_layout.add_widget(self.max_moon_slider)
@@ -241,12 +303,36 @@ class SettingsScreen(Screen):
         moon_layout.add_widget(self.max_moon_label)
         section.add_widget(moon_layout)
         
+        # Exclude insufficient time objects
+        exclude_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
+        exclude_layout.add_widget(Label(text='Exclude Insufficient Time:', size_hint_x=None, width=dp(180)))
+        
+        # Create toggle button instead of Switch to avoid Kivy BooleanProperty issues
+        self.exclude_insufficient_state = self.get_current_exclude_insufficient()
+        self.exclude_insufficient_button = Button(
+            text='ON' if self.exclude_insufficient_state else 'OFF',
+            size_hint_x=None,
+            width=dp(80),
+            background_color=(0.2, 0.8, 0.2, 1.0) if self.exclude_insufficient_state else (0.8, 0.2, 0.2, 1.0)
+        )
+        self.exclude_insufficient_button.bind(on_press=self.toggle_exclude_insufficient)
+        exclude_layout.add_widget(self.exclude_insufficient_button)
+        section.add_widget(exclude_layout)
+        
         # Advanced constraints toggle
         advanced_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
         advanced_layout.add_widget(Label(text='Advanced Filtering:', size_hint_x=None, width=dp(150)))
         
-        self.advanced_switch = Switch(active=self.get_current_advanced_filtering())
-        advanced_layout.add_widget(self.advanced_switch)
+        # Create toggle button instead of Switch to avoid Kivy BooleanProperty issues
+        self.advanced_filtering_state = self.get_current_advanced_filtering()
+        self.advanced_button = Button(
+            text='ON' if self.advanced_filtering_state else 'OFF',
+            size_hint_x=None,
+            width=dp(80),
+            background_color=(0.2, 0.8, 0.2, 1.0) if self.advanced_filtering_state else (0.8, 0.2, 0.2, 1.0)
+        )
+        self.advanced_button.bind(on_press=self.toggle_advanced_filtering)
+        advanced_layout.add_widget(self.advanced_button)
         section.add_widget(advanced_layout)
         
         return section
@@ -301,8 +387,14 @@ class SettingsScreen(Screen):
         refresh_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
         refresh_layout.add_widget(Label(text='Auto-refresh:', size_hint_x=None, width=dp(120)))
         
+        # Create slider with safe initialization
+        try:
+            refresh_value = float(self.get_current_refresh_interval())
+        except (ValueError, TypeError):
+            refresh_value = 15.0
+            
         self.refresh_slider = Slider(
-            min=5, max=60, value=self.get_current_refresh_interval(), step=5
+            min=5, max=60, value=refresh_value, step=5
         )
         self.refresh_slider.bind(value=self.update_refresh_label)
         refresh_layout.add_widget(self.refresh_slider)
@@ -319,16 +411,32 @@ class SettingsScreen(Screen):
         theme_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
         theme_layout.add_widget(Label(text='Dark Theme:', size_hint_x=None, width=dp(120)))
         
-        self.theme_switch = Switch(active=True)  # Default to dark theme
-        theme_layout.add_widget(self.theme_switch)
+        # Create toggle button instead of Switch to avoid Kivy BooleanProperty issues
+        self.theme_state = True  # Default to dark theme
+        self.theme_button = Button(
+            text='ON' if self.theme_state else 'OFF',
+            size_hint_x=None,
+            width=dp(80),
+            background_color=(0.2, 0.8, 0.2, 1.0) if self.theme_state else (0.8, 0.2, 0.2, 1.0)
+        )
+        self.theme_button.bind(on_press=self.toggle_theme)
+        theme_layout.add_widget(self.theme_button)
         section.add_widget(theme_layout)
         
         # Enable logging
         logging_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
         logging_layout.add_widget(Label(text='Enable Logging:', size_hint_x=None, width=dp(120)))
         
-        self.logging_switch = Switch(active=True)
-        logging_layout.add_widget(self.logging_switch)
+        # Create toggle button instead of Switch to avoid Kivy BooleanProperty issues
+        self.logging_state = True
+        self.logging_button = Button(
+            text='ON' if self.logging_state else 'OFF',
+            size_hint_x=None,
+            width=dp(80),
+            background_color=(0.2, 0.8, 0.2, 1.0) if self.logging_state else (0.8, 0.2, 0.2, 1.0)
+        )
+        self.logging_button.bind(on_press=self.toggle_logging)
+        logging_layout.add_widget(self.logging_button)
         section.add_widget(logging_layout)
         
         return section
@@ -403,7 +511,8 @@ class SettingsScreen(Screen):
     
     def get_current_min_altitude(self):
         """Get current minimum altitude constraint"""
-        return 30.0  # Default
+        # Use default values from AppState - NumericProperty(30.0)
+        return 30.0
     
     def get_current_min_visibility(self):
         """Get current minimum visibility hours"""
@@ -426,6 +535,28 @@ class SettingsScreen(Screen):
         except Exception:
             pass
         return False
+    
+    def get_current_max_altitude(self):
+        """Get current maximum altitude setting"""
+        # Use default values from AppState - NumericProperty(85.0)
+        return 85.0
+    
+    def get_current_min_azimuth(self):
+        """Get current minimum azimuth setting"""
+        # Use default values from AppState - NumericProperty(0.0)
+        return 0.0
+    
+    def get_current_max_azimuth(self):
+        """Get current maximum azimuth setting"""
+        # Use default values from AppState - NumericProperty(360.0)
+        return 360.0
+    
+    def get_current_exclude_insufficient(self):
+        """Get current exclude insufficient time setting"""
+        try:
+            return getattr(self.app.app_state, 'exclude_insufficient_time', True)
+        except:
+            return True
     
     def get_current_refresh_interval(self):
         """Get current auto-refresh interval"""
@@ -463,6 +594,35 @@ class SettingsScreen(Screen):
     def update_refresh_label(self, instance, value):
         """Update refresh interval label"""
         self.refresh_label.text = f'{int(value)}min'
+    
+    def update_max_altitude_label(self, instance, value):
+        """Update maximum altitude label"""
+        self.max_altitude_label.text = f'{int(value)}°'
+    
+    # Toggle button methods (replacing Switch widgets to avoid Kivy BooleanProperty issues)
+    def toggle_exclude_insufficient(self, instance):
+        """Toggle exclude insufficient time setting"""
+        self.exclude_insufficient_state = not self.exclude_insufficient_state
+        instance.text = 'ON' if self.exclude_insufficient_state else 'OFF'
+        instance.background_color = (0.2, 0.8, 0.2, 1.0) if self.exclude_insufficient_state else (0.8, 0.2, 0.2, 1.0)
+    
+    def toggle_advanced_filtering(self, instance):
+        """Toggle advanced filtering setting"""
+        self.advanced_filtering_state = not self.advanced_filtering_state
+        instance.text = 'ON' if self.advanced_filtering_state else 'OFF'
+        instance.background_color = (0.2, 0.8, 0.2, 1.0) if self.advanced_filtering_state else (0.8, 0.2, 0.2, 1.0)
+    
+    def toggle_theme(self, instance):
+        """Toggle theme setting"""
+        self.theme_state = not self.theme_state
+        instance.text = 'ON' if self.theme_state else 'OFF'
+        instance.background_color = (0.2, 0.8, 0.2, 1.0) if self.theme_state else (0.8, 0.2, 0.2, 1.0)
+    
+    def toggle_logging(self, instance):
+        """Toggle logging setting"""
+        self.logging_state = not self.logging_state
+        instance.text = 'ON' if self.logging_state else 'OFF'
+        instance.background_color = (0.2, 0.8, 0.2, 1.0) if self.logging_state else (0.8, 0.2, 0.2, 1.0)
     
     # Action methods
     def save_settings(self, instance):
@@ -502,10 +662,20 @@ class SettingsScreen(Screen):
                 else:
                     internal_twilight = 'astronomical'  # Default
                 
+                # Update app state
                 self.app.app_state.twilight_type = internal_twilight
                 
-                # Also update the main config file
+                # Update main config file
                 self.update_main_config_twilight(internal_twilight)
+                
+                # Trigger refresh of targets and visibility chart
+                if hasattr(self.app, 'refresh_data'):
+                    self.app.refresh_data()
+                    log_info(f"Triggered app refresh after twilight change to: {internal_twilight}")
+                
+                # Close the spinner popup (if it exists)
+                if hasattr(self, 'twilight_popup') and self.twilight_popup:
+                    self.twilight_popup.dismiss()
                 
                 log_info(f"Twilight type saved: {internal_twilight}")
             except Exception as e:
@@ -522,9 +692,17 @@ class SettingsScreen(Screen):
             
             # Save visibility constraints
             self.app.app_state.min_visibility_hours = self.min_visibility_slider.value
+            self.app.app_state.min_altitude = self.min_altitude_slider.value
+            self.app.app_state.max_altitude = self.max_altitude_slider.value
+            self.app.app_state.exclude_insufficient_time = self.exclude_insufficient_state
             
             # Save app preferences
             # (These would be saved to app config/preferences)
+            
+            log_info(f"Saved visibility settings: min_alt={self.min_altitude_slider.value}°, "
+                    f"max_alt={self.max_altitude_slider.value}°, "
+                    f"min_vis={self.min_visibility_slider.value}h, "
+                    f"exclude_insufficient={self.exclude_insufficient_state}")
             
             # Trigger app refresh with new settings
             if hasattr(self.app, 'refresh_data'):
@@ -551,14 +729,29 @@ class SettingsScreen(Screen):
             
             # Reset visibility constraints
             self.min_altitude_slider.value = 30.0
+            self.max_altitude_slider.value = 85.0
             self.min_visibility_slider.value = 2.0
             self.max_moon_slider.value = 50.0
-            self.advanced_switch.active = False
+            
+            # Reset toggle buttons
+            self.exclude_insufficient_state = True
+            self.exclude_insufficient_button.text = 'ON'
+            self.exclude_insufficient_button.background_color = (0.2, 0.8, 0.2, 1.0)
+            
+            self.advanced_filtering_state = False
+            self.advanced_button.text = 'OFF'
+            self.advanced_button.background_color = (0.8, 0.2, 0.2, 1.0)
             
             # Reset preferences
             self.refresh_slider.value = 15.0
-            self.theme_switch.active = True
-            self.logging_switch.active = True
+            
+            self.theme_state = True
+            self.theme_button.text = 'ON'
+            self.theme_button.background_color = (0.2, 0.8, 0.2, 1.0)
+            
+            self.logging_state = True
+            self.logging_button.text = 'ON'
+            self.logging_button.background_color = (0.2, 0.8, 0.2, 1.0)
             
             # Reset twilight type
             self.twilight_spinner.text = "Civil (-6°)"
@@ -581,12 +774,12 @@ class SettingsScreen(Screen):
                     'min_altitude': self.min_altitude_slider.value,
                     'min_visibility_hours': self.min_visibility_slider.value,
                     'max_moon_illumination': self.max_moon_slider.value,
-                    'advanced_filtering': self.advanced_switch.active
+                    'advanced_filtering': self.advanced_filtering_state
                 },
                 'preferences': {
                     'refresh_interval': self.refresh_slider.value,
-                    'dark_theme': self.theme_switch.active,
-                    'logging_enabled': self.logging_switch.active,
+                    'dark_theme': self.theme_state,
+                    'logging_enabled': self.logging_state,
                     'twilight_type': self.twilight_spinner.text
                 },
                 'export_date': datetime.now().isoformat()
@@ -732,3 +925,75 @@ class SettingsScreen(Screen):
             size_hint=(0.9, 0.7)
         )
         popup.open()
+    
+    def show_azimuth_editor(self, instance):
+        """Show azimuth range editor popup"""
+        content = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
+        
+        # Min azimuth
+        min_az_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
+        min_az_layout.add_widget(Label(text='Min Azimuth:', size_hint_x=None, width=dp(100)))
+        
+        min_az_slider = Slider(min=0, max=360, value=self.get_current_min_azimuth(), step=15)
+        min_az_layout.add_widget(min_az_slider)
+        
+        min_az_label = Label(text=f'{int(min_az_slider.value)}°', size_hint_x=None, width=dp(50))
+        min_az_slider.bind(value=lambda instance, value: setattr(min_az_label, 'text', f'{int(value)}°'))
+        min_az_layout.add_widget(min_az_label)
+        content.add_widget(min_az_layout)
+        
+        # Max azimuth
+        max_az_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40))
+        max_az_layout.add_widget(Label(text='Max Azimuth:', size_hint_x=None, width=dp(100)))
+        
+        max_az_slider = Slider(min=0, max=360, value=self.get_current_max_azimuth(), step=15)
+        max_az_layout.add_widget(max_az_slider)
+        
+        max_az_label = Label(text=f'{int(max_az_slider.value)}°', size_hint_x=None, width=dp(50))
+        max_az_slider.bind(value=lambda instance, value: setattr(max_az_label, 'text', f'{int(value)}°'))
+        max_az_layout.add_widget(max_az_label)
+        content.add_widget(max_az_layout)
+        
+        # Info
+        info_label = Label(
+            text='Azimuth range limits telescope pointing direction.\n0° = North, 90° = East, 180° = South, 270° = West',
+            size_hint_y=None,
+            height=dp(60),
+            halign='center',
+            text_size=(dp(300), None)
+        )
+        content.add_widget(info_label)
+        
+        # Buttons
+        button_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(40), spacing=dp(10))
+        
+        def save_azimuth(instance):
+            self.app.app_state.min_azimuth = min_az_slider.value
+            self.app.app_state.max_azimuth = max_az_slider.value
+            self.azimuth_range_label.text = f'{int(min_az_slider.value)}° - {int(max_az_slider.value)}°'
+            azimuth_popup.dismiss()
+            
+        def reset_azimuth(instance):
+            min_az_slider.value = 0
+            max_az_slider.value = 360
+        
+        save_btn = Button(text='Save', background_color=(0.2, 0.8, 0.2, 1.0))
+        save_btn.bind(on_press=save_azimuth)
+        
+        reset_btn = Button(text='Reset (0°-360°)', background_color=(0.8, 0.4, 0.2, 1.0))
+        reset_btn.bind(on_press=reset_azimuth)
+        
+        cancel_btn = Button(text='Cancel', background_color=(0.6, 0.6, 0.6, 1.0))
+        cancel_btn.bind(on_press=lambda x: azimuth_popup.dismiss())
+        
+        button_layout.add_widget(save_btn)
+        button_layout.add_widget(reset_btn)
+        button_layout.add_widget(cancel_btn)
+        content.add_widget(button_layout)
+        
+        azimuth_popup = Popup(
+            title='Edit Azimuth Range',
+            content=content,
+            size_hint=(0.8, 0.6)
+        )
+        azimuth_popup.open()

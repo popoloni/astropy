@@ -22,7 +22,7 @@ from ..utils.common import (
 
 # Import astronomy functions
 from astronomy import (
-    calculate_altaz, calculate_moon_position, is_visible, is_near_moon,
+    calculate_altaz, calculate_moon_position, calculate_sun_position, is_visible, is_near_moon,
     utc_to_local, get_local_timezone
 )
 
@@ -31,7 +31,8 @@ from config.settings import (
     COLOR_MAP, MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ,
     FIGURE_SIZE, GRID_ALPHA, VISIBLE_REGION_ALPHA,
     MOON_TRAJECTORY_COLOR, MOON_LINE_WIDTH, MOON_MARKER_COLOR, 
-    MOON_MARKER_SIZE, MOON_INTERFERENCE_COLOR
+    MOON_MARKER_SIZE, MOON_INTERFERENCE_COLOR,
+    MULTI_NIGHT_COLOR, MULTI_NIGHT_VISUAL_INDICATOR
 )
 
 # Configure logging
@@ -97,9 +98,14 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         alt, az = calculate_altaz(obj, current_time)
         moon_alt, moon_az = calculate_moon_position(current_time)
         
+        # Check sun position for twilight-aware plotting
+        sun_alt, _ = calculate_sun_position(current_time)
+        from astronomy.visibility import get_twilight_angle
+        is_dark_enough = sun_alt < get_twilight_angle()
+        
         # Extended visibility check for trajectory plotting (±5 degrees)
         if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and 
-            MIN_AZ - 5 <= az <= MAX_AZ + 5):
+            MIN_AZ - 5 <= az <= MAX_AZ + 5 and is_dark_enough):
             times.append(current_time)
             alts.append(alt)
             azs.append(az)
@@ -145,11 +151,20 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         obj.moon_influence_periods = moon_influence_periods  # Store periods for later use
     
     if azs:
-        # Determine line style based on sufficient time
-        line_style = '-' if getattr(obj, 'sufficient_time', True) else '--'
+        # Determine line style and color based on object status
+        line_style = '-'
+        plot_color = color
+        
+        # Check if object is multi-night candidate
+        if hasattr(obj, 'is_multi_night_candidate') and obj.is_multi_night_candidate:
+            if MULTI_NIGHT_VISUAL_INDICATOR == 'dashed_lines':
+                line_style = '--'
+            plot_color = MULTI_NIGHT_COLOR
+        elif not getattr(obj, 'sufficient_time', True):
+            line_style = '--'
         
         # Plot base trajectory (lowest z-order)
-        ax.plot(azs, alts, line_style, color=color, linewidth=1.5, alpha=0.3, zorder=1)
+        ax.plot(azs, alts, line_style, color=plot_color, linewidth=1.5, alpha=0.3, zorder=1)
         
         # Plot moon-affected segments if any
         if hasattr(obj, 'moon_influence_periods'):
@@ -177,18 +192,18 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         
         if obj_name not in existing_labels:
             # Add a dummy line for the legend
-            ax.plot([], [], line_style, color=color, 
+            ax.plot([], [], line_style, color=plot_color, 
                    linewidth=2, label=obj_name)
         
         # Add hour markers
         for t, az, alt in zip(hour_times, hour_azs, hour_alts):
-            ax.plot(az, alt, 'o', color=color, markersize=6, zorder=3)
+            ax.plot(az, alt, 'o', color=plot_color, markersize=6, zorder=3)
             ax.annotate(f'{t.hour:02d}h', 
                        (az, alt),
                        xytext=(5, 5),
                        textcoords='offset points',
                        fontsize=8,
-                       color=color,
+                       color=plot_color,
                        zorder=3)
         
         # Add abbreviated name near trajectory
@@ -225,7 +240,7 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
                        label_pos,
                        xytext=(offset_x, offset_y),
                        textcoords='offset points',
-                       color=color,
+                       color=plot_color,
                        fontweight='bold',
                        fontsize=10,
                        bbox=dict(boxstyle="round,pad=0.2", facecolor=label_bg_color, alpha=label_alpha),

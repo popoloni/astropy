@@ -13,11 +13,12 @@ from matplotlib.dates import DateFormatter
 import numpy as np
 import pytz
 from datetime import datetime, timedelta
+import math
 
 # Import astronomy functions
 from astronomy import (
     find_visibility_window, calculate_visibility_duration, 
-    get_local_timezone
+    get_local_timezone, calculate_altaz, calculate_sun_position
 )
 
 # Import utility functions
@@ -27,6 +28,9 @@ from ..utils.common import get_abbreviated_name
 from config.settings import (
     MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ, GRID_ALPHA, VISIBLE_REGION_ALPHA
 )
+
+# Import matplotlib date conversion functions
+from matplotlib.dates import date2num, num2date
 
 # Constants for visibility plotting
 FIGURE_SIZE = (15, 10)
@@ -60,7 +64,7 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     schedule : list, optional
         List of scheduled observations [(start, end, obj), ...]
     title : str, optional
-        Chart title
+        Chart title (will be enhanced with date and times)
     use_margins : bool, optional
         Whether to use extended margins (±5°) for visibility boundaries
         
@@ -79,6 +83,12 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     # Get current time in local timezone for the vertical line
     current_time = datetime.now(local_tz)
 
+    # Create enhanced title with date and twilight times
+    date_str = start_time.strftime('%Y-%m-%d')
+    start_time_str = start_time.strftime('%H:%M')
+    end_time_str = end_time.strftime('%H:%M')
+    enhanced_title = f"Object visibility {date_str} from {start_time_str} to {end_time_str}"
+
     # Create figure with settings - creating a brand new figure each time
     # to avoid any remnant elements from previous plots
     plt.close('all')  # Close any existing figures
@@ -94,8 +104,11 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     # Get visibility periods and sort objects
     sorted_objects = _get_sorted_objects_for_chart(objects, start_time, end_time, use_margins)
 
-    # Setup plot
-    _setup_visibility_chart_axes(ax, title, start_time, end_time, local_tz)
+    # Setup plot with corrected timezone handling and enhanced title
+    _setup_visibility_chart_axes(ax, enhanced_title, start_time, end_time, local_tz)
+
+    # Add twilight observation window background
+    _add_twilight_background(ax, start_time, end_time, len(sorted_objects))
 
     # Create mapping for recommended objects and scheduled intervals (in local time)
     recommended_objects = [obj for _, _, obj in schedule] if schedule else []
@@ -262,16 +275,46 @@ def _get_sorted_objects_for_chart(objects, start_time, end_time, use_margins):
     return [item[0] for item in object_periods]
 
 def _setup_visibility_chart_axes(ax, title, start_time, end_time, tz):
-    """Setup axes for visibility chart"""
+    """Setup axes for visibility chart with proper timezone handling"""
     ax.set_title(title, fontsize=14, fontweight='bold')
     ax.set_xlabel('Local Time', fontsize=12)
     ax.set_ylabel('Objects', fontsize=12)
+    
+    # Ensure we're working with timezone-aware datetimes in the correct timezone
+    if start_time.tzinfo is None:
+        start_time = tz.localize(start_time)
+    else:
+        start_time = start_time.astimezone(tz)
+        
+    if end_time.tzinfo is None:
+        end_time = tz.localize(end_time)
+    else:
+        end_time = end_time.astimezone(tz)
+    
+    # Set axis limits directly with timezone-aware datetime objects
     ax.set_xlim(start_time, end_time)
     
-    # Use local time formatter
-    ax.xaxis.set_major_formatter(DateFormatter('%H:%M', tz=tz))
-    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
-    ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval=30))
+    # Force matplotlib to use the correct timezone by setting the converter
+    import matplotlib.dates as mdates
+    from matplotlib import units
+    
+    # Create a custom date formatter that respects the timezone
+    def custom_format_func(x, pos=None):
+        """Custom formatter that ensures timezone-aware formatting"""
+        # Fix: Use matplotlib's default num2date without tz parameter to avoid double conversion
+        dt = num2date(x)
+        # Convert to the correct timezone if needed
+        if dt.tzinfo != tz:
+            dt = dt.astimezone(tz)
+        return dt.strftime('%H:%M')
+    
+    # Apply the custom formatter
+    from matplotlib.ticker import FuncFormatter
+    ax.xaxis.set_major_formatter(FuncFormatter(custom_format_func))
+    
+    # Set locators
+    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1, tz=tz))
+    ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval=30, tz=tz))
 
 def _plot_object_visibility_bars(ax, index, obj, start_time, end_time, recommended_objects, use_margins):
     """Plot visibility bars for a single object (BASE LAYER)"""
@@ -436,5 +479,21 @@ def _add_visibility_chart_legend(ax, schedule, sorted_objects):
     # Add the legend
     if legend_handles:
         ax.legend(handles=legend_handles, loc='lower left', fontsize=10)
+
+def _add_twilight_background(ax, start_time, end_time, num_objects):
+    """Add a subtle background to show the full twilight observation window"""
+    from matplotlib.patches import Rectangle
+    
+    # Add a very subtle background rectangle to show the full observation window
+    twilight_bg = Rectangle(
+        (start_time, -0.5), 
+        end_time - start_time, 
+        num_objects,
+        facecolor='lightblue', 
+        alpha=0.1,
+        zorder=0,
+        label='Twilight Window'
+    )
+    ax.add_patch(twilight_bg)
 
 # All astronomical calculation functions are now properly imported from astronomy module 

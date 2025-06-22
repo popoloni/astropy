@@ -2,9 +2,8 @@
 
 **iOS Pythonista compatibility and experimental mobile app development**
 
-> **📱 iOS Pythonista**: Wrapper scripts are fully functional on iOS Pythonista - designed to simplify running astronightplanner.py without typing parameters.
-> 
-> **🧪 EXPERIMENTAL**: A separate native mobile app implementation is in development but not fully tested yet.
+> **⚠️ IMPORTANT**: For reliable mobile usage, use the fully tested iOS Pythonista wrapper scripts.
+> **🧪 EXPERIMENTAL**: A separate native mobile app implementation is in development but not fully tested yet and may be unstable.
 
 ---
 

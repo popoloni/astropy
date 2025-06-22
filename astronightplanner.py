@@ -216,6 +216,7 @@ def main():
     use_margins = not args.no_margins
     
     # Filter objects based on visibility and exposure requirements for the calculated time period
+    # Astronightplanner: multi-night mode only if configured (not default)
     visible_objects, insufficient_objects = filter_visible_objects(
         all_objects, start_time, end_time, use_margins=use_margins)
     
@@ -502,6 +503,13 @@ def main():
         if any(obj for obj in all_check_objects if hasattr(obj, 'near_moon')):
             moon_line = plt.Line2D([0], [0], color=MOON_INTERFERENCE_COLOR, linestyle='-', label='Moon Interference')
             handles.append(moon_line)
+        
+        # Add legend entry for multi-night candidates if any
+        if any(obj for obj in all_check_objects if hasattr(obj, 'is_multi_night_candidate') and obj.is_multi_night_candidate):
+            from config.settings import MULTI_NIGHT_COLOR, MULTI_NIGHT_VISUAL_INDICATOR
+            line_style = '--' if MULTI_NIGHT_VISUAL_INDICATOR == 'dashed_lines' else '-'
+            multi_night_line = plt.Line2D([0], [0], color=MULTI_NIGHT_COLOR, linestyle=line_style, label='Multi-Night Candidates')
+            handles.append(multi_night_line)
         
         # Add legend entry for insufficient time objects if any
         if insufficient_objects and not args.mosaic_only:

@@ -327,7 +327,7 @@ def finalize_plot_legend(ax):
     regular_entries = []
     
     for i, label in enumerate(labels):
-        if label in ['Visible Region', 'Moon']:
+        if label in ['Visible Region', 'Moon', 'Moon Interference', 'Insufficient Time', 'Multi-Night Candidates']:
             special_entries.append((handles[i], label))
         else:
             regular_entries.append((handles[i], label))
@@ -340,15 +340,12 @@ def finalize_plot_legend(ax):
     final_labels = []
     
     # Add special entries first (in specific order)
-    for handle, label in special_entries:
-        if label == 'Visible Region':
-            final_handles.append(handle)
-            final_labels.append(label)
-    
-    for handle, label in special_entries:
-        if label == 'Moon':
-            final_handles.append(handle)
-            final_labels.append(label)
+    special_order = ['Visible Region', 'Moon', 'Moon Interference', 'Multi-Night Candidates', 'Insufficient Time']
+    for special_label in special_order:
+        for handle, label in special_entries:
+            if label == special_label:
+                final_handles.append(handle)
+                final_labels.append(label)
     
     # Add regular entries
     for handle, label in regular_entries:

@@ -23,10 +23,26 @@ from mobile_app.utils.app_logger import log_error, log_warning, log_debug, log_i
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 try:
-    from astronightplanner import calculate_moon_phase, get_moon_phase_icon, find_astronomical_twilight
+    from astronightplanner import calculate_moon_phase, get_moon_phase_icon
     from astronomy import find_configured_twilight, get_local_timezone, utc_to_local
+    TWILIGHT_IMPORTS_AVAILABLE = True
+    Logger.info("HomeScreen: Successfully imported astronomy modules")
 except ImportError as e:
-    Logger.error(f"HomeScreen: Failed to import astronightplanner modules: {e}")
+    Logger.error(f"HomeScreen: Failed to import astronomy modules: {e}")
+    TWILIGHT_IMPORTS_AVAILABLE = False
+    
+    # Define fallbacks
+    def find_configured_twilight(dt):
+        Logger.warning("HomeScreen: Using fallback twilight calculation")
+        return None, None
+    def calculate_moon_phase(dt):
+        return 0.5
+    def get_moon_phase_icon(phase):
+        return "🌕", "Full Moon"
+    def get_local_timezone():
+        return None
+    def utc_to_local(dt):
+        return dt
 
 # Import plotting utilities
 try:
@@ -513,22 +529,66 @@ class HomeScreen(Screen):
             return
         
         try:
-            # Get visible targets for tonight
-            visible_targets = getattr(self.app.app_state, 'all_visible_objects', [])[:10]  # Top 10
+            # Get current location
             location = getattr(self.app.app_state, 'current_location', {})
             
-            if not visible_targets:
-                # Try tonights_targets as fallback
-                visible_targets = getattr(self.app.app_state, 'tonights_targets', [])[:10]
-            
-            if not visible_targets or not location:
-                Logger.warning("HomeScreen: No targets or location for chart")
-                # Update status to show user what happened
+            if not location:
+                Logger.warning("HomeScreen: No location available for chart")
                 if hasattr(self, 'plot_status'):
-                    self.plot_status.text = 'No targets or location available for chart'
+                    self.plot_status.text = 'No location available for chart'
                 elif hasattr(self, 'plot_widget'):
-                    self.plot_widget.show_error('No targets or location available')
+                    self.plot_widget.show_error('No location available')
                 return
+            
+            # Get properly filtered visible targets like the desktop version - NO LIMITS
+            visible_targets = []
+            try:
+                # Try to get from properly filtered objects first - USE ALL OBJECTS
+                if hasattr(self.app.app_state, 'all_visible_objects') and self.app.app_state.all_visible_objects:
+                    visible_targets = list(self.app.app_state.all_visible_objects)  # NO LIMIT - use all objects
+                elif hasattr(self.app.app_state, 'tonights_targets') and self.app.app_state.tonights_targets:
+                    visible_targets = list(self.app.app_state.tonights_targets)  # NO LIMIT - use all objects
+                else:
+                    # Fallback: try to filter objects ourselves
+                    from datetime import datetime, timedelta
+                    from astronomy import filter_visible_objects
+                    from catalogs import get_combined_catalog
+                    
+                    # Get twilight times
+                    today = datetime.now().date()
+                    if TWILIGHT_IMPORTS_AVAILABLE:
+                        twilight_start, twilight_end = find_configured_twilight(today)
+                        if not twilight_start or not twilight_end:
+                            # Fallback to evening to morning
+                            twilight_start = datetime.combine(today, datetime.min.time().replace(hour=20))
+                            twilight_end = twilight_start + timedelta(hours=10)
+                    else:
+                        twilight_start = datetime.combine(today, datetime.min.time().replace(hour=20))
+                        twilight_end = twilight_start + timedelta(hours=10)
+                    
+                    # Get all objects and filter them
+                    all_objects = get_combined_catalog()
+                    if all_objects:
+                        filtered_objects, _ = filter_visible_objects(all_objects, twilight_start, twilight_end)
+                        visible_targets = filtered_objects  # NO LIMIT - use all filtered objects
+                        Logger.info(f"HomeScreen: Filtered {len(filtered_objects)} visible objects from catalog")
+                    
+            except Exception as e:
+                Logger.error(f"HomeScreen: Error getting filtered targets: {e}")
+                # Final fallback - use whatever is available
+                visible_targets = getattr(self.app.app_state, 'all_visible_objects', [])  # NO LIMIT
+                if not visible_targets:
+                    visible_targets = getattr(self.app.app_state, 'tonights_targets', [])  # NO LIMIT
+            
+            if not visible_targets:
+                Logger.warning("HomeScreen: No visible targets found for chart")
+                if hasattr(self, 'plot_status'):
+                    self.plot_status.text = 'No visible targets found for tonight'
+                elif hasattr(self, 'plot_widget'):
+                    self.plot_widget.show_error('No visible targets found for tonight')
+                return
+            
+            Logger.info(f"HomeScreen: Using {len(visible_targets)} targets for visibility chart")
             
             # Try to generate actual plot if plotting is available
             if hasattr(self, 'plot_widget'):
@@ -539,12 +599,40 @@ class HomeScreen(Screen):
                     # Update widget status
                     self.plot_widget.status_label.text = 'Generating visibility chart...'
                     
-                    # Generate the plot asynchronously
+                    # Get twilight times for proper plot centering
+                    try:
+                        if TWILIGHT_IMPORTS_AVAILABLE:
+                            today = datetime.now().date()
+                            twilight_start, twilight_end = find_configured_twilight(today)
+                            if twilight_start and twilight_end:
+                                # Use twilight times for plot range
+                                plot_start = twilight_start
+                                plot_end = twilight_end
+                            else:
+                                # Fallback to evening to morning
+                                plot_start = datetime.combine(today, datetime.min.time().replace(hour=20))
+                                plot_end = plot_start + timedelta(hours=10)
+                        else:
+                            # Fallback when twilight imports not available
+                            today = datetime.now().date()
+                            plot_start = datetime.combine(today, datetime.min.time().replace(hour=20))
+                            plot_end = plot_start + timedelta(hours=10)
+                    except Exception as e:
+                        log_warning(f"Could not get twilight times: {e}")
+                        # Ultimate fallback
+                        today = datetime.now().date()
+                        plot_start = datetime.combine(today, datetime.min.time().replace(hour=20))
+                        plot_end = plot_start + timedelta(hours=10)
+                    
+                    # Generate the plot asynchronously with proper time range
+                    def create_chart_with_times():
+                        return mobile_plot_generator.create_visibility_chart(
+                            visible_targets, location, plot_start, plot_end
+                        )
+                    
                     self.plot_widget.load_plot_async(
-                        mobile_plot_generator.create_visibility_chart,
-                        "Tonight's Visibility Chart",
-                        visible_targets,
-                        location
+                        create_chart_with_times,
+                        "Tonight's Visibility Chart"
                     )
                     
                     Logger.info("HomeScreen: Visibility chart generation initiated with PlotWidget")
@@ -604,11 +692,15 @@ class HomeScreen(Screen):
                     if hasattr(self.app.app_state, 'tonights_targets') and self.app.app_state.tonights_targets:
                         # Handle Kivy ListProperty properly
                         targets_prop = self.app.app_state.tonights_targets
-                        if hasattr(targets_prop, '__len__'):
-                            total_targets = len(targets_prop)
-                        else:
-                            # It's a Kivy ListProperty, convert to list first
-                            total_targets = len(list(targets_prop))
+                        # Handle ListProperty properly
+                        try:
+                            total_targets = len(targets_prop) if hasattr(targets_prop, '__len__') else 0
+                        except TypeError:
+                            # For ListProperty that doesn't support operations directly
+                            try:
+                                total_targets = getattr(targets_prop, '__len__', lambda: 0)()
+                            except:
+                                total_targets = 0
                         log_debug(f"Found {total_targets} targets in tonights_targets")
                     elif hasattr(self.app.app_state, 'all_visible_objects') and self.app.app_state.all_visible_objects:
                         # Handle Kivy ListProperty properly
@@ -748,8 +840,16 @@ class HomeScreen(Screen):
     def get_twilight_info(self):
         """Get twilight times using configured twilight type"""
         try:
+            # Debug: Check if the import is working
+            Logger.info("HomeScreen: Attempting to get twilight info")
+            
             # Use the new centralized twilight function
-            twilight_times = find_configured_twilight(datetime.now())
+            if TWILIGHT_IMPORTS_AVAILABLE:
+                twilight_times = find_configured_twilight(datetime.now())
+                Logger.info(f"HomeScreen: find_configured_twilight returned: {twilight_times}")
+            else:
+                Logger.warning("HomeScreen: TWILIGHT_IMPORTS_AVAILABLE is False, using fallback")
+                twilight_times = None
             
             if twilight_times and len(twilight_times) == 2:
                 evening_twilight, morning_twilight = twilight_times
@@ -769,27 +869,39 @@ class HomeScreen(Screen):
                 
                 # Convert to local timezone if needed
                 try:
-                    from astronomy import utc_to_local
-                    evening_local = utc_to_local(evening_twilight)
-                    return f"{twilight_type} Twilight: {evening_local.strftime('%H:%M')}"
-                except:
-                    return f"{twilight_type} Twilight: {evening_twilight.strftime('%H:%M')}"
+                    if TWILIGHT_IMPORTS_AVAILABLE:
+                        evening_local = utc_to_local(evening_twilight)
+                        result = f"{twilight_type} Twilight: {evening_local.strftime('%H:%M')}"
+                    else:
+                        result = f"{twilight_type} Twilight: {evening_twilight.strftime('%H:%M')}"
+                    Logger.info(f"HomeScreen: Returning twilight info: {result}")
+                    return result
+                except Exception as e:
+                    Logger.error(f"HomeScreen: Error formatting twilight time: {e}")
+                    result = f"{twilight_type} Twilight: {evening_twilight.strftime('%H:%M')}"
+                    Logger.info(f"HomeScreen: Returning fallback twilight info: {result}")
+                    return result
             
+            Logger.warning("HomeScreen: Invalid twilight times, using fallback")
             return "Twilight: --:--"
         except Exception as e:
             Logger.error(f"HomeScreen: Error getting twilight info: {e}")
+            import traceback
+            Logger.error(f"HomeScreen: Twilight error traceback: {traceback.format_exc()}")
+            
             # Fallback to legacy function
             try:
-                twilight_times = find_astronomical_twilight(datetime.now())
-                if twilight_times and len(twilight_times) == 2:
-                    evening_twilight, morning_twilight = twilight_times
-                    try:
-                        from astronomy import utc_to_local
-                        evening_local = utc_to_local(evening_twilight)
-                        return f"Twilight: {evening_local.strftime('%H:%M')}"
-                    except:
-                        return f"Twilight: {evening_twilight.strftime('%H:%M')}"
-            except:
+                if TWILIGHT_IMPORTS_AVAILABLE:
+                    twilight_times = find_configured_twilight(datetime.now())
+                    if twilight_times and len(twilight_times) == 2:
+                        evening_twilight, morning_twilight = twilight_times
+                        try:
+                            evening_local = utc_to_local(evening_twilight)
+                            return f"Twilight: {evening_local.strftime('%H:%M')}"
+                        except:
+                            return f"Twilight: {evening_twilight.strftime('%H:%M')}"
+            except Exception as e2:
+                Logger.error(f"HomeScreen: Legacy twilight also failed: {e2}")
                 pass
             return "Twilight: --:--"
     
@@ -914,14 +1026,31 @@ class HomeScreen(Screen):
                     return 'No location set.\nPlease set location in Settings first.'
             
             # Show top 3 targets for mobile
-            # Handle Kivy ListProperty properly
-            if hasattr(targets, '__getitem__'):
-                # It's subscriptable (regular list or similar)
-                top_targets = targets[:3]
-            else:
-                # It's a Kivy ListProperty, convert to list first
-                targets_list = list(targets)
-                top_targets = targets_list[:3]
+            # Handle Kivy ListProperty properly - avoid iteration errors
+            top_targets = []
+            try:
+                # Convert to regular list first to avoid ListProperty issues
+                if hasattr(targets, '__iter__'):
+                    # Convert to list safely
+                    targets_list = []
+                    try:
+                        for target in targets:
+                            targets_list.append(target)
+                            if len(targets_list) >= 3:  # Only need first 3
+                                break
+                    except (TypeError, AttributeError):
+                        # If iteration fails, try direct access
+                        try:
+                            targets_list = list(targets)[:3]
+                        except:
+                            targets_list = []
+                    
+                    top_targets = targets_list[:3]
+                else:
+                    top_targets = []
+            except Exception:
+                # Ultimate fallback for any ListProperty issues
+                top_targets = []
             highlights = []
             
             for i, target in enumerate(top_targets, 1):
@@ -939,10 +1068,14 @@ class HomeScreen(Screen):
             if highlights:
                 result = '\n'.join(highlights)
                 # Handle Kivy ListProperty properly for length calculation
-                if hasattr(targets, '__len__'):
-                    targets_count = len(targets)
-                else:
-                    targets_count = len(list(targets))
+                try:
+                    targets_count = len(targets) if hasattr(targets, '__len__') else 0
+                except TypeError:
+                    # For ListProperty that doesn't support len() directly
+                    try:
+                        targets_count = getattr(targets, '__len__', lambda: 0)()
+                    except:
+                        targets_count = 0
                 result += f'\n\nTap "View Tonight\'s Targets" to see all {targets_count} targets'
                 return result
             else:

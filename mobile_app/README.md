@@ -1,5 +1,9 @@
 # AstroScope Planner Mobile App
 
+> **🧪 EXPERIMENTAL & ⚠️ UNSTABLE**: This mobile app is currently in experimental development and may contain bugs or incomplete features. For production use, please use the desktop version or iOS Pythonista wrapper scripts instead.
+> 
+> **Recommended Alternative**: Use the fully tested [iOS Pythonista wrapper scripts](../documentation/mobile-app/SETUP_GUIDE.md) for reliable mobile access.
+
 A Kivy-based mobile application for astrophotography planning that integrates the powerful astropy calculation engine.
 
 ## Features

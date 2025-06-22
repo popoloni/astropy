@@ -175,7 +175,7 @@ astropy/
 │   ├── run_report_only.py      # Report-only wrapper
 │   ├── run_telescope_analysis.py # Telescope analysis and listing
 │   └── run_with_plots.py       # Full plotting wrapper
-├── 📁 mobile_app/        # 🧪 Experimental native mobile app (In Development)
+├── 📁 mobile_app/        # 🧪 **EXPERIMENTAL** native mobile app (⚠️ UNSTABLE)
 │   ├── main.py          # Kivy-based mobile app entry point
 │   ├── buildozer.spec   # Android build configuration
 │   ├── requirements.txt # Mobile app dependencies
@@ -755,8 +755,10 @@ Comprehensive documentation is available in the `documentation/` folder:
 - **🏗️ [Architecture](documentation/architecture/)** - System design and modules
 - **⚙️ [API Documentation](documentation/api/)** - Function and class references
 - **🔧 [Development](documentation/development/)** - Contributing, refactoring documentation, and phase reports
+- **📋 [Project Documentation](documentation/project/)** - Project plans and specifications
+- **🧹 [Cleanup Documentation](documentation/CLEANUP_README.md)** - Maintenance and cleanup procedures
 - **🌌 [Visualization](documentation/visualization/)** - Constellation visualization guides and technical docs
-- **📱 [Mobile App Features](documentation/mobile-app/)** - iOS Pythonista compatibility & experimental mobile app
+- **📱 [Mobile App Features](documentation/mobile-app/)** - iOS Pythonista compatibility & **🧪 experimental mobile app**
 - **⭐ [Coordinate System Fixes](documentation/coordinate-system-fixes/)** - Major coordinate calculation overhaul documentation
 
 ### **Quick References**

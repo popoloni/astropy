@@ -1,0 +1,32 @@
+{
+  "app_name": "AstroScope",
+  "export_timestamp": "2025-06-22T22:17:11.688233",
+  "error_summary": {
+    "total_errors": 1,
+    "errors_24h": 1,
+    "recent_errors": [
+      {
+        "timestamp": "2025-06-22T22:16:44.428103",
+        "message": "Error saving twilight type: 'SettingsScreen' object has no attribute 'twilight_popup'",
+        "exception": null,
+        "exception_type": null,
+        "context": null,
+        "critical": false,
+        "traceback": null
+      }
+    ],
+    "error_categories": {
+      "Unknown": 1
+    },
+    "critical_errors": []
+  },
+  "performance_summary": {},
+  "session_info": {
+    "total_errors": 1,
+    "log_files": [
+      "logs/AstroScope_errors_20250622.log",
+      "logs/AstroScope_performance_20250622.log",
+      "logs/AstroScope_20250622.log"
+    ]
+  }
+}

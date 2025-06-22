@@ -38,9 +38,20 @@ class AppLogger:
     def _setup_loggers(self):
         """Setup multiple loggers for different purposes"""
         
+        # Set root logger level to suppress DEBUG messages globally - AGGRESSIVE
+        logging.getLogger().setLevel(logging.WARNING)
+        
+        # Suppress DEBUG messages from common noisy libraries - CRITICAL LEVEL
+        logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
+        logging.getLogger('matplotlib.font_manager').setLevel(logging.CRITICAL)
+        logging.getLogger('matplotlib.findfont').setLevel(logging.CRITICAL)
+        logging.getLogger('matplotlib.backends').setLevel(logging.CRITICAL)
+        logging.getLogger('PIL').setLevel(logging.CRITICAL)
+        logging.getLogger('kivy').setLevel(logging.WARNING)
+        
         # Main application logger
         self.logger = logging.getLogger(f"{self.app_name}_main")
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.WARNING)  # Only WARNING and above
         
         # Error logger
         self.error_logger = logging.getLogger(f"{self.app_name}_errors")
@@ -71,7 +82,7 @@ class AppLogger:
         # Main log file
         main_handler = logging.FileHandler(self.log_dir / f"{self.app_name}_{today}.log")
         main_handler.setFormatter(detailed_formatter)
-        main_handler.setLevel(logging.DEBUG)
+        main_handler.setLevel(logging.WARNING)  # Only WARNING and above to file
         self.logger.addHandler(main_handler)
         
         # Error log file
@@ -86,10 +97,10 @@ class AppLogger:
         perf_handler.setLevel(logging.INFO)
         self.perf_logger.addHandler(perf_handler)
         
-        # Console handler (for development)
+        # Console handler (for development) - ONLY ERRORS
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(simple_formatter)
-        console_handler.setLevel(logging.INFO)
+        console_handler.setLevel(logging.ERROR)  # Only show ERRORS on console
         self.logger.addHandler(console_handler)
     
     def debug(self, message: str, context: Dict[str, Any] = None):

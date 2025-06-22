@@ -649,11 +649,15 @@ class TargetDetailScreen(Screen):
                     return "Location coordinates missing"
                 
                 # Find time of highest altitude tonight
-                best_time = datetime.now().replace(hour=22, minute=0, second=0, microsecond=0)
+                # Break replace() into multiple calls to avoid argument limit issues
+                best_time = datetime.now().replace(hour=22, minute=0)
+                best_time = best_time.replace(second=0, microsecond=0)
                 best_alt = 0
                 
                 for hour in range(18, 30):  # 6 PM to 6 AM next day
-                    test_time = datetime.now().replace(hour=hour % 24, minute=0, second=0, microsecond=0)
+                    # Break replace() into multiple calls to avoid argument limit issues
+                    test_time = datetime.now().replace(hour=hour % 24, minute=0)
+                    test_time = test_time.replace(second=0, microsecond=0)
                     if hour >= 24:
                         test_time += timedelta(days=1)
                     

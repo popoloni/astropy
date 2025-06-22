@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from plots.base import setup_altaz_plot
 from plots.trajectory.desktop import plot_moon_trajectory, plot_moon_trajectory_no_legend
 from astronomy import (
-    calculate_altaz, is_visible, utc_to_local
+    calculate_altaz, calculate_sun_position, is_visible, utc_to_local
 )
 from config.settings import (
     MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ, GRID_ALPHA
@@ -151,9 +151,14 @@ def plot_mosaic_group_trajectory(ax, group, start_time, end_time, group_color, g
         while current_time <= end_time:
             alt, az = calculate_altaz(obj, current_time)
             
+            # Check sun position for twilight-aware plotting
+            sun_alt, _ = calculate_sun_position(current_time)
+            from astronomy.visibility import get_twilight_angle
+            is_dark_enough = sun_alt < get_twilight_angle()
+            
             # Extended visibility check for trajectory plotting (±5 degrees)
             if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and 
-                MIN_AZ - 5 <= az <= MAX_AZ + 5):
+                MIN_AZ - 5 <= az <= MAX_AZ + 5 and is_dark_enough):
                 times.append(current_time)
                 alts.append(alt)
                 azs.append(az)

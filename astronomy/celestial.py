@@ -11,6 +11,9 @@ import logging
 from typing import Optional, Dict, Any, Union, List, Tuple
 from .time_utils import calculate_julian_date
 
+# Set up logger for this module
+logger = logging.getLogger(__name__)
+
 # Import precision modules
 try:
     from .precision.config import should_use_high_precision, log_precision_fallback
@@ -418,9 +421,9 @@ def apply_proper_motion_correction(ra, dec, dt, obj):
     ra_corrected = ra_corrected % (2 * math.pi)
     dec_corrected = max(-math.pi/2, min(math.pi/2, dec_corrected))
     
-    # Only log proper motion corrections for significant changes (> 1 arcsecond)
-    if abs(math.degrees(delta_ra)*3600) > 1.0 or abs(math.degrees(delta_dec)*3600) > 1.0:
-        logging.debug(f"Applied proper motion to {obj_name}: ΔRA={math.degrees(delta_ra)*3600:.1f}\", ΔDec={math.degrees(delta_dec)*3600:.1f}\"")
+    # Only log proper motion corrections for very significant changes (> 30 arcseconds)
+    if abs(math.degrees(delta_ra)*3600) > 30.0 or abs(math.degrees(delta_dec)*3600) > 30.0:
+        logging.info(f"Applied significant proper motion to {obj_name}: ΔRA={math.degrees(delta_ra)*3600:.1f}\", ΔDec={math.degrees(delta_dec)*3600:.1f}\"")
     
     return ra_corrected, dec_corrected
 
@@ -1005,7 +1008,9 @@ def _find_twilight_fallback(date, twilight_type='astronomical'):
     if date.tzinfo is not None:
         date = date.replace(tzinfo=None)
     
-    noon = date.replace(hour=12, minute=0, second=0, microsecond=0)
+    # Break replace() into multiple calls to avoid argument limit issues
+    noon = date.replace(hour=12, minute=0)
+    noon = noon.replace(second=0, microsecond=0)
     noon = local_tz.localize(noon)
     noon_utc = local_to_utc(noon)
     
@@ -1071,7 +1076,7 @@ def find_twilight(dt, observer_lat, observer_lon, twilight_type='civil', event_t
             logger.warning("High-precision modules not available: %s", e)
             # Fall back to standard calculation
     
-    # Standard twilight calculation (simplified approximation)
+    # FIXED: Use proper iterative calculation instead of broken approximation
     from datetime import timedelta
     
     twilight_angles = {
@@ -1083,23 +1088,44 @@ def find_twilight(dt, observer_lat, observer_lon, twilight_type='civil', event_t
     if twilight_type not in twilight_angles:
         raise ValueError(f"Invalid twilight type: {twilight_type}")
     
-    # Simple approximation - this is much less accurate than the high-precision version
-    base_date = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    target_altitude = twilight_angles[twilight_type]
+    
+    # Use proper iterative search to find when sun reaches target altitude
+    # Break replace() into multiple calls to avoid argument limit issues
+    base_date = dt.replace(hour=0, minute=0)
+    base_date = base_date.replace(second=0, microsecond=0)
     
     if event_type in ['sunset', 'dusk']:
-        # Approximate sunset time
-        approx_time = base_date.replace(hour=18)
-        # Add offset for twilight type
-        offset_hours = abs(twilight_angles[twilight_type]) / 15.0  # Rough approximation
-        return approx_time + timedelta(hours=offset_hours)
+        # Start search from noon and go forward to find evening twilight
+        current_time = base_date.replace(hour=12)
+        search_direction = 1  # Forward in time
     elif event_type in ['sunrise', 'dawn']:
-        # Approximate sunrise time
-        approx_time = base_date.replace(hour=6)
-        # Subtract offset for twilight type
-        offset_hours = abs(twilight_angles[twilight_type]) / 15.0  # Rough approximation
-        return approx_time - timedelta(hours=offset_hours)
+        # Start search from midnight and go forward to find morning twilight
+        current_time = base_date.replace(hour=0)
+        search_direction = 1  # Forward in time
     else:
         raise ValueError(f"Invalid event type: {event_type}")
+    
+    # Iterative search with 1-minute precision
+    search_interval = timedelta(minutes=1)
+    max_iterations = 24 * 60  # Maximum 24 hours of search
+    
+    for _ in range(max_iterations):
+        sun_alt, _ = calculate_sun_position(current_time)
+        
+        if event_type in ['sunset', 'dusk']:
+            # For evening twilight, find when sun drops below target altitude
+            if sun_alt <= target_altitude:
+                return current_time
+        elif event_type in ['sunrise', 'dawn']:
+            # For morning twilight, find when sun rises above target altitude
+            if sun_alt >= target_altitude:
+                return current_time
+                
+        current_time += search_direction * search_interval
+    
+    # If we get here, twilight time not found (shouldn't happen for reasonable dates)
+    raise RuntimeError(f"Could not find {twilight_type} {event_type} time for date {dt}")
 
 
 def transform_coordinates(dt, observer_lat, observer_lon, input_coords, input_system, output_system, 

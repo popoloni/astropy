@@ -45,6 +45,13 @@ class AppState(EventDispatcher):
             self.min_visibility_hours = NumericProperty(2.0)
             self.twilight_type = StringProperty('astronomical')
             
+            # Visibility window settings
+            self.min_altitude = NumericProperty(30.0)
+            self.max_altitude = NumericProperty(85.0)
+            self.min_azimuth = NumericProperty(0.0)
+            self.max_azimuth = NumericProperty(360.0)
+            self.exclude_insufficient_time = BooleanProperty(True)
+            
             # UI state
             self.is_loading = BooleanProperty(False)
             self.current_screen = StringProperty('home')
@@ -61,6 +68,13 @@ class AppState(EventDispatcher):
             self.show_mosaic_only = False
             self.min_visibility_hours = 2.0
             self.twilight_type = 'astronomical'
+            
+            # Visibility window settings
+            self.min_altitude = 30.0
+            self.max_altitude = 85.0
+            self.min_azimuth = 0.0
+            self.max_azimuth = 360.0
+            self.exclude_insufficient_time = True
             
             # UI state
             self.is_loading = False
