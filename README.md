@@ -105,6 +105,7 @@ The system has been fully refactored into a clean, modular architecture:
 astropy/
 ├── 🌟 astronightplanner.py              # Main application entry point
 ├── 🌟 astroseasonplanner.py  # Multi-night astrophotography planner
+├── 🌟 astromultinightplanner.py          # 🆕 Mosaic trajectory planner with multi-night analysis
 ├── 📄 config.json             # Main configuration file with locations and settings
 ├── 📄 scope_data.json         # Telescope/scope configuration database
 ├── 📁 images/             # SVG constellation visualization output
@@ -428,17 +429,19 @@ python utilities/show_all_constellations.py Cyg --show-star-names      # Show br
 ### **📱 iOS Pythonista Implementation**
 ```bash
 # Wrapper scripts to avoid typing command-line parameters in iOS Pythonista
-# All 10 wrappers tested and working on desktop AND iOS Pythonista
+# 9 wrappers tested and working on desktop AND iOS Pythonista
 python wrappers/run_report_only.py        # Generate reports
 python wrappers/run_max_objects.py        # Maximum objects strategy
 python wrappers/run_optimal_snr.py        # Optimal SNR strategy
 python wrappers/run_mosaic_analysis.py    # Comprehensive mosaic analysis
 python wrappers/run_quarters.py           # Quarterly planning
 python wrappers/run_longest_duration.py   # Longest duration strategy
-python wrappers/run_mosaic_plots.py       # Mosaic trajectory plotting
 python wrappers/run_quarters_report.py    # Quarterly analysis without plots
 python wrappers/run_with_plots.py         # Full observation planner with plots
 python wrappers/run_telescope_analysis.py # Telescope analysis and listing
+
+# 🆕 NEW: Root-level specialized planners
+python astromultinightplanner.py          # Mosaic multi-night trajectory planner
 ```
 
 > **💡 Purpose**: These wrapper scripts provide the same functionality as `python astronightplanner.py --parameters` but without needing to type command-line parameters in iOS Pythonista. This is the **current working mobile solution**.
@@ -514,6 +517,48 @@ python astroseasonplanner.py --precision-info
 python astroseasonplanner.py --month 10 --no-plots
 ```
 
+---
+
+## 🌌 **🆕 Mosaic Multi-Night Planner**
+
+The **new mosaic trajectory planner** (`astromultinightplanner.py`) is a specialized tool designed for advanced mosaic astrophotography planning. This focused planner enables multi-night analysis specifically optimized for objects that can be photographed together in mosaic groups.
+
+### **🎯 Key Features**
+- **🧩 Specialized Mosaic Analysis**: Focus exclusively on objects suitable for mosaic imaging
+- **🌙 Multi-Night Mode**: Automatically enabled to include ALL visible objects (even those with insufficient standalone time)
+- **🎨 Advanced Visualization**: Combined mosaic trajectory plots and individual group details
+- **🔍 Duplicate Filtering**: `--no-duplicates` flag excludes individual objects already in mosaic groups
+- **📊 Comprehensive Reporting**: Full night reports with mosaic group details and scheduling
+
+### **🆕 What Makes This Special**
+- **Expanded Object Pool**: Includes objects with insufficient time for standalone imaging since they might be perfect for mosaic groups
+- **Smart Group Detection**: Advanced algorithm finds 100% more mosaic groups with adaptive FOV margins
+- **Visual Optimization**: Mosaic-specific plots with proper group numbering and distinct colors
+- **Intelligent Scheduling**: Multiple strategies optimized for mosaic group planning
+
+### **Quick Start**
+```bash
+# Generate mosaic trajectory plots for tonight
+python astromultinightplanner.py
+
+# Also available as executable
+./astromultinightplanner.py
+```
+
+### **Technical Details**
+- **Origin**: Evolved from `wrappers/run_mosaic_plots.py` → moved to root directory
+- **Multi-Night Analysis**: Automatically enables `FORCE_MULTI_NIGHT_MODE=true`
+- **Mosaic Parameters**: Uses `--mosaic --no-duplicates` for optimal visualization
+- **Integration**: Uses integrated mosaic functionality from `astronightplanner.py`
+
+### **Output Examples**
+- **Combined Mosaic Trajectory Plot**: Shows all mosaic groups with distinct colors
+- **Individual Group Details**: Grid of detailed plots for each mosaic group
+- **Complete Reports**: Night observation reports with mosaic group information
+- **Scheduling Analysis**: Multiple strategies focused on mosaic optimization
+
+> **💡 Perfect For**: Astrophotographers planning complex mosaic projects requiring multiple panels or sessions, especially when individual objects don't have sufficient standalone visibility time.
+
 ### **Understanding the Output**
 - **Weekly Scores**: Higher scores indicate better conditions (>200 = excellent)
 - **Moon-Free Objects**: Targets with minimal lunar interference (🌑)
@@ -583,9 +628,11 @@ python astronightplanner.py --mosaic --schedule mosaic_groups
 # Focus only on mosaics
 python astronightplanner.py --mosaic-only --no-duplicates
 
+# 🆕 NEW: Dedicated mosaic multi-night planner
+python astromultinightplanner.py
+
 # Using mosaic wrapper scripts
 python wrappers/run_mosaic_analysis.py
-python wrappers/run_mosaic_plots.py
 ```
 
 #### **🕐 Advanced Planning**

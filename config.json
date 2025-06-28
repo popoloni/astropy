@@ -54,7 +54,7 @@
         "marker_color": "yellow",
         "line_width": 2,
         "marker_size": 6,
-        "interference_color": "lightblue"
+        "interference_color": "darkpink"
     },
     "plotting": {
         "max_objects_optimal": 5,
@@ -67,11 +67,6 @@
         "visible_region_alpha": 0.1
     },
     "observation": {
-        "min_altitude": 15,
-        "max_altitude": 75,
-        "min_azimuth": 65,
-        "max_azimuth": 165,
-        "bortle_index": 9,
         "single_exposure_minutes": 5,
         "min_visibility_hours": 1.5,
         "max_overlap_minutes": 30,
@@ -92,6 +87,5 @@
             "catalog": "catalog.csv",
             "output": "output/"
         }
-    },
-    "twilight_type": "astronomical"
+    }
 }

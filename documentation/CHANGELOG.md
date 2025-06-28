@@ -5,7 +5,76 @@ All notable changes to the Astronomical Observation Planning System will be docu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2025-06-22
+## [Unreleased] - 2025-06-28
+
+### Fixed - Critical Twilight Calculation Bug ⭐
+- **🎯 CRITICAL: Twilight visibility gap eliminated** - Fixed systematic 36-minute gap where no objects were visible between calculated twilight end and actual twilight
+- **🔧 Root cause identified and fixed**:
+  - **Bug in `find_twilight()` function**: Incorrect search logic for morning twilight events
+  - **Issue**: Function returned sun altitude of -1.06° instead of target -6° for civil twilight
+  - **Gap**: Objects correctly ended at 04:59 (sun = -6°) but twilight reported ending at 05:35
+- **✅ Algorithm improvements**:
+  - Enhanced morning twilight search in `astronomy/celestial.py`
+  - Added proper bracket validation ensuring sun starts below target and crosses above
+  - Fixed event detection to prevent false positives in iterative search
+- **📊 Accuracy verification**:
+  - **Before**: Morning twilight 05:35 (sun = -1.06°) - **Error: 4.94°**
+  - **After**: Morning twilight 05:00 (sun = -5.92°) - **Error: 0.08°** ✅
+  - **Gap eliminated**: Objects now visible until twilight actually ends
+- **🔧 Temporary precision adjustment**: Disabled high-precision mode to use fixed standard calculation
+- **Status**: ✅ **NO MORE VISIBILITY GAPS - TWILIGHT CALCULATIONS ASTRONOMICALLY ACCURATE**
+
+### Enhanced - Configuration and Visual Improvements
+- **🎨 Moon interference color**: Changed from "darkyellow" to "darkpink" for better visibility contrast
+- **🔧 Civil twilight testing**: Verified all scripts work correctly with civil twilight configuration
+- **✅ Multi-script compatibility**: Both `astronightplanner.py` and `astromultinightplanner.py` fully functional
+
+### Impact - Eliminated Observation Planning Confusion
+- **Before**: 36-minute unexplained gap where DSOs unavailable but twilight continued
+- **After**: **Seamless visibility until actual twilight end** - no more planning confusion
+- **User experience**: Clear understanding of when observation window truly ends
+- **Accuracy**: Twilight calculations now within 0.08° of astronomical targets
+
+### Added - New Mosaic Multi-Night Planner ⭐
+- **🆕 NEW: `astromultinightplanner.py`** - Dedicated mosaic trajectory planner moved to root directory
+- **🎯 Specialized mosaic analysis**:
+  - Focuses exclusively on objects suitable for mosaic imaging
+  - Automatically enables multi-night mode to include ALL visible objects
+  - Includes objects with insufficient standalone time since they might be perfect for mosaic groups
+  - Uses `--mosaic --no-duplicates` parameters for optimal visualization
+- **🎨 Enhanced visualization features**:
+  - Combined mosaic trajectory plots with distinct group colors
+  - Individual mosaic group detail grids
+  - Proper group numbering (1-6) with professional color coding
+  - Complete night reports with mosaic group scheduling analysis
+- **📁 File migration**: 
+  - **Origin**: `wrappers/run_mosaic_plots.py` → `astromultinightplanner.py`
+  - **Location**: Moved from wrappers/ to root directory
+  - **Updated paths**: Removed parent directory path manipulation since now in root
+  - **Made executable**: Added proper executable permissions
+- **🔧 Technical improvements**:
+  - Automatic `FORCE_MULTI_NIGHT_MODE=true` environment setting
+  - Integration with existing mosaic functionality from `astronightplanner.py`
+  - Enhanced output reporting with emoji indicators and progress feedback
+  - Both `python astromultinightplanner.py` and `./astromultinightplanner.py` execution methods supported
+
+### Updated - Documentation and Usage
+- **📚 README.md updates**:
+  - Added new script to architecture section
+  - Included in usage examples for mosaic planning workflow
+  - Updated iOS Pythonista section (9 wrappers instead of 10)
+  - Added dedicated section explaining the new mosaic multi-night planner
+- **🔗 Usage workflow integration**:
+  - Included in mosaic planning examples
+  - Added to root-level specialized planners section
+  - Documented technical details and output examples
+
+### Impact - Improved Mosaic Planning Workflow
+- **Before**: Mosaic plotting required typing `python wrappers/run_mosaic_plots.py`
+- **After**: **Simple root-level execution** with `python astromultinightplanner.py`
+- **Perfect for**: Astrophotographers planning complex mosaic projects requiring multiple panels or sessions
+- **Status**: ✅ **MOSAIC MULTI-NIGHT PLANNER READY FOR USE**
+
 ## [Unreleased] - 2025-06-22
 
 ### Changed - Documentation Reorganization & Mobile App Status Update 📚

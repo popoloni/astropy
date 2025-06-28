@@ -1110,6 +1110,10 @@ def find_twilight(dt, observer_lat, observer_lon, twilight_type='civil', event_t
     search_interval = timedelta(minutes=1)
     max_iterations = 24 * 60  # Maximum 24 hours of search
     
+    # For morning events, we need to ensure we're finding the correct crossing
+    # The sun should start below the target and cross above it
+    found_below_target = False
+    
     for _ in range(max_iterations):
         sun_alt, _ = calculate_sun_position(current_time)
         
@@ -1119,7 +1123,10 @@ def find_twilight(dt, observer_lat, observer_lon, twilight_type='civil', event_t
                 return current_time
         elif event_type in ['sunrise', 'dawn']:
             # For morning twilight, find when sun rises above target altitude
-            if sun_alt >= target_altitude:
+            # But ensure we've seen it below the target first to avoid false positives
+            if sun_alt < target_altitude:
+                found_below_target = True
+            elif found_below_target and sun_alt >= target_altitude:
                 return current_time
                 
         current_time += search_direction * search_interval

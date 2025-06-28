@@ -385,6 +385,25 @@ def _plot_object_visibility_bars(ax, index, obj, start_time, end_time, recommend
             # No moon interference - draw normal bar
             ax.barh(index, plot_end - plot_start, left=plot_start, height=0.3,
                    alpha=alpha, color=color, zorder=base_zorder)
+        
+        # Add time labels overlaid on the bar, but only if they differ from overall window boundaries
+        # Start time label (left side of bar) - only if different from overall start time
+        if plot_start != start_time:
+            start_time_str = plot_start.strftime('%H:%M')
+            ax.text(plot_start, index, start_time_str, 
+                    fontsize=8, ha='left', va='center', 
+                    color='black', weight='bold',
+                    bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.9, edgecolor='none'),
+                    zorder=10)
+        
+        # End time label (right side of bar) - only if different from overall end time
+        if plot_end != end_time:
+            end_time_str = plot_end.strftime('%H:%M')
+            ax.text(plot_end, index, end_time_str, 
+                    fontsize=8, ha='right', va='center', 
+                    color='black', weight='bold',
+                    bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.9, edgecolor='none'),
+                    zorder=10)
 
 def _plot_scheduled_interval(ax, index, obj, scheduled_interval, start_time, end_time, use_margins):
     """Plot scheduled interval overlay with hatching"""

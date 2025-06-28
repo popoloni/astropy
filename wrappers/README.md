@@ -27,19 +27,7 @@ All wrapper scripts are designed to work seamlessly in iOS Pythonista without su
 
 ### Mosaic-Specific Wrappers
 
-#### `run_mosaic_plots.py`
-- **Purpose**: Generates mosaic trajectory plots using integrated functionality
-- **Features**: 
-  - Mosaic group analysis
-  - Individual group trajectory plots
-  - Combined trajectory overview
-  - Full observation report with mosaic details
-  - **🆕 Clean duplicate filtering**: Automatically uses `--no-duplicates` flag to show only mosaic groups
-  - **🆕 Enhanced labels**: Displays abbreviated names of constituent objects in mosaic groups
-  - **🆕 Improved visuals**: Legend positioned to avoid overlap with visibility bars
-- **Usage**: Quick mosaic plotting and analysis with clean, focused output
-
-#### `run_mosaic_analysis.py` ⭐ **NEW**
+#### `run_mosaic_analysis.py` ⭐
 - **Purpose**: Comprehensive mosaic analysis and planning tool
 - **Features**:
   - Detailed mosaic group identification
@@ -80,8 +68,8 @@ All wrapper scripts are designed to work seamlessly in iOS Pythonista without su
 
 ### Standard Python Environment:
 ```bash
-# Quick mosaic analysis (clean output with no duplicates)
-python3 wrappers/run_mosaic_plots.py
+# 🆕 NEW: Dedicated mosaic multi-night planner (moved to root)
+python3 astromultinightplanner.py
 
 # Standard mosaic analysis (shows individuals + groups)
 python3 astronightplanner.py --mosaic
@@ -113,6 +101,14 @@ with open('wrappers/run_longest_duration.py') as f:
 ```
 
 ## 🔄 Migration from Legacy Scripts
+
+### `run_mosaic_plots.py` → `astromultinightplanner.py` 🆕
+The `run_mosaic_plots.py` wrapper has been **migrated to the root directory** as `astromultinightplanner.py`:
+- ✅ **New location**: Root directory (no longer in wrappers/)
+- ✅ **Enhanced functionality**: Dedicated mosaic multi-night planner
+- ✅ **Simplified execution**: `python astromultinightplanner.py` or `./astromultinightplanner.py`
+- ✅ **Multi-night mode**: Automatically enabled for comprehensive analysis
+- ✅ **Same great features**: Mosaic plotting, group analysis, and reporting
 
 ### `plot_mosaic_trajectories.py` → `run_mosaic_analysis.py`
 The old standalone `plot_mosaic_trajectories.py` script has been replaced by `run_mosaic_analysis.py`, which provides:
