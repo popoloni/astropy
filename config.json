@@ -54,7 +54,7 @@
         "marker_color": "yellow",
         "line_width": 2,
         "marker_size": 6,
-        "interference_color": "darkpink"
+        "interference_color": "darkblue"
     },
     "plotting": {
         "max_objects_optimal": 5,
