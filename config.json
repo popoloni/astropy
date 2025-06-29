@@ -28,40 +28,25 @@
         }
     },
     "visibility": {
-        "min_visibility_hours": 2,
+        "min_visibility_hours": 1.0,
         "min_total_area": 225,
         "trajectory_interval_minutes": 15,
-        "search_interval_minutes": 1
+        "search_interval_minutes": 1,
+        "twilight_type": "civil",
+        "comment": "twilight_type options: 'civil' (-6\u00b0), 'nautical' (-12\u00b0), 'astronomical' (-18\u00b0)"
     },
     "catalog": {
-        "use_csv_catalog": true,
+        "use_csv_catalog": false,
         "catalog_name": "catalogs/objects.csv",
-        "merge": true
+        "merge": true,
+        "comment": "Set use_csv_catalog=true to use CSV catalog, false for enhanced JSON catalog"
     },
     "scheduling": {
-        "strategy": "max_objects",
-        "max_overlap_minutes": 15,
-        "exclude_insufficient_time": false
-    },
-    "imaging": {
-        "scope": {
-            "name": "Vaonis Vespera Passenger",
-            "fov_width": 2.4,
-            "fov_height": 1.8,
-            "mosaic_fov_width": 4.7,
-            "mosaic_fov_height": 3.5,
-            "native_resolution_mp": 6.2,
-            "mosaic_resolution_mp": 24,
-            "sensor": "Sony IMX585",
-            "single_exposure": 10,
-            "min_snr": 20,
-            "gain": 800,
-            "read_noise": 0.8,
-            "pixel_size": 2.9,
-            "focal_length": 200,
-            "aperture": 50,
-            "comment": "Updated for Vaonis Vespera Passenger with mosaic capabilities"
-        }
+        "strategy": "optimal_snr",
+        "exclude_insufficient_time": true,
+        "max_overlap_minutes": 20,
+        "multi_night_visual_indicator": "dashed_lines",
+        "multi_night_color": "pink"
     },
     "moon": {
         "proximity_radius": 30,
@@ -69,7 +54,7 @@
         "marker_color": "yellow",
         "line_width": 2,
         "marker_size": 6,
-        "interference_color": "lightblue"
+        "interference_color": "darkblue"
     },
     "plotting": {
         "max_objects_optimal": 5,
@@ -82,18 +67,13 @@
         "visible_region_alpha": 0.1
     },
     "observation": {
-        "min_altitude": 15,
-        "max_altitude": 75,
-        "min_azimuth": 65,
-        "max_azimuth": 165,
-        "bortle_index": 9,
         "single_exposure_minutes": 5,
         "min_visibility_hours": 1.5,
         "max_overlap_minutes": 30,
         "exclude_insufficient_time": true
     },
     "precision": {
-        "use_high_precision": true,
+        "use_high_precision": false,
         "atmospheric_refraction": true,
         "parallax_correction": true,
         "cache_calculations": true

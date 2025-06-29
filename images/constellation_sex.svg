@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" 
+     viewBox="0 0 800 600"
+     xmlns="http://www.w3.org/2000/svg"
+     style="background-color: #000000;">
+     
+  <!-- Scalable constellation visualization -->
+  <defs>
+    <!-- Star symbol -->
+    <g id="star">
+      <polygon points="0,-1 0.3,-0.3 1,0 0.3,0.3 0,1 -0.3,0.3 -1,0 -0.3,-0.3" 
+               fill="currentColor" stroke="none"/>
+    </g>
+    
+    <!-- Bright star symbol -->
+    <g id="bright-star">
+      <polygon points="0,-1.2 0.35,-0.35 1.2,0 0.35,0.35 0,1.2 -0.35,0.35 -1.2,0 -0.35,-0.35" 
+               fill="currentColor" stroke="none"/>
+    </g>
+  </defs>
+  
+  <!-- Grid lines -->
+  <g id="grid" stroke="#333" stroke-width="0.1" opacity="0.3">
+  </g>
+
+  <!-- Constellation elements -->
+  <use href="#star" x="520.8024310602389" y="172.94154478473865" transform="scale(0.5504586866995425)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="245.93635700128482" y="182.12302778835948" transform="scale(0.5)" fill="#FFFFFF" opacity="0.9"/>
+  <line x1="245.93635700128482" y1="182.12302778835948" x2="520.8024310602389" y2="172.94154478473865" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <ellipse cx="554.0636429987152" cy="427.0584552152614" rx="0.2874074074074074" ry="0.2211111111111111" transform="rotate(15.0000000001 554.0636429987152 427.0584552152614)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="556.0636429987152" y="429.0584552152614" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC3115</text>
+  
+  <!-- Title and info -->
+  <text x="400.0" y="25" text-anchor="middle" 
+        fill="white" font-size="12.0" font-weight="bold">
+    Constellation View
+  </text>
+  
+  <text x="10" y="590" fill="white" font-size="5.0">
+    RA: 146.3° to 162.6° | DE: -12.7° to 4.6° | 
+    Stars: 2 | DSO: 1 | Vector SVG
+  </text>
+  
+</svg>

@@ -1,0 +1,1 @@
+2025-06-22 22:16:44 | ERROR    | AstroScope_errors | error:132 | Error saving twilight type: 'SettingsScreen' object has no attribute 'twilight_popup'

@@ -73,7 +73,7 @@ All astronomical calculation functions pass comprehensive testing:
 
 ## Import Structure
 
-The main `astropy.py` file now imports all astronomical functions from the `astronomy` package:
+The main `astronightplanner.py` file now imports all astronomical functions from the `astronomy` package:
 
 ```python
 from astronomy import (
@@ -129,7 +129,7 @@ astropy/
 │   ├── catalog_manager.py
 │   ├── object_utils.py
 │   └── csv_catalog.py
-└── astropy.py               # Main file with astronomy imports
+└── astronightplanner.py               # Main file with astronomy imports
 ```
 
 **Phase 3 Status: ✅ COMPLETED SUCCESSFULLY** 
