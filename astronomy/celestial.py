@@ -747,7 +747,8 @@ def calculate_moon_interference_radius(moon_phase, obj_magnitude, sky_brightness
     
     # Magnitude factor (fainter objects are more affected)
     # Normalize magnitude to a factor between 1.0 and 2.0
-    mag_factor = min(2.0, max(1.0, obj_magnitude / 8.0))
+    # mag_factor = min(2.0, max(1.0, obj_magnitude / 8.0))
+    mag_factor = min(2.0, max(1.0, (obj_magnitude / 8.0))) if obj_magnitude is not None else 2.0
     
     # Sky brightness factor (light pollution makes moon interference worse)
     # In Bortle 9 skies, interference is much more significant
