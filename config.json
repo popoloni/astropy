@@ -10,7 +10,7 @@
             "min_azimuth": 65,
             "max_azimuth": 165,
             "bortle_index": 9,
-            "default": true,
+            "default": false,
             "comment": "Milan coordinates"
         },
         "lozio": {
@@ -25,7 +25,20 @@
             "bortle_index": 6,
             "default": false,
             "comment": "Lozio coordinates"
-        }
+        },
+      "cavriglia": {
+            "name": "Cavriglia",
+            "latitude": 43.521567,
+            "longitude": 11.486436,
+            "timezone": "Europe/Rome",
+            "min_altitude": 40,
+            "max_altitude": 85,
+            "min_azimuth": 315,
+            "max_azimuth": 90,
+            "bortle_index": 6,
+            "default": true,
+            "comment": "Cavriglia coordinates"
+      }
     },
     "visibility": {
         "min_visibility_hours": 1.0,

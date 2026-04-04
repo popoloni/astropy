@@ -104,8 +104,8 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         is_dark_enough = sun_alt < get_twilight_angle()
         
         # Extended visibility check for trajectory plotting (±5 degrees)
-        if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and 
-            MIN_AZ - 5 <= az <= MAX_AZ + 5 and is_dark_enough):
+        _az_ok = (az >= MIN_AZ - 5 or az <= MAX_AZ + 5) if MIN_AZ > MAX_AZ else (MIN_AZ - 5 <= az <= MAX_AZ + 5)
+        if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and _az_ok and is_dark_enough):
             times.append(current_time)
             alts.append(alt)
             azs.append(az)
@@ -537,8 +537,8 @@ def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, exist
         moon_alt, moon_az = calculate_moon_position(current_time)
         
         # Extended visibility check
-        if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and 
-            MIN_AZ - 5 <= az <= MAX_AZ + 5):
+        _az_ok = (az >= MIN_AZ - 5 or az <= MAX_AZ + 5) if MIN_AZ > MAX_AZ else (MIN_AZ - 5 <= az <= MAX_AZ + 5)
+        if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and _az_ok):
             times.append(current_time)
             alts.append(alt)
             azs.append(az)

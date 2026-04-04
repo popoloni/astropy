@@ -57,20 +57,28 @@ class LocationManager:
             
         except Exception as e:
             Logger.error(f"LocationManager: Error loading default locations: {e}")
-            # Add a fallback location
-            self.saved_locations.append({
-                'name': 'Default Location',
-                'latitude': 45.516667,
-                'longitude': 9.216667,
-                'timezone': 'Europe/Rome',
-                'min_altitude': 15,
-                'max_altitude': 75,
-                'min_azimuth': 0,
-                'max_azimuth': 360,
-                'bortle_index': 6,
-                'is_default': True,
-                'source': 'fallback'
-            })
+            # Add a fallback location read from config.json
+            try:
+                import json, os
+                _cfg_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'config.json')
+                with open(_cfg_path) as _f:
+                    _cfg = json.load(_f)
+                _loc = next((v for v in _cfg['locations'].values() if v.get('default')), next(iter(_cfg['locations'].values())))
+                self.saved_locations.append({
+                    'name': _loc.get('name', 'Default Location'),
+                    'latitude': _loc['latitude'],
+                    'longitude': _loc['longitude'],
+                    'timezone': _loc.get('timezone', 'UTC'),
+                    'min_altitude': _loc.get('min_altitude', 15),
+                    'max_altitude': _loc.get('max_altitude', 75),
+                    'min_azimuth': _loc.get('min_azimuth', 0),
+                    'max_azimuth': _loc.get('max_azimuth', 360),
+                    'bortle_index': _loc.get('bortle_index', 5),
+                    'is_default': True,
+                    'source': 'config_fallback'
+                })
+            except Exception:
+                pass
     
     def initialize_gps(self):
         """Initialize GPS functionality if available"""

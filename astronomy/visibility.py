@@ -27,13 +27,19 @@ def is_visible(alt, az, use_margins=True):
     """Check if object is within visibility limits"""
     # Import here to avoid circular imports during refactoring
     from config.settings import MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ
-    
-    if use_margins:
-        # Use 5-degree margins as in trajectory plotting
-        return ((MIN_ALT - 5 <= alt <= MAX_ALT + 5) and 
-                (MIN_AZ - 5 <= az <= MAX_AZ + 5))
+
+    margin = 5 if use_margins else 0
+    alt_ok = (MIN_ALT - margin) <= alt <= (MAX_ALT + margin)
+
+    # Handle wrap-around azimuth window (e.g. 315° NW to 45° NE crossing North)
+    min_az = MIN_AZ - margin
+    max_az = MAX_AZ + margin
+    if MIN_AZ > MAX_AZ:
+        az_ok = az >= min_az or az <= max_az
     else:
-        return (MIN_AZ <= az <= MAX_AZ) and (MIN_ALT <= alt <= MAX_ALT)
+        az_ok = min_az <= az <= max_az
+
+    return alt_ok and az_ok
 
 
 def find_visibility_window(obj, start_time, end_time, use_margins=True):

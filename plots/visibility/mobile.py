@@ -331,8 +331,9 @@ class MobileVisibilityPlotter:
         return fig
 
     def _get_local_timezone(self):
-        """Get local timezone for mobile"""
-        return pytz.timezone('Europe/Rome')  # Milan timezone
+        """Get local timezone from config"""
+        from astronomy.time_utils import get_local_timezone
+        return get_local_timezone()
 
 # Convenience functions for easy access
 

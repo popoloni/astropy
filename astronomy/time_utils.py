@@ -8,8 +8,20 @@ import math
 
 
 def get_local_timezone():
-    """Get configured timezone"""
-    return pytz.timezone('Europe/Rome')
+    """Get configured timezone from config.json"""
+    try:
+        from config.settings import TIMEZONE
+        return pytz.timezone(TIMEZONE)
+    except Exception:
+        try:
+            import json, os
+            _cfg_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config.json')
+            with open(_cfg_path) as _f:
+                _cfg = json.load(_f)
+            _loc = next((v for v in _cfg['locations'].values() if v.get('default')), next(iter(_cfg['locations'].values())))
+            return pytz.timezone(_loc['timezone'])
+        except Exception:
+            return pytz.timezone('Europe/Rome')
 
 
 def local_to_utc(local_time):

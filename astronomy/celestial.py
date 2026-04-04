@@ -930,8 +930,17 @@ def find_configured_twilight(date, precision_mode=None):
     except ImportError:
         # Fallback to astronomical twilight if config not available
         twilight_type = 'astronomical'
-        observer_lat_rad = math.radians(45.5167)  # Milan
-        observer_lon_rad = math.radians(9.2167)
+        try:
+            import json, os
+            _cfg_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config.json')
+            with open(_cfg_path) as _f:
+                _cfg = json.load(_f)
+            _loc = next((v for v in _cfg['locations'].values() if v.get('default')), next(iter(_cfg['locations'].values())))
+            observer_lat_rad = math.radians(_loc['latitude'])
+            observer_lon_rad = math.radians(_loc['longitude'])
+        except Exception:
+            observer_lat_rad = 0.0
+            observer_lon_rad = 0.0
     
     # Ensure date is timezone-naive for calculations
     if hasattr(date, 'tzinfo') and date.tzinfo is not None:
@@ -989,8 +998,17 @@ def _find_twilight_fallback(date, twilight_type='astronomical'):
         observer_lon = DEFAULT_LOCATION['longitude']
     except ImportError:
         search_interval = 1
-        observer_lat = 45.5167  # Milan fallback
-        observer_lon = 9.2167
+        try:
+            import json, os
+            _cfg_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config.json')
+            with open(_cfg_path) as _f:
+                _cfg = json.load(_f)
+            _loc = next((v for v in _cfg['locations'].values() if v.get('default')), next(iter(_cfg['locations'].values())))
+            observer_lat = _loc['latitude']
+            observer_lon = _loc['longitude']
+        except Exception:
+            observer_lat = 0.0
+            observer_lon = 0.0
     
     # Define twilight angles
     twilight_angles = {
