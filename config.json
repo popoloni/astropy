@@ -31,10 +31,10 @@
             "latitude": 43.521567,
             "longitude": 11.486436,
             "timezone": "Europe/Rome",
-            "min_altitude": 40,
+            "min_altitude": 35,
             "max_altitude": 85,
-            "min_azimuth": 320,
-            "max_azimuth": 100,
+            "min_azimuth": 315,
+            "max_azimuth": 90,
             "bortle_index": 6,
             "default": true,
             "comment": "Cavriglia coordinates"
