@@ -24,6 +24,7 @@ from config.settings import (
     MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ, GRID_ALPHA
 )
 from config.settings import MOSAIC_FOV_WIDTH, MOSAIC_FOV_HEIGHT, SCOPE_NAME
+from plots.utils.common import get_altaz_xlim, circular_mean_degrees, split_trajectory_by_azimuth_wrap
 
 # Desktop mosaic plotting constants
 DESKTOP_FIGURE_SIZE = (15, 10)
@@ -95,7 +96,10 @@ def calculate_group_center_position(group, time):
             azimuths.append(az)
     
     if altitudes and azimuths:
-        return sum(altitudes) / len(altitudes), sum(azimuths) / len(azimuths)
+        mean_az = circular_mean_degrees(azimuths)
+        if mean_az is None:
+            mean_az = sum(azimuths) / len(azimuths)
+        return sum(altitudes) / len(altitudes), mean_az
     return None, None
 
 def plot_mosaic_group_trajectory(ax, group, start_time, end_time, group_color, group_number, show_labels=True):
@@ -156,9 +160,9 @@ def plot_mosaic_group_trajectory(ax, group, start_time, end_time, group_color, g
             from astronomy.visibility import get_twilight_angle
             is_dark_enough = sun_alt < get_twilight_angle()
             
-            # Extended visibility check for trajectory plotting (±5 degrees)
-            if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and 
-                MIN_AZ - 5 <= az <= MAX_AZ + 5 and is_dark_enough):
+            # Extended visibility check for trajectory plotting (±5 degrees), wrap-safe in azimuth
+            _az_ok = (az >= MIN_AZ - 5 or az <= MAX_AZ + 5) if MIN_AZ > MAX_AZ else (MIN_AZ - 5 <= az <= MAX_AZ + 5)
+            if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and _az_ok and is_dark_enough):
                 times.append(current_time)
                 alts.append(alt)
                 azs.append(az)
@@ -177,10 +181,12 @@ def plot_mosaic_group_trajectory(ax, group, start_time, end_time, group_color, g
             line_styles = ['-', '--', '-.', ':']
             line_style = line_styles[i % len(line_styles)]
             
-            # Plot trajectory
+            # Plot trajectory split around azimuth wrap boundaries
             label = f'Group {group_number}: {get_abbreviated_name(obj.name)}' if show_labels else None
-            ax.plot(azs, alts, line_style, color=group_color, linewidth=2, 
-                   alpha=0.8, label=label)
+            segments = split_trajectory_by_azimuth_wrap(azs, alts)
+            for seg_idx, (seg_az, seg_alt) in enumerate(segments):
+                ax.plot(seg_az, seg_alt, line_style, color=group_color, linewidth=2,
+                       alpha=0.8, label=label if seg_idx == 0 else None)
             
             # Add hour markers (reduce frequency for smaller plots)
             marker_freq = 2 if not show_labels else 1  # Every 2 hours for small plots
@@ -385,7 +391,8 @@ def create_mosaic_grid_plot(groups, start_time, end_time):
         group_number = i + 1
         
         # Setup this subplot
-        ax.set_xlim(MIN_AZ, MAX_AZ)
+        x_min, x_max = get_altaz_xlim(MIN_AZ, MAX_AZ, margin=0)
+        ax.set_xlim(x_min, x_max)
         ax.set_ylim(MIN_ALT, MAX_ALT)
         ax.set_xlabel('Azimuth (degrees)', fontsize=10)
         ax.set_ylabel('Altitude (degrees)', fontsize=10)

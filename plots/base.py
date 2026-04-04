@@ -16,6 +16,7 @@ from config.settings import (
     COLOR_MAP, MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ, 
     FIGURE_SIZE, GRID_ALPHA, VISIBLE_REGION_ALPHA
 )
+from plots.utils.common import get_altaz_xlim, get_visible_azimuth_segments
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -81,21 +82,26 @@ def setup_altaz_plot(config: Optional[PlotConfig] = None) -> Tuple[Figure, plt.A
     
     ax = fig.add_subplot(gs[0, 0])
     
-    # Set axis limits and labels using config constants with margins
-    ax.set_xlim(MIN_AZ-10, MAX_AZ+10)
+    # Set axis limits and labels using wrap-safe azimuth handling
+    x_min, x_max = get_altaz_xlim(MIN_AZ, MAX_AZ, margin=10)
+    ax.set_xlim(x_min, x_max)
     ax.set_ylim(MIN_ALT-10, MAX_ALT+10)
     ax.set_xlabel('Azimuth (degrees)')
     ax.set_ylabel('Altitude (degrees)')
     ax.grid(True, alpha=GRID_ALPHA)
     
-    # Add visible region rectangle
-    visible_region = Rectangle((MIN_AZ, MIN_ALT), 
-                             MAX_AZ - MIN_AZ, 
-                             MAX_ALT - MIN_ALT,
-                             facecolor='green', 
-                             alpha=VISIBLE_REGION_ALPHA,
-                             label='Visible Region')
-    ax.add_patch(visible_region)
+    # Add visible region rectangles (one or two segments when window wraps)
+    visible_segments = get_visible_azimuth_segments(MIN_AZ, MAX_AZ)
+    for idx, (seg_start, seg_end) in enumerate(visible_segments):
+        visible_region = Rectangle(
+            (seg_start, MIN_ALT),
+            seg_end - seg_start,
+            MAX_ALT - MIN_ALT,
+            facecolor='green',
+            alpha=VISIBLE_REGION_ALPHA,
+            label='Visible Region' if idx == 0 else None
+        )
+        ax.add_patch(visible_region)
     
     # Configure grid with major and minor ticks
     ax.xaxis.set_major_locator(MultipleLocator(10))

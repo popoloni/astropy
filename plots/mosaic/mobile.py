@@ -24,6 +24,7 @@ from config.settings import (
     MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ, GRID_ALPHA
 )
 from config.settings import MOSAIC_FOV_WIDTH, MOSAIC_FOV_HEIGHT, SCOPE_NAME
+from plots.utils.common import get_altaz_xlim, circular_mean_degrees, split_trajectory_by_azimuth_wrap
 
 # Mobile-specific constants
 MOBILE_FIGURE_SIZE = (8, 6)
@@ -152,7 +153,8 @@ class MobileMosaicPlotter:
             ax.set_title(title, fontsize=MOBILE_TITLE_SIZE, fontweight='bold')
             ax.set_xlabel('Azimuth (degrees)', fontsize=MOBILE_LABEL_SIZE)
             ax.set_ylabel('Altitude (degrees)', fontsize=MOBILE_LABEL_SIZE)
-            ax.set_xlim(MIN_AZ, MAX_AZ)
+            x_min, x_max = get_altaz_xlim(MIN_AZ, MAX_AZ, margin=0)
+            ax.set_xlim(x_min, x_max)
             ax.set_ylim(MIN_ALT, MAX_ALT)
             ax.grid(True, alpha=GRID_ALPHA)
             
@@ -235,7 +237,8 @@ class MobileMosaicPlotter:
                 group_number = i + 1
                 
                 # Setup this subplot
-                ax.set_xlim(MIN_AZ, MAX_AZ)
+                x_min, x_max = get_altaz_xlim(MIN_AZ, MAX_AZ, margin=0)
+                ax.set_xlim(x_min, x_max)
                 ax.set_ylim(MIN_ALT, MAX_ALT)
                 ax.set_xlabel('Az (°)', fontsize=MOBILE_FONT_SIZE)
                 ax.set_ylabel('Alt (°)', fontsize=MOBILE_FONT_SIZE)
@@ -271,7 +274,8 @@ class MobileMosaicPlotter:
         ax.set_title(title, fontsize=MOBILE_TITLE_SIZE, fontweight='bold')
         ax.set_xlabel('Azimuth (degrees)', fontsize=MOBILE_LABEL_SIZE)
         ax.set_ylabel('Altitude (degrees)', fontsize=MOBILE_LABEL_SIZE)
-        ax.set_xlim(MIN_AZ, MAX_AZ)
+        x_min, x_max = get_altaz_xlim(MIN_AZ, MAX_AZ, margin=0)
+        ax.set_xlim(x_min, x_max)
         ax.set_ylim(MIN_ALT, MAX_ALT)
         ax.grid(True, alpha=GRID_ALPHA)
         ax.tick_params(labelsize=self.font_size)
@@ -312,9 +316,12 @@ class MobileMosaicPlotter:
             current_time += time_step
         
         if azs:
-            # Plot simplified trajectory
+            # Plot simplified trajectory split around azimuth wrap boundaries
             group_name = self._get_mobile_group_name(group, group_number)
-            ax.plot(azs, alts, '-', color=color, linewidth=2, alpha=0.8, label=group_name)
+            segments = split_trajectory_by_azimuth_wrap(azs, alts)
+            for seg_idx, (seg_az, seg_alt) in enumerate(segments):
+                ax.plot(seg_az, seg_alt, '-', color=color, linewidth=2, alpha=0.8,
+                       label=group_name if seg_idx == 0 else None)
 
     def _plot_mobile_fov_at_optimal_time(self, ax, group, overlap_periods, color):
         """Plot mobile-optimized FOV indicator"""
@@ -368,7 +375,10 @@ class MobileMosaicPlotter:
                 azimuths.append(az)
         
         if altitudes and azimuths:
-            return sum(altitudes) / len(altitudes), sum(azimuths) / len(azimuths)
+            mean_az = circular_mean_degrees(azimuths)
+            if mean_az is None:
+                mean_az = sum(azimuths) / len(azimuths)
+            return sum(altitudes) / len(altitudes), mean_az
         return None, None
 
     def _add_mobile_mosaic_legend(self, ax, groups):

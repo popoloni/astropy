@@ -33,8 +33,8 @@
             "timezone": "Europe/Rome",
             "min_altitude": 40,
             "max_altitude": 85,
-            "min_azimuth": 315,
-            "max_azimuth": 90,
+            "min_azimuth": 320,
+            "max_azimuth": 100,
             "bortle_index": 6,
             "default": true,
             "comment": "Cavriglia coordinates"

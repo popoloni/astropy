@@ -89,9 +89,8 @@ def plot_visibility_chart(objects, start_time, end_time, schedule=None, title="O
     end_time_str = end_time.strftime('%H:%M')
     enhanced_title = f"Object visibility {date_str} from {start_time_str} to {end_time_str}"
 
-    # Create figure with settings - creating a brand new figure each time
-    # to avoid any remnant elements from previous plots
-    plt.close('all')  # Close any existing figures
+    # Create figure with settings for this chart only.
+    # Avoid closing global figure state, which can remove other plots.
     fig = plt.figure(figsize=FIGURE_SIZE)
     
     # Calculate dynamic height based on number of objects

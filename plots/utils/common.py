@@ -9,6 +9,70 @@ import re
 import math
 from typing import List, Tuple, Optional, Any
 
+
+def normalize_azimuth(azimuth_deg):
+    """Normalize azimuth in degrees to [0, 360)."""
+    return azimuth_deg % 360.0
+
+
+def is_wrap_azimuth_window(min_az, max_az):
+    """Return True when azimuth visibility window crosses North (0 deg)."""
+    return min_az > max_az
+
+
+def get_altaz_xlim(min_az, max_az, margin=10.0):
+    """Return robust x-limits for alt/az charts, including wrap windows."""
+    if is_wrap_azimuth_window(min_az, max_az):
+        return -margin, 360.0 + margin
+    return min_az - margin, max_az + margin
+
+
+def get_visible_azimuth_segments(min_az, max_az):
+    """Return one or two azimuth segments for drawing visible regions."""
+    if is_wrap_azimuth_window(min_az, max_az):
+        return [(min_az, 360.0), (0.0, max_az)]
+    return [(min_az, max_az)]
+
+
+def split_trajectory_by_azimuth_wrap(azimuths, altitudes, threshold=180.0):
+    """Split trajectories where azimuth jumps over wrap boundary to avoid artifacts."""
+    if not azimuths or not altitudes or len(azimuths) != len(altitudes):
+        return []
+
+    segments = []
+    seg_az = [azimuths[0]]
+    seg_alt = [altitudes[0]]
+
+    for idx in range(1, len(azimuths)):
+        if abs(azimuths[idx] - azimuths[idx - 1]) > threshold:
+            if len(seg_az) > 1:
+                segments.append((seg_az, seg_alt))
+            seg_az = [azimuths[idx]]
+            seg_alt = [altitudes[idx]]
+        else:
+            seg_az.append(azimuths[idx])
+            seg_alt.append(altitudes[idx])
+
+    if len(seg_az) > 1:
+        segments.append((seg_az, seg_alt))
+
+    if not segments and len(azimuths) == 1:
+        segments.append((azimuths, altitudes))
+
+    return segments
+
+
+def circular_mean_degrees(angles_deg):
+    """Compute circular mean of azimuth angles expressed in degrees."""
+    if not angles_deg:
+        return None
+
+    sin_sum = sum(math.sin(math.radians(a)) for a in angles_deg)
+    cos_sum = sum(math.cos(math.radians(a)) for a in angles_deg)
+    if sin_sum == 0 and cos_sum == 0:
+        return None
+    return normalize_azimuth(math.degrees(math.atan2(sin_sum, cos_sum)))
+
 def get_abbreviated_name(full_name, max_length=12):
     """
     Get abbreviated name (catalog designation) from full name.

@@ -17,7 +17,10 @@ from ..base import setup_altaz_plot, PlotConfig, get_color_cycle
 from ..utils.common import (
     get_abbreviated_name, 
     calculate_label_offset, 
-    find_optimal_label_position
+    find_optimal_label_position,
+    get_altaz_xlim,
+    get_visible_azimuth_segments,
+    split_trajectory_by_azimuth_wrap
 )
 
 # Import astronomy functions
@@ -163,8 +166,9 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         elif not getattr(obj, 'sufficient_time', True):
             line_style = '--'
         
-        # Plot base trajectory (lowest z-order)
-        ax.plot(azs, alts, line_style, color=plot_color, linewidth=1.5, alpha=0.3, zorder=1)
+        # Plot base trajectory (lowest z-order), split across 360->0 wrap jumps
+        for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(azs, alts):
+            ax.plot(seg_az, seg_alt, line_style, color=plot_color, linewidth=1.5, alpha=0.3, zorder=1)
         
         # Plot moon-affected segments if any
         if hasattr(obj, 'moon_influence_periods'):
@@ -177,13 +181,16 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
                         break
                 
                 if valid_segment:
-                    # Plot the moon-affected segment
-                    ax.plot(azs[start_idx:end_idx+1], 
-                           alts[start_idx:end_idx+1], 
-                           line_style,
-                           color=MOON_INTERFERENCE_COLOR,
-                           linewidth=2,
-                           zorder=2)
+                          # Plot moon-affected segment split around azimuth wrap boundaries
+                          moon_seg_az = azs[start_idx:end_idx+1]
+                          moon_seg_alt = alts[start_idx:end_idx+1]
+                          for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(moon_seg_az, moon_seg_alt):
+                           ax.plot(seg_az,
+                               seg_alt,
+                               line_style,
+                               color=MOON_INTERFERENCE_COLOR,
+                               linewidth=2,
+                               zorder=2)
         
         # Add label only once
         legend = ax.get_legend()
@@ -280,9 +287,10 @@ def plot_moon_trajectory(ax, start_time, end_time):
         current_time += timedelta(minutes=1)
     
     if azs:
-        # Plot moon trajectory
-        ax.plot(azs, alts, '-', color=MOON_TRAJECTORY_COLOR, 
-               linewidth=MOON_LINE_WIDTH, label='Moon', zorder=2)
+         # Plot moon trajectory split around azimuth wrap boundaries
+        for idx, (seg_az, seg_alt) in enumerate(split_trajectory_by_azimuth_wrap(azs, alts)):
+            ax.plot(seg_az, seg_alt, '-', color=MOON_TRAJECTORY_COLOR,
+                   linewidth=MOON_LINE_WIDTH, label='Moon' if idx == 0 else None, zorder=2)
         
         # Add hour markers
         for t, az, alt in zip(hour_times, hour_azs, hour_alts):
@@ -358,21 +366,23 @@ def plot_quarterly_trajectories(objects, start_time, end_time, schedule=None):
         col = i % 2
         ax = fig.add_subplot(gs[row, col])
         
-        # Setup axis like the original plot
-        ax.set_xlim(MIN_AZ-10, MAX_AZ+10)
+        # Setup axis with wrap-safe azimuth window handling
+        x_min, x_max = get_altaz_xlim(MIN_AZ, MAX_AZ, margin=10)
+        ax.set_xlim(x_min, x_max)
         ax.set_ylim(MIN_ALT-10, MAX_ALT+10)
         ax.set_xlabel('Azimuth (degrees)')
         ax.set_ylabel('Altitude (degrees)')
         ax.grid(True, alpha=GRID_ALPHA)
         ax.set_title(title, fontweight='bold')
         
-        # Add visible region (no label to avoid legend entry)
-        visible_region = Rectangle((MIN_AZ, MIN_ALT), 
-                                 MAX_AZ - MIN_AZ, 
-                                 MAX_ALT - MIN_ALT,
-                                 facecolor='green', 
-                                 alpha=VISIBLE_REGION_ALPHA)
-        ax.add_patch(visible_region)
+        # Add wrap-safe visible region segments (no labels to avoid legend entry)
+        for seg_start, seg_end in get_visible_azimuth_segments(MIN_AZ, MAX_AZ):
+            visible_region = Rectangle((seg_start, MIN_ALT),
+                                     seg_end - seg_start,
+                                     MAX_ALT - MIN_ALT,
+                                     facecolor='green',
+                                     alpha=VISIBLE_REGION_ALPHA)
+            ax.add_patch(visible_region)
         
         # Get quarter time range and objects
         q_start, q_end = quarters[quarter_name]
@@ -565,8 +575,9 @@ def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, exist
     # Determine line style
     line_style = '-' if getattr(obj, 'sufficient_time', True) else '--'
     
-    # Plot base trajectory (no label for legend)
-    ax.plot(azs, alts, line_style, color=color, linewidth=1.5, alpha=0.3, zorder=1)
+    # Plot base trajectory (no label for legend), split around azimuth wrap
+    for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(azs, alts):
+        ax.plot(seg_az, seg_alt, line_style, color=color, linewidth=1.5, alpha=0.3, zorder=1)
     
     # Plot moon-affected segments if any
     if hasattr(obj, 'moon_influence_periods'):
@@ -581,12 +592,15 @@ def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, exist
                         break
                 
                 if valid_segment:
-                    ax.plot(azs[start_idx:end_idx+1], 
-                           alts[start_idx:end_idx+1], 
-                           line_style,
-                           color=MOON_INTERFERENCE_COLOR,
-                           linewidth=2,
-                           zorder=2)
+                          moon_seg_az = azs[start_idx:end_idx+1]
+                          moon_seg_alt = alts[start_idx:end_idx+1]
+                          for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(moon_seg_az, moon_seg_alt):
+                           ax.plot(seg_az,
+                               seg_alt,
+                               line_style,
+                               color=MOON_INTERFERENCE_COLOR,
+                               linewidth=2,
+                               zorder=2)
     
     # Add hour markers
     for t, az, alt in zip(hour_times, hour_azs, hour_alts):
