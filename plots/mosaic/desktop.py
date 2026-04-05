@@ -24,7 +24,13 @@ from config.settings import (
     MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ, GRID_ALPHA
 )
 from config.settings import MOSAIC_FOV_WIDTH, MOSAIC_FOV_HEIGHT, SCOPE_NAME
-from plots.utils.common import get_altaz_xlim, circular_mean_degrees, split_trajectory_by_azimuth_wrap
+from plots.utils.common import (
+    configure_azimuth_axis,
+    azimuth_to_display_x,
+    transform_azimuths_for_display,
+    circular_mean_degrees,
+    split_trajectory_by_azimuth_wrap
+)
 
 # Desktop mosaic plotting constants
 DESKTOP_FIGURE_SIZE = (15, 10)
@@ -56,6 +62,8 @@ def plot_mosaic_fov_indicator(ax, center_alt, center_az, fov_width, fov_height, 
     alpha : float, optional
         Transparency level
     """
+    center_az = azimuth_to_display_x(center_az, MIN_AZ, MAX_AZ)
+
     # Create an ellipse to represent the FOV
     fov_patch = Ellipse((center_az, center_alt), fov_width, fov_height,
                        facecolor=color, edgecolor=color, alpha=alpha,
@@ -183,14 +191,17 @@ def plot_mosaic_group_trajectory(ax, group, start_time, end_time, group_color, g
             
             # Plot trajectory split around azimuth wrap boundaries
             label = f'Group {group_number}: {get_abbreviated_name(obj.name)}' if show_labels else None
-            segments = split_trajectory_by_azimuth_wrap(azs, alts)
+            plot_azs = transform_azimuths_for_display(azs, MIN_AZ, MAX_AZ)
+            plot_hour_azs = transform_azimuths_for_display(hour_azs, MIN_AZ, MAX_AZ)
+
+            segments = split_trajectory_by_azimuth_wrap(plot_azs, alts)
             for seg_idx, (seg_az, seg_alt) in enumerate(segments):
                 ax.plot(seg_az, seg_alt, line_style, color=group_color, linewidth=2,
                        alpha=0.8, label=label if seg_idx == 0 else None)
             
             # Add hour markers (reduce frequency for smaller plots)
             marker_freq = 2 if not show_labels else 1  # Every 2 hours for small plots
-            for j, (t, az, alt) in enumerate(zip(hour_times, hour_azs, hour_alts)):
+            for j, (t, az, alt) in enumerate(zip(hour_times, plot_hour_azs, hour_alts)):
                 if j % marker_freq == 0:
                     ax.plot(az, alt, 'o', color=group_color, markersize=4 if not show_labels else 6, zorder=3)
                     if show_labels:
@@ -204,11 +215,11 @@ def plot_mosaic_group_trajectory(ax, group, start_time, end_time, group_color, g
             
             # Add object label
             if len(azs) > 10 and show_labels:  # Only if we have enough points and showing labels
-                mid_idx = len(azs) // 2
-                label_pos = (azs[mid_idx], alts[mid_idx])
+                mid_idx = len(plot_azs) // 2
+                label_pos = (plot_azs[mid_idx], alts[mid_idx])
                 
                 abbreviated_name = get_abbreviated_name(obj.name)
-                offset_x, offset_y = calculate_label_offset(label_pos[0], label_pos[1], mid_idx, azs, alts)
+                offset_x, offset_y = calculate_label_offset(label_pos[0], label_pos[1], mid_idx, plot_azs, alts)
                 
                 # Use group-specific background color
                 ax.annotate(abbreviated_name, 
@@ -252,6 +263,7 @@ def plot_mosaic_fov_at_optimal_time(ax, group, overlap_periods, group_color, sma
     center_alt, center_az = calculate_group_center_position(group, mid_time)
     
     if center_alt is not None and center_az is not None:
+        center_az = azimuth_to_display_x(center_az, MIN_AZ, MAX_AZ)
         # Plot the mosaic FOV indicator
         if small_plot:
             # Simplified FOV indicator for small plots
@@ -391,8 +403,7 @@ def create_mosaic_grid_plot(groups, start_time, end_time):
         group_number = i + 1
         
         # Setup this subplot
-        x_min, x_max = get_altaz_xlim(MIN_AZ, MAX_AZ, margin=0)
-        ax.set_xlim(x_min, x_max)
+        configure_azimuth_axis(ax, MIN_AZ, MAX_AZ, margin=0, use_cardinals=True)
         ax.set_ylim(MIN_ALT, MAX_ALT)
         ax.set_xlabel('Azimuth (degrees)', fontsize=10)
         ax.set_ylabel('Altitude (degrees)', fontsize=10)

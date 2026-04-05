@@ -20,17 +20,71 @@ def is_wrap_azimuth_window(min_az, max_az):
     return min_az > max_az
 
 
+def get_azimuth_window_span(min_az, max_az):
+    """Return azimuth window span in degrees (supports wrap windows)."""
+    if is_wrap_azimuth_window(min_az, max_az):
+        return (max_az - min_az) % 360.0
+    return max_az - min_az
+
+
+def azimuth_to_display_x(azimuth_deg, min_az, max_az):
+    """Map real azimuth to display x coordinate for wrap-safe plotting."""
+    if is_wrap_azimuth_window(min_az, max_az):
+        return (normalize_azimuth(azimuth_deg) - normalize_azimuth(min_az)) % 360.0
+    return azimuth_deg
+
+
+def display_x_to_azimuth(display_x, min_az, max_az):
+    """Map display x coordinate back to real azimuth degrees."""
+    if is_wrap_azimuth_window(min_az, max_az):
+        return normalize_azimuth(min_az + display_x)
+    return display_x
+
+
+def transform_azimuths_for_display(azimuths, min_az, max_az):
+    """Transform a sequence of azimuth values to display coordinates."""
+    if not azimuths:
+        return []
+    return [azimuth_to_display_x(az, min_az, max_az) for az in azimuths]
+
+
+def format_azimuth_tick_label(display_x, min_az, max_az, use_cardinals=True):
+    """Format azimuth axis tick labels using real azimuth values."""
+    real_az = display_x_to_azimuth(display_x, min_az, max_az)
+    rounded = int(round(real_az)) % 360
+
+    if use_cardinals and rounded in {0, 90, 180, 270}:
+        return {0: 'N', 90: 'E', 180: 'S', 270: 'W'}[rounded]
+
+    return f"{rounded}°"
+
+
+def configure_azimuth_axis(ax, min_az, max_az, margin=10.0, use_cardinals=True):
+    """Configure azimuth axis limits and labels for normal and wrap windows."""
+    if is_wrap_azimuth_window(min_az, max_az):
+        span = get_azimuth_window_span(min_az, max_az)
+        ax.set_xlim(-margin, span + margin)
+
+        from matplotlib.ticker import FuncFormatter
+        ax.xaxis.set_major_formatter(
+            FuncFormatter(lambda x, _pos: format_azimuth_tick_label(x, min_az, max_az, use_cardinals=use_cardinals))
+        )
+    else:
+        ax.set_xlim(min_az - margin, max_az + margin)
+
+
 def get_altaz_xlim(min_az, max_az, margin=10.0):
     """Return robust x-limits for alt/az charts, including wrap windows."""
     if is_wrap_azimuth_window(min_az, max_az):
-        return -margin, 360.0 + margin
+        span = get_azimuth_window_span(min_az, max_az)
+        return -margin, span + margin
     return min_az - margin, max_az + margin
 
 
 def get_visible_azimuth_segments(min_az, max_az):
     """Return one or two azimuth segments for drawing visible regions."""
     if is_wrap_azimuth_window(min_az, max_az):
-        return [(min_az, 360.0), (0.0, max_az)]
+        return [(0.0, get_azimuth_window_span(min_az, max_az))]
     return [(min_az, max_az)]
 
 

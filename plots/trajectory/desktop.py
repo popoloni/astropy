@@ -18,9 +18,10 @@ from ..utils.common import (
     get_abbreviated_name, 
     calculate_label_offset, 
     find_optimal_label_position,
-    get_altaz_xlim,
+    configure_azimuth_axis,
     get_visible_azimuth_segments,
-    split_trajectory_by_azimuth_wrap
+    split_trajectory_by_azimuth_wrap,
+    transform_azimuths_for_display
 )
 
 # Import astronomy functions
@@ -154,6 +155,9 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         obj.moon_influence_periods = moon_influence_periods  # Store periods for later use
     
     if azs:
+        plot_azs = transform_azimuths_for_display(azs, MIN_AZ, MAX_AZ)
+        plot_hour_azs = transform_azimuths_for_display(hour_azs, MIN_AZ, MAX_AZ)
+
         # Determine line style and color based on object status
         line_style = '-'
         plot_color = color
@@ -166,8 +170,8 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         elif not getattr(obj, 'sufficient_time', True):
             line_style = '--'
         
-        # Plot base trajectory (lowest z-order), split across 360->0 wrap jumps
-        for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(azs, alts):
+        # Plot base trajectory (lowest z-order), split across wrap jumps in display space
+        for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(plot_azs, alts):
             ax.plot(seg_az, seg_alt, line_style, color=plot_color, linewidth=1.5, alpha=0.3, zorder=1)
         
         # Plot moon-affected segments if any
@@ -181,11 +185,11 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
                         break
                 
                 if valid_segment:
-                          # Plot moon-affected segment split around azimuth wrap boundaries
-                          moon_seg_az = azs[start_idx:end_idx+1]
-                          moon_seg_alt = alts[start_idx:end_idx+1]
-                          for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(moon_seg_az, moon_seg_alt):
-                           ax.plot(seg_az,
+                    # Plot moon-affected segment split around wrap boundaries
+                    moon_seg_az = plot_azs[start_idx:end_idx+1]
+                    moon_seg_alt = alts[start_idx:end_idx+1]
+                    for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(moon_seg_az, moon_seg_alt):
+                        ax.plot(seg_az,
                                seg_alt,
                                line_style,
                                color=MOON_INTERFERENCE_COLOR,
@@ -203,7 +207,7 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
                    linewidth=2, label=obj_name)
         
         # Add hour markers
-        for t, az, alt in zip(hour_times, hour_azs, hour_alts):
+        for t, az, alt in zip(hour_times, plot_hour_azs, hour_alts):
             ax.plot(az, alt, 'o', color=plot_color, markersize=6, zorder=3)
             ax.annotate(f'{t.hour:02d}h', 
                        (az, alt),
@@ -218,20 +222,20 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
             existing_positions = []
             
         # Collect hour positions for avoiding overlap
-        hour_positions = [(az, alt) for az, alt in zip(hour_azs, hour_alts)]
+        hour_positions = [(az, alt) for az, alt in zip(plot_hour_azs, hour_alts)]
         
         # Get existing labels from legend to avoid duplicates
         legend = ax.get_legend()
         existing_labels = [t.get_text() for t in legend.get_texts()] if legend else []
             
-        label_pos_tuple = find_optimal_label_position(azs, alts, hour_positions, existing_positions, existing_labels, margin=6)
+        label_pos_tuple = find_optimal_label_position(plot_azs, alts, hour_positions, existing_positions, existing_labels, margin=6)
         if label_pos_tuple and len(label_pos_tuple) >= 2:
             label_pos = (label_pos_tuple[0], label_pos_tuple[1])
             abbreviated_name = get_abbreviated_name(obj.name)
             
             # Calculate smart offset based on trajectory direction
-            trajectory_idx = len(azs) // 2  # Use middle point for direction calculation
-            offset_x, offset_y = calculate_label_offset(label_pos[0], label_pos[1], trajectory_idx, azs, alts)
+            trajectory_idx = len(plot_azs) // 2  # Use middle point for direction calculation
+            offset_x, offset_y = calculate_label_offset(label_pos[0], label_pos[1], trajectory_idx, plot_azs, alts)
             
             # Choose label background color based on scheduling status
             if is_scheduled:
@@ -287,13 +291,16 @@ def plot_moon_trajectory(ax, start_time, end_time):
         current_time += timedelta(minutes=1)
     
     if azs:
-         # Plot moon trajectory split around azimuth wrap boundaries
-        for idx, (seg_az, seg_alt) in enumerate(split_trajectory_by_azimuth_wrap(azs, alts)):
+        plot_azs = transform_azimuths_for_display(azs, MIN_AZ, MAX_AZ)
+        plot_hour_azs = transform_azimuths_for_display(hour_azs, MIN_AZ, MAX_AZ)
+
+        # Plot moon trajectory split around azimuth wrap boundaries
+        for idx, (seg_az, seg_alt) in enumerate(split_trajectory_by_azimuth_wrap(plot_azs, alts)):
             ax.plot(seg_az, seg_alt, '-', color=MOON_TRAJECTORY_COLOR,
                    linewidth=MOON_LINE_WIDTH, label='Moon' if idx == 0 else None, zorder=2)
         
         # Add hour markers
-        for t, az, alt in zip(hour_times, hour_azs, hour_alts):
+        for t, az, alt in zip(hour_times, plot_hour_azs, hour_alts):
             ax.plot(az, alt, 'o', color=MOON_MARKER_COLOR, 
                    markersize=MOON_MARKER_SIZE, zorder=3)
             ax.annotate(f'{t.hour:02d}h', 
@@ -367,8 +374,7 @@ def plot_quarterly_trajectories(objects, start_time, end_time, schedule=None):
         ax = fig.add_subplot(gs[row, col])
         
         # Setup axis with wrap-safe azimuth window handling
-        x_min, x_max = get_altaz_xlim(MIN_AZ, MAX_AZ, margin=10)
-        ax.set_xlim(x_min, x_max)
+        configure_azimuth_axis(ax, MIN_AZ, MAX_AZ, margin=10, use_cardinals=True)
         ax.set_ylim(MIN_ALT-10, MAX_ALT+10)
         ax.set_xlabel('Azimuth (degrees)')
         ax.set_ylabel('Altitude (degrees)')
@@ -501,12 +507,16 @@ def plot_moon_trajectory_no_legend(ax, start_time, end_time):
         current_time += timedelta(minutes=1)
     
     if azs:
+        plot_azs = transform_azimuths_for_display(azs, MIN_AZ, MAX_AZ)
+        plot_hour_azs = transform_azimuths_for_display(hour_azs, MIN_AZ, MAX_AZ)
+
         # Plot moon trajectory (no label for legend)
-        ax.plot(azs, alts, '-', color=MOON_TRAJECTORY_COLOR, 
-               linewidth=MOON_LINE_WIDTH, zorder=2)
+        for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(plot_azs, alts):
+            ax.plot(seg_az, seg_alt, '-', color=MOON_TRAJECTORY_COLOR,
+                   linewidth=MOON_LINE_WIDTH, zorder=2)
         
         # Add hour markers
-        for t, az, alt in zip(hour_times, hour_azs, hour_alts):
+        for t, az, alt in zip(hour_times, plot_hour_azs, hour_alts):
             ax.plot(az, alt, 'o', color=MOON_MARKER_COLOR, 
                    markersize=MOON_MARKER_SIZE, zorder=3)
             ax.annotate(f'{t.hour:02d}h', 
@@ -574,9 +584,12 @@ def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, exist
     
     # Determine line style
     line_style = '-' if getattr(obj, 'sufficient_time', True) else '--'
+
+    plot_azs = transform_azimuths_for_display(azs, MIN_AZ, MAX_AZ)
+    plot_hour_azs = transform_azimuths_for_display(hour_azs, MIN_AZ, MAX_AZ)
     
     # Plot base trajectory (no label for legend), split around azimuth wrap
-    for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(azs, alts):
+    for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(plot_azs, alts):
         ax.plot(seg_az, seg_alt, line_style, color=color, linewidth=1.5, alpha=0.3, zorder=1)
     
     # Plot moon-affected segments if any
@@ -592,10 +605,10 @@ def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, exist
                         break
                 
                 if valid_segment:
-                          moon_seg_az = azs[start_idx:end_idx+1]
-                          moon_seg_alt = alts[start_idx:end_idx+1]
-                          for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(moon_seg_az, moon_seg_alt):
-                           ax.plot(seg_az,
+                    moon_seg_az = plot_azs[start_idx:end_idx+1]
+                    moon_seg_alt = alts[start_idx:end_idx+1]
+                    for seg_az, seg_alt in split_trajectory_by_azimuth_wrap(moon_seg_az, moon_seg_alt):
+                        ax.plot(seg_az,
                                seg_alt,
                                line_style,
                                color=MOON_INTERFERENCE_COLOR,
@@ -603,7 +616,7 @@ def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, exist
                                zorder=2)
     
     # Add hour markers
-    for t, az, alt in zip(hour_times, hour_azs, hour_alts):
+    for t, az, alt in zip(hour_times, plot_hour_azs, hour_alts):
         ax.plot(az, alt, 'o', color=color, markersize=6, zorder=3)
         ax.annotate(f'{t.hour:02d}h', 
                    (az, alt),
@@ -618,17 +631,17 @@ def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, exist
         existing_positions = []
         
     # Collect hour positions for avoiding overlap
-    hour_positions = [(az, alt) for az, alt in zip(hour_azs, hour_alts)]
+    hour_positions = [(az, alt) for az, alt in zip(plot_hour_azs, hour_alts)]
     existing_labels = []  # No legend in this version
     
-    label_pos_tuple = find_optimal_label_position(azs, alts, hour_positions, existing_positions, 
+    label_pos_tuple = find_optimal_label_position(plot_azs, alts, hour_positions, existing_positions, 
                                            existing_labels, margin=6)
     if label_pos_tuple and len(label_pos_tuple) >= 2:
         label_pos = (label_pos_tuple[0], label_pos_tuple[1])
         abbreviated_name = get_abbreviated_name(obj.name)
         # Calculate smart offset
-        trajectory_idx = len(azs) // 2
-        offset_x, offset_y = calculate_label_offset(label_pos[0], label_pos[1], trajectory_idx, azs, alts)
+        trajectory_idx = len(plot_azs) // 2
+        offset_x, offset_y = calculate_label_offset(label_pos[0], label_pos[1], trajectory_idx, plot_azs, alts)
         
         # Choose label background color based on scheduling status
         if is_scheduled:

@@ -16,7 +16,7 @@ from config.settings import (
     COLOR_MAP, MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ, 
     FIGURE_SIZE, GRID_ALPHA, VISIBLE_REGION_ALPHA
 )
-from plots.utils.common import get_altaz_xlim, get_visible_azimuth_segments
+from plots.utils.common import configure_azimuth_axis, get_visible_azimuth_segments
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -83,8 +83,7 @@ def setup_altaz_plot(config: Optional[PlotConfig] = None) -> Tuple[Figure, plt.A
     ax = fig.add_subplot(gs[0, 0])
     
     # Set axis limits and labels using wrap-safe azimuth handling
-    x_min, x_max = get_altaz_xlim(MIN_AZ, MAX_AZ, margin=10)
-    ax.set_xlim(x_min, x_max)
+    configure_azimuth_axis(ax, MIN_AZ, MAX_AZ, margin=10, use_cardinals=True)
     ax.set_ylim(MIN_ALT-10, MAX_ALT+10)
     ax.set_xlabel('Azimuth (degrees)')
     ax.set_ylabel('Altitude (degrees)')

@@ -11,10 +11,12 @@ from typing import List, Tuple, Optional, Any
 import logging
 
 from ..base import setup_plot, PlotConfig
+from ..utils.common import configure_azimuth_axis, transform_azimuths_for_display
 from astronomy import (
     calculate_altaz, calculate_moon_position, is_visible, 
     utc_to_local
 )
+from config.settings import MIN_AZ, MAX_AZ
 from .desktop import get_abbreviated_name
 
 # Configure logging
@@ -77,6 +79,7 @@ class MobileTrajectoryPlotter:
             ax.set_xlabel('Azimuth (degrees)', fontsize=10)
             ax.set_ylabel('Altitude (degrees)', fontsize=10)
             ax.grid(True, alpha=0.3)
+            configure_azimuth_axis(ax, MIN_AZ, MAX_AZ, margin=10, use_cardinals=True)
             
             # Optimize for mobile viewing
             plt.tight_layout()
@@ -120,8 +123,10 @@ class MobileTrajectoryPlotter:
                 current_time += timedelta(minutes=15)
             
             if azs:
+                plot_azs = transform_azimuths_for_display(azs, MIN_AZ, MAX_AZ)
+
                 # Plot simplified trajectory
-                ax.plot(azs, alts, '-', color='blue', linewidth=MOBILE_LINE_WIDTH, 
+                ax.plot(plot_azs, alts, '-', color='blue', linewidth=MOBILE_LINE_WIDTH,
                        label=get_abbreviated_name(target.name))
                 
                 # Add fewer hour markers for mobile
@@ -129,10 +134,10 @@ class MobileTrajectoryPlotter:
                 for i in hour_indices:
                     if i < len(times):
                         local_time = utc_to_local(times[i])
-                        ax.plot(azs[i], alts[i], 'o', color='blue', 
+                        ax.plot(plot_azs[i], alts[i], 'o', color='blue',
                                markersize=MOBILE_MARKER_SIZE)
                         ax.annotate(f'{local_time.hour:02d}h', 
-                                   (azs[i], alts[i]),
+                                   (plot_azs[i], alts[i]),
                                    xytext=(3, 3),
                                    textcoords='offset points',
                                    fontsize=8,
@@ -144,6 +149,7 @@ class MobileTrajectoryPlotter:
             ax.set_xlabel('Az (°)', fontsize=10)
             ax.set_ylabel('Alt (°)', fontsize=10)
             ax.grid(True, alpha=0.3)
+            configure_azimuth_axis(ax, MIN_AZ, MAX_AZ, margin=10, use_cardinals=True)
             ax.legend(fontsize=9)
             
             plt.tight_layout()
@@ -188,6 +194,7 @@ class MobileTrajectoryPlotter:
             ax.set_xlabel('Az (°)', fontsize=10)
             ax.set_ylabel('Alt (°)', fontsize=10)
             ax.grid(True, alpha=0.3)
+            configure_azimuth_axis(ax, MIN_AZ, MAX_AZ, margin=10, use_cardinals=True)
             
             # Compact legend for mobile
             ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
@@ -227,12 +234,15 @@ class MobileTrajectoryPlotter:
             current_time += timedelta(minutes=5)
         
         if azs:
+            plot_azs = transform_azimuths_for_display(azs, MIN_AZ, MAX_AZ)
+            plot_hour_azs = transform_azimuths_for_display(hour_azs, MIN_AZ, MAX_AZ)
+
             # Plot trajectory
-            ax.plot(azs, alts, '-', color='blue', linewidth=MOBILE_LINE_WIDTH, 
+            ax.plot(plot_azs, alts, '-', color='blue', linewidth=MOBILE_LINE_WIDTH,
                    label=get_abbreviated_name(target.name))
             
             # Add hour markers (reduced frequency for mobile)
-            for t, az, alt in zip(hour_times, hour_azs, hour_alts):
+            for t, az, alt in zip(hour_times, plot_hour_azs, hour_alts):
                 ax.plot(az, alt, 'o', color='blue', markersize=MOBILE_MARKER_SIZE)
                 ax.annotate(f'{t.hour:02d}h', 
                            (az, alt),
@@ -258,9 +268,11 @@ class MobileTrajectoryPlotter:
             current_time += timedelta(minutes=10)
         
         if azs:
+            plot_azs = transform_azimuths_for_display(azs, MIN_AZ, MAX_AZ)
+
             # Plot simplified trajectory (no hour markers for multi-target)
             abbreviated_name = get_abbreviated_name(target.name)
-            ax.plot(azs, alts, '-', color=color, linewidth=MOBILE_LINE_WIDTH, 
+            ax.plot(plot_azs, alts, '-', color=color, linewidth=MOBILE_LINE_WIDTH,
                    label=abbreviated_name, alpha=0.8)
     
     def _create_error_plot(self, title, message):
