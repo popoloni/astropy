@@ -229,7 +229,12 @@ def is_object_imageable(obj, visibility_duration, bortle_index):
 def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=None, use_margins=True):
     """Filter objects based on visibility and exposure requirements"""
     # Import here to avoid circular imports during refactoring
-    from config.settings import EXCLUDE_INSUFFICIENT_TIME, MIN_VISIBILITY_HOURS, BORTLE_INDEX
+    from config.settings import (
+        EXCLUDE_INSUFFICIENT_TIME,
+        MIN_VISIBILITY_HOURS,
+        VISIBILITY_LIST_THRESHOLD_HOURS,
+        BORTLE_INDEX,
+    )
     
     if exclude_insufficient is None:
         exclude_insufficient = EXCLUDE_INSUFFICIENT_TIME
@@ -246,6 +251,11 @@ def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=N
         periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins)
         if periods:
             duration = calculate_visibility_duration(periods)
+
+            # Hard gate for visibility lists: skip any object below configured threshold.
+            if duration < VISIBILITY_LIST_THRESHOLD_HOURS:
+                continue
+
             if hasattr(obj, 'magnitude') and obj.magnitude is not None:
                 # Calculate required exposure time and store it in the object
                 obj.required_exposure = calculate_required_exposure(

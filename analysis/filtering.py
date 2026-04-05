@@ -27,7 +27,12 @@ def filter_objects_by_altitude_azimuth(objects, min_alt=None, max_alt=None, min_
 
 def filter_objects_by_criteria(objects, start_time, end_time, exclude_insufficient=True, use_margins=True):
     """Filter objects based on visibility and exposure requirements"""
-    from config.settings import EXCLUDE_INSUFFICIENT_TIME, MIN_VISIBILITY_HOURS, BORTLE_INDEX
+    from config.settings import (
+        EXCLUDE_INSUFFICIENT_TIME,
+        MIN_VISIBILITY_HOURS,
+        VISIBILITY_LIST_THRESHOLD_HOURS,
+        BORTLE_INDEX,
+    )
     
     # Use parameter if provided, otherwise use config default
     if exclude_insufficient is None:
@@ -40,6 +45,11 @@ def filter_objects_by_criteria(objects, start_time, end_time, exclude_insufficie
         periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins)
         if periods:
             duration = calculate_visibility_duration(periods)
+
+            # Hard gate for visibility lists: skip any object below configured threshold.
+            if duration < VISIBILITY_LIST_THRESHOLD_HOURS:
+                continue
+
             if hasattr(obj, 'magnitude') and obj.magnitude is not None:
                 # Calculate required exposure time and store it in the object
                 obj.required_exposure = calculate_required_exposure(

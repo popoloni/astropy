@@ -77,6 +77,10 @@ MERGING_CATALOGS = CONFIG['catalog']['merge']
 
 # Time & Visibility Configuration
 MIN_VISIBILITY_HOURS = CONFIG['visibility']['min_visibility_hours']
+VISIBILITY_LIST_THRESHOLD_HOURS = CONFIG['visibility'].get(
+    'visibility_list_threshold_hours',
+    MIN_VISIBILITY_HOURS,
+)
 MIN_TOTAL_AREA = CONFIG['visibility']['min_total_area']
 TRAJECTORY_INTERVAL_MINUTES = CONFIG['visibility']['trajectory_interval_minutes']
 SEARCH_INTERVAL_MINUTES = CONFIG['visibility']['search_interval_minutes']

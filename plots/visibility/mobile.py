@@ -14,6 +14,8 @@ import pytz
 from datetime import datetime, timedelta
 import logging
 
+from ..utils.common import get_abbreviated_name
+
 # Mobile-specific constants
 MOBILE_FIGURE_SIZE = (8, 6)
 MOBILE_DPI = 100
@@ -303,13 +305,9 @@ class MobileVisibilityPlotter:
             name = obj.get('name', 'Unknown')
         else:
             name = str(obj)
-        
-        # Abbreviate for mobile display
-        if '/' in name:
-            name = name.split('/')[0]
-        
-        # Limit length for mobile
-        return name[:8] if len(name) > 8 else name
+
+        # Reuse shared abbreviation logic used by desktop charts.
+        return get_abbreviated_name(name, max_length=8)
 
     def _create_error_plot(self, error_message):
         """Create error plot for mobile display"""

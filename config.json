@@ -42,6 +42,7 @@
     },
     "visibility": {
         "min_visibility_hours": 1.0,
+        "visibility_list_threshold_hours": 1.0,
         "min_total_area": 225,
         "trajectory_interval_minutes": 15,
         "search_interval_minutes": 1,

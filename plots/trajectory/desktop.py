@@ -70,10 +70,6 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
     schedule : list, optional
         List of scheduled observations [(start, end, obj), ...] for label styling
     """
-    # Ensure there's a legend (even if empty) to avoid NoneType errors
-    if ax.get_legend() is None:
-        ax.legend()
-        
     times = []
     alts = []
     azs = []
@@ -199,13 +195,15 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         
         # Add label only once
         legend = ax.get_legend()
-        obj_name = obj.name.split('/')[0]
+        obj_name = get_abbreviated_name(obj.name)
         existing_labels = [t.get_text() for t in legend.get_texts()] if legend else []
         
         if obj_name not in existing_labels:
             # Add a dummy line for the legend
             ax.plot([], [], line_style, color=plot_color, 
                    linewidth=2, label=obj_name)
+            # Refresh legend when a new labeled artist is added.
+            ax.legend()
         
         # Add hour markers
         for t, az, alt in zip(hour_times, plot_hour_azs, hour_alts):
