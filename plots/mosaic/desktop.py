@@ -110,7 +110,7 @@ def calculate_group_center_position(group, time):
         return sum(altitudes) / len(altitudes), mean_az
     return None, None
 
-def plot_mosaic_group_trajectory(ax, group, start_time, end_time, group_color, group_number, show_labels=True):
+def plot_mosaic_group_trajectory(ax, group, start_time, end_time, group_color, group_number, show_labels=True, use_margins=True):
     """
     Plot trajectory for a mosaic group with special visual indicators.
     
@@ -168,9 +168,10 @@ def plot_mosaic_group_trajectory(ax, group, start_time, end_time, group_color, g
             from astronomy.visibility import get_twilight_angle
             is_dark_enough = sun_alt < get_twilight_angle()
             
-            # Extended visibility check for trajectory plotting (±5 degrees), wrap-safe in azimuth
-            _az_ok = (az >= MIN_AZ - 5 or az <= MAX_AZ + 5) if MIN_AZ > MAX_AZ else (MIN_AZ - 5 <= az <= MAX_AZ + 5)
-            if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and _az_ok and is_dark_enough):
+            # Visibility check with optional extended margins, wrap-safe in azimuth
+            margin = 5 if use_margins else 0
+            _az_ok = (az >= MIN_AZ - margin or az <= MAX_AZ + margin) if MIN_AZ > MAX_AZ else (MIN_AZ - margin <= az <= MAX_AZ + margin)
+            if (MIN_ALT - margin <= alt <= MAX_ALT + margin and _az_ok and is_dark_enough):
                 times.append(current_time)
                 alts.append(alt)
                 azs.append(az)
@@ -323,7 +324,7 @@ def create_mosaic_trajectory_plot(groups, start_time, end_time):
         
         # Plot trajectories for this group
         plot_mosaic_group_trajectory(ax, group, start_time, end_time, 
-                                    group_color, group_number, show_labels=True)
+                        group_color, group_number, show_labels=True)
         
         # Plot FOV indicator at optimal time
         plot_mosaic_fov_at_optimal_time(ax, group, overlap_periods, group_color, small_plot=False)
@@ -419,7 +420,7 @@ def create_mosaic_grid_plot(groups, start_time, end_time):
         
         # Plot this group
         plot_mosaic_group_trajectory(ax, group, start_time, end_time, 
-                                    group_color, group_number, show_labels=False)
+                        group_color, group_number, show_labels=False)
         
         # Plot FOV indicator
         plot_mosaic_fov_at_optimal_time(ax, group, overlap_periods, group_color, small_plot=True)

@@ -415,7 +415,7 @@ def main():
             colors = colormap(np.linspace(0, 1, len(all_objects_for_plot)))
             
             # Plot moon trajectory first
-            plot_moon_trajectory(ax, start_time, end_time)
+            plot_moon_trajectory(ax, start_time, end_time, use_margins=use_margins)
             
             existing_positions = []
             group_counter = 1  # Track actual group numbers
@@ -428,13 +428,13 @@ def main():
                     
                     # Plot mosaic group with correct group number and color
                     plot_mosaic_group_trajectory(ax, obj, start_time, end_time, 
-                                                group_color, group_counter, show_labels=True)
+                                                group_color, group_counter, show_labels=True, use_margins=use_margins)
                     group_counter += 1
                 else:
                     # Use pink color for insufficient time objects
                     plot_color = 'pink' if obj in insufficient_objects else color
                     plot_object_trajectory(ax, obj, start_time, end_time, 
-                                         plot_color, existing_positions, schedule)
+                                         plot_color, existing_positions, schedule, use_margins=use_margins)
             
             plt.title(f"Combined Objects and Mosaic Groups - {sunset.date()}")
             finalize_plot_legend(ax)
@@ -448,7 +448,7 @@ def main():
         else:
             all_visible = combined_objects
         
-        fig = plot_quarterly_trajectories(all_visible, start_time, end_time, schedule)
+        fig = plot_quarterly_trajectories(all_visible, start_time, end_time, schedule, use_margins=use_margins)
         plt.show()
         plt.close(fig)
         
@@ -464,7 +464,7 @@ def main():
         ax.legend()
         
         # Plot moon trajectory first
-        plot_moon_trajectory(ax, start_time, end_time)
+        plot_moon_trajectory(ax, start_time, end_time, use_margins=use_margins)
         
         existing_positions = []
         group_counter = 1  # Track actual group numbers
@@ -477,17 +477,17 @@ def main():
                 
                 # Plot mosaic group with correct group number and color
                 plot_mosaic_group_trajectory(ax, obj, start_time, end_time, 
-                                            group_color, group_counter, show_labels=True)
+                                            group_color, group_counter, show_labels=True, use_margins=use_margins)
                 group_counter += 1
             else:
                 plot_object_trajectory(ax, obj, start_time, end_time, 
-                                     color, existing_positions, schedule)
+                                     color, existing_positions, schedule, use_margins=use_margins)
         
         # Plot trajectories for insufficient time objects if not excluded
         if not EXCLUDE_INSUFFICIENT_TIME and not args.mosaic_only:
             for obj in insufficient_objects:
                 plot_object_trajectory(ax, obj, start_time, end_time, 
-                                     'pink', existing_positions, schedule)
+                                     'pink', existing_positions, schedule, use_margins=use_margins)
         
         # Use sunset date for the title to maintain consistency in the display
         title = f"Object Trajectories for Night of {sunset.date()}"
@@ -542,7 +542,7 @@ def main():
         chart_title += f" (including {len(mosaic_groups)} mosaic groups)"
     
     fig, ax = plot_visibility_chart(chart_objects, start_time, 
-                                  end_time, schedule, title=chart_title, use_margins=False)
+                                  end_time, schedule, title=chart_title, use_margins=use_margins)
     plt.show()
     plt.close(fig)  # Explicitly close the figure
 

@@ -43,7 +43,7 @@ from config.settings import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positions=None, schedule=None):
+def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positions=None, schedule=None, use_margins=True):
     """
     Plot trajectory with moon proximity checking and legend.
     Elements are plotted in specific z-order:
@@ -107,9 +107,10 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
         from astronomy.visibility import get_twilight_angle
         is_dark_enough = sun_alt < get_twilight_angle()
         
-        # Extended visibility check for trajectory plotting (±5 degrees)
-        _az_ok = (az >= MIN_AZ - 5 or az <= MAX_AZ + 5) if MIN_AZ > MAX_AZ else (MIN_AZ - 5 <= az <= MAX_AZ + 5)
-        if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and _az_ok and is_dark_enough):
+        # Visibility check with optional extended margins
+        margin = 5 if use_margins else 0
+        _az_ok = (az >= MIN_AZ - margin or az <= MAX_AZ + margin) if MIN_AZ > MAX_AZ else (MIN_AZ - margin <= az <= MAX_AZ + margin)
+        if (MIN_ALT - margin <= alt <= MAX_ALT + margin and _az_ok and is_dark_enough):
             times.append(current_time)
             alts.append(alt)
             azs.append(az)
@@ -258,7 +259,7 @@ def plot_object_trajectory(ax, obj, start_time, end_time, color, existing_positi
                        zorder=15)
             existing_positions.append(label_pos)
 
-def plot_moon_trajectory(ax, start_time, end_time):
+def plot_moon_trajectory(ax, start_time, end_time, use_margins=True):
     """Plot moon trajectory and add it to the legend"""
     times = []
     alts = []
@@ -276,7 +277,7 @@ def plot_moon_trajectory(ax, start_time, end_time):
     current_time = start_time
     while current_time <= end_time:
         alt, az = calculate_moon_position(current_time)
-        if is_visible(alt, az):
+        if is_visible(alt, az, use_margins=use_margins):
             times.append(current_time)
             alts.append(alt)
             azs.append(az)
@@ -311,7 +312,7 @@ def plot_moon_trajectory(ax, start_time, end_time):
                        color=MOON_MARKER_COLOR,
                        zorder=3)
 
-def plot_quarterly_trajectories(objects, start_time, end_time, schedule=None):
+def plot_quarterly_trajectories(objects, start_time, end_time, schedule=None, use_margins=True):
     """Create 4-quarter trajectory plots to reduce visual clutter"""
     
     # Calculate quarter durations
@@ -340,7 +341,7 @@ def plot_quarterly_trajectories(objects, start_time, end_time, schedule=None):
             visible_in_quarter = False
             for sample_time in sample_times:
                 alt, az = calculate_altaz(obj, sample_time)
-                if is_visible(alt, az, use_margins=True):
+                if is_visible(alt, az, use_margins=use_margins):
                     visible_in_quarter = True
                     break
             
@@ -399,14 +400,14 @@ def plot_quarterly_trajectories(objects, start_time, end_time, schedule=None):
         check_time = q_start
         while check_time <= q_end and not moon_visible_in_quarter:
             moon_alt, moon_az = calculate_moon_position(check_time)
-            if is_visible(moon_alt, moon_az, use_margins=True):
+            if is_visible(moon_alt, moon_az, use_margins=use_margins):
                 moon_visible_in_quarter = True
                 has_moon_trajectory = True
             check_time += timedelta(minutes=30)
         
         # Plot moon trajectory for this quarter (no legend)
         if moon_visible_in_quarter:
-            plot_moon_trajectory_no_legend(ax, q_start, q_end)
+            plot_moon_trajectory_no_legend(ax, q_start, q_end, use_margins=use_margins)
         
         # Generate colors for this quarter's objects
         if quarter_visible_objects:
@@ -417,7 +418,7 @@ def plot_quarterly_trajectories(objects, start_time, end_time, schedule=None):
             # Plot trajectories for this quarter only (no legend)
             existing_positions = []
             for obj, color in zip(quarter_visible_objects, colors):
-                plot_object_trajectory_no_legend(ax, obj, q_start, q_end, color, existing_positions, schedule)
+                plot_object_trajectory_no_legend(ax, obj, q_start, q_end, color, existing_positions, schedule, use_margins=use_margins)
                 all_quarter_objects.add(obj.name)
         
         # Add quarter time info
@@ -474,7 +475,7 @@ def plot_quarterly_trajectories(objects, start_time, end_time, schedule=None):
     plt.subplots_adjust(left=0.08, right=0.98, top=0.93, bottom=0.12)
     return fig
 
-def plot_moon_trajectory_no_legend(ax, start_time, end_time):
+def plot_moon_trajectory_no_legend(ax, start_time, end_time, use_margins=True):
     """Plot moon trajectory without adding legend entries"""
     times = []
     alts = []
@@ -492,7 +493,7 @@ def plot_moon_trajectory_no_legend(ax, start_time, end_time):
     current_time = start_time
     while current_time <= end_time:
         alt, az = calculate_moon_position(current_time)
-        if is_visible(alt, az):
+        if is_visible(alt, az, use_margins=use_margins):
             times.append(current_time)
             alts.append(alt)
             azs.append(az)
@@ -527,7 +528,7 @@ def plot_moon_trajectory_no_legend(ax, start_time, end_time):
                        color=MOON_MARKER_COLOR,
                        zorder=3)
 
-def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, existing_positions=None, schedule=None):
+def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, existing_positions=None, schedule=None, use_margins=True):
     """Plot object trajectory without adding legend entries"""
     times = []
     alts = []
@@ -556,9 +557,10 @@ def plot_object_trajectory_no_legend(ax, obj, start_time, end_time, color, exist
         alt, az = calculate_altaz(obj, current_time)
         moon_alt, moon_az = calculate_moon_position(current_time)
         
-        # Extended visibility check
-        _az_ok = (az >= MIN_AZ - 5 or az <= MAX_AZ + 5) if MIN_AZ > MAX_AZ else (MIN_AZ - 5 <= az <= MAX_AZ + 5)
-        if (MIN_ALT - 5 <= alt <= MAX_ALT + 5 and _az_ok):
+        # Visibility check with optional extended margins
+        margin = 5 if use_margins else 0
+        _az_ok = (az >= MIN_AZ - margin or az <= MAX_AZ + margin) if MIN_AZ > MAX_AZ else (MIN_AZ - margin <= az <= MAX_AZ + margin)
+        if (MIN_ALT - margin <= alt <= MAX_ALT + margin and _az_ok):
             times.append(current_time)
             alts.append(alt)
             azs.append(az)
