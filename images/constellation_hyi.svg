@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" 
+     viewBox="0 0 800 600"
+     xmlns="http://www.w3.org/2000/svg"
+     style="background-color: #000000;">
+     
+  <!-- Scalable constellation visualization -->
+  <defs>
+    <!-- Star symbol -->
+    <g id="star">
+      <polygon points="0,-1 0.3,-0.3 1,0 0.3,0.3 0,1 -0.3,0.3 -1,0 -0.3,-0.3" 
+               fill="currentColor" stroke="none"/>
+    </g>
+    
+    <!-- Bright star symbol -->
+    <g id="bright-star">
+      <polygon points="0,-1.2 0.35,-0.35 1.2,0 0.35,0.35 0,1.2 -0.35,0.35 -1.2,0 -0.35,-0.35" 
+               fill="currentColor" stroke="none"/>
+    </g>
+  </defs>
+  
+  <!-- Grid lines -->
+  <g id="grid" stroke="#333" stroke-width="0.1" opacity="0.3">
+  </g>
+
+  <!-- Constellation elements -->
+  <use href="#star" x="733.3333333333333" y="483.2535307268133" transform="scale(0.7894736445841717)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="425.71672180685863" y="116.74646927318668" transform="scale(0.7792207985226718)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="349.6788852906939" y="282.2427839699461" transform="scale(0.5940593835033989)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="290.6064658730835" y="273.09411555727223" transform="scale(0.588235305117351)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="66.6666666666667" y="412.5168166016586" transform="scale(0.7058823529411765)" fill="#FFFFFF" opacity="0.9"/>
+  <line x1="66.6666666666667" y1="412.5168166016586" x2="290.6064658730835" y2="273.09411555727223" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="290.6064658730835" y1="273.09411555727223" x2="349.6788852906939" y2="282.2427839699461" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="349.6788852906939" y1="282.2427839699461" x2="425.71672180685863" y2="116.74646927318668" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  
+  <!-- Title and info -->
+  <text x="400.0" y="25" text-anchor="middle" 
+        fill="white" font-size="12.0" font-weight="bold">
+    Constellation View
+  </text>
+  
+  <text x="10" y="590" fill="white" font-size="5.0">
+    RA: 1.4° to 61.8° | DE: -82.3° to -56.6° | 
+    Stars: 5 | DSO: 0 | Vector SVG
+  </text>
+  
+</svg>

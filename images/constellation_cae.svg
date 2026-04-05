@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" 
+     viewBox="0 0 800 600"
+     xmlns="http://www.w3.org/2000/svg"
+     style="background-color: #000000;">
+     
+  <!-- Scalable constellation visualization -->
+  <defs>
+    <!-- Star symbol -->
+    <g id="star">
+      <polygon points="0,-1 0.3,-0.3 1,0 0.3,0.3 0,1 -0.3,0.3 -1,0 -0.3,-0.3" 
+               fill="currentColor" stroke="none"/>
+    </g>
+    
+    <!-- Bright star symbol -->
+    <g id="bright-star">
+      <polygon points="0,-1.2 0.35,-0.35 1.2,0 0.35,0.35 0,1.2 -0.35,0.35 -1.2,0 -0.35,-0.35" 
+               fill="currentColor" stroke="none"/>
+    </g>
+  </defs>
+  
+  <!-- Grid lines -->
+  <g id="grid" stroke="#333" stroke-width="0.1" opacity="0.3">
+  </g>
+
+  <!-- Constellation elements -->
+  <use href="#star" x="487.6386234231818" y="431.5621703885661" transform="scale(0.5)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="335.78858828548823" y="327.49008262021283" transform="scale(0.5555555457440916)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="312.3613765768181" y="168.4378296114339" transform="scale(0.5)" fill="#FFFFFF" opacity="0.9"/>
+  <line x1="487.6386234231818" y1="431.5621703885661" x2="335.78858828548823" y2="327.49008262021283" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="335.78858828548823" y1="327.49008262021283" x2="312.3613765768181" y2="168.4378296114339" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  
+  <!-- Title and info -->
+  <text x="400.0" y="25" text-anchor="middle" 
+        fill="white" font-size="12.0" font-weight="bold">
+    Constellation View
+  </text>
+  
+  <text x="10" y="590" fill="white" font-size="5.0">
+    RA: 62.7° to 75.5° | DE: -50.0° to -32.1° | 
+    Stars: 3 | DSO: 0 | Vector SVG
+  </text>
+  
+</svg>

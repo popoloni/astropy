@@ -214,7 +214,7 @@ def test_main_application():
         # Test basic report generation
         import subprocess
         result = subprocess.run([
-            'python', 'astropy.py', '--report-only', '--schedule', 'longest_duration'
+            'python', 'astroastronightplanner.py', '--report-only', '--schedule', 'longest_duration'
         ], capture_output=True, text=True, timeout=30)
         
         if result.returncode == 0:
@@ -228,7 +228,7 @@ def test_main_application():
         strategies = ['max_objects', 'optimal_snr', 'minimal_mosaic', 'difficulty_balanced']
         for strategy in strategies:
             result = subprocess.run([
-                'python', 'astropy.py', '--report-only', '--schedule', strategy
+                'python', 'astroastronightplanner.py', '--report-only', '--schedule', strategy
             ], capture_output=True, text=True, timeout=30)
             
             if result.returncode != 0:
@@ -239,7 +239,7 @@ def test_main_application():
         
         # Test mosaic functionality
         result = subprocess.run([
-            'python', 'astropy.py', '--report-only', '--schedule', 'mosaic_groups', '--mosaic'
+            'python', 'astroastronightplanner.py', '--report-only', '--schedule', 'mosaic_groups', '--mosaic'
         ], capture_output=True, text=True, timeout=30)
         
         if result.returncode == 0:

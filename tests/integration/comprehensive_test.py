@@ -15,7 +15,7 @@ def run_command(cmd, description):
     print(f"Testing: {description}")
     
     try:
-        # Change to astropy root directory to run astropy.py commands
+        # Change to astropy root directory to run astronightplanner.py commands
         import os
         original_cwd = os.getcwd()
         
@@ -28,8 +28,8 @@ def run_command(cmd, description):
             os.chdir(astropy_root)
         
         # Fix the command path - remove ../ since we're in astropy root
-        if '../astropy.py' in cmd:
-            cmd = cmd.replace('../astropy.py', 'astropy.py')
+        if '../astronightplanner.py' in cmd:
+            cmd = cmd.replace('../astronightplanner.py', 'astronightplanner.py')
         
         print(f"Command: {cmd}")
         print('='*60)
@@ -85,7 +85,7 @@ def main():
     # Test 1: Basic functionality (report-only)
     tests_total += 1
     success, output, stderr = run_command(
-        "python3 ../astropy.py --report-only",
+        "python3 ../astronightplanner.py --report-only",
         "Basic functionality with all scheduling strategies"
     )
     
@@ -113,7 +113,7 @@ def main():
     # Test 2: Mosaic analysis integration
     tests_total += 1
     success, output, stderr = run_command(
-        "python3 ../astropy.py --mosaic --report-only",
+        "python3 ../astronightplanner.py --mosaic --report-only",
         "Mosaic analysis integration"
     )
     
@@ -139,7 +139,7 @@ def main():
     # Test 3: Mosaic-only mode
     tests_total += 1
     success, output, stderr = run_command(
-        "python3 ../astropy.py --mosaic-only --report-only",
+        "python3 ../astronightplanner.py --mosaic-only --report-only",
         "Mosaic-only mode"
     )
     
@@ -163,7 +163,7 @@ def main():
     # Test 4: Specific mosaic_groups strategy
     tests_total += 1
     success, output, stderr = run_command(
-        "python3 ../astropy.py --schedule mosaic_groups --report-only",
+        "python3 ../astronightplanner.py --schedule mosaic_groups --report-only",
         "Mosaic groups scheduling strategy"
     )
     
@@ -188,7 +188,7 @@ def main():
     for strategy in strategies:
         tests_total += 1
         success, output, stderr = run_command(
-                         f"python3 ../astropy.py --schedule {strategy} --report-only",
+                         f"python3 ../astronightplanner.py --schedule {strategy} --report-only",
             f"Backwards compatibility - {strategy} strategy"
         )
         
@@ -201,7 +201,7 @@ def main():
     # Test 6: Check for essential components and classes
     tests_total += 1
     success, output, stderr = run_command(
-        "python3 -c \"import sys; sys.path.insert(0, '.'); import astropy; print('MosaicGroup available:', hasattr(astropy, 'MosaicGroup')); print('SchedulingStrategy.MOSAIC_GROUPS available:', hasattr(astropy.SchedulingStrategy, 'MOSAIC_GROUPS'))\"",
+        "python3 -c \"import sys; sys.path.insert(0, '.'); import astronightplanner; print('MosaicGroup available:', hasattr(astronightplanner, 'MosaicGroup')); print('SchedulingStrategy.MOSAIC_GROUPS available:', hasattr(astronightplanner.SchedulingStrategy, 'MOSAIC_GROUPS'))\"",
         "Essential classes and enums availability"
     )
     

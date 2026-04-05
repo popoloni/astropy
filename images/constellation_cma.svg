@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" 
+     viewBox="0 0 800 600"
+     xmlns="http://www.w3.org/2000/svg"
+     style="background-color: #000000;">
+     
+  <!-- Scalable constellation visualization -->
+  <defs>
+    <!-- Star symbol -->
+    <g id="star">
+      <polygon points="0,-1 0.3,-0.3 1,0 0.3,0.3 0,1 -0.3,0.3 -1,0 -0.3,-0.3" 
+               fill="currentColor" stroke="none"/>
+    </g>
+    
+    <!-- Bright star symbol -->
+    <g id="bright-star">
+      <polygon points="0,-1.2 0.35,-0.35 1.2,0 0.35,0.35 0,1.2 -0.35,0.35 -1.2,0 -0.35,-0.35" 
+               fill="currentColor" stroke="none"/>
+    </g>
+  </defs>
+  
+  <!-- Grid lines -->
+  <g id="grid" stroke="#333" stroke-width="0.1" opacity="0.3">
+  </g>
+
+  <!-- Constellation elements -->
+  <use href="#star" x="645.8300839393465" y="453.393588936758" transform="scale(0.75)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="627.4353078730263" y="214.977989327247" transform="scale(1.016949136104436)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="532.1805934905818" y="313.6093105059499" transform="scale(0.5454545454545454)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="519.6252647426279" y="240.58540634205406" transform="scale(0.6060605710312484)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="454.51164589223225" y="190.72143853976021" transform="scale(0.5)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="418.2177030313559" y="501.5415873719462" transform="scale(0.6666666666666666)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="384.7201618659325" y="98.4584126280538" transform="scale(0.5940593835033989)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="384.48146891359835" y="332.58438619103543" transform="scale(0.5)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="369.6837214902866" y="197.22196328523358" transform="scale(0.5607476735471151)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="350.497905714509" y="431.9045956226301" transform="scale(1.2)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="326.65512994020565" y="411.4787478552004" transform="scale(0.6741572600274294)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="316.5916468729151" y="330.712757129721" transform="scale(0.75)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="310.93569128133475" y="169.2427512469389" transform="scale(0.588235305117351)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="275.2210583827987" y="381.12172901041026" transform="scale(1.0714285896748916)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="225.73845303027795" y="388.5931873559492" transform="scale(0.6)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="154.16991606065346" y="438.42216658073414" transform="scale(0.8695651452798309)" fill="#FFFFFF" opacity="0.9"/>
+  <line x1="384.7201618659325" y1="98.4584126280538" x2="310.93569128133475" y2="169.2427512469389" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="310.93569128133475" y1="169.2427512469389" x2="369.6837214902866" y2="197.22196328523358" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="369.6837214902866" y1="197.22196328523358" x2="454.51164589223225" y2="190.72143853976021" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="454.51164589223225" y1="190.72143853976021" x2="316.5916468729151" y2="330.712757129721" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="316.5916468729151" y1="330.712757129721" x2="275.2210583827987" y2="381.12172901041026" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="275.2210583827987" y1="381.12172901041026" x2="225.73845303027795" y2="388.5931873559492" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="225.73845303027795" y1="388.5931873559492" x2="154.16991606065346" y2="438.42216658073414" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="350.497905714509" y1="431.9045956226301" x2="326.65512994020565" y2="411.4787478552004" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="326.65512994020565" y1="411.4787478552004" x2="275.2210583827987" y2="381.12172901041026" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="326.65512994020565" y1="411.4787478552004" x2="384.48146891359835" y2="332.58438619103543" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="384.48146891359835" y1="332.58438619103543" x2="519.6252647426279" y2="240.58540634205406" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="519.6252647426279" y1="240.58540634205406" x2="532.1805934905818" y2="313.6093105059499" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="519.6252647426279" y1="240.58540634205406" x2="627.4353078730263" y2="214.977989327247" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="519.6252647426279" y1="240.58540634205406" x2="454.51164589223225" y2="190.72143853976021" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="350.497905714509" y1="431.9045956226301" x2="418.2177030313559" y2="501.5415873719462" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="645.8300839393465" y1="453.393588936758" x2="350.497905714509" y2="431.9045956226301" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="369.6837214902866" y1="197.22196328523358" x2="384.7201618659325" y2="98.4584126280538" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <use href="#bright-star" x="454.37072606371254" y="190.78034961261216" transform="scale(0.8)" fill="#FFD700" opacity="0.95"/>
+  <text x="457.37072606371254" y="187.78034961261216" fill="#FFD700" font-size="4.5" font-weight="bold">Sirius</text>
+  <ellipse cx="447.70133549492857" cy="270.135861022571" rx="1.4740740740740739" ry="2.2111111111111112" transform="rotate(1e-10 447.70133549492857 270.135861022571)" fill="none" stroke="#FFA500" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="449.70133549492857" y="272.135861022571" fill="#FFA500" font-size="3.5" font-weight="bold" opacity="0.9">M41</text>
+  <text x="199.2985578292154" y="123.91656665229883" fill="#BA55D3" font-size="3.5" font-weight="bold" opacity="0.9">NGC2359</text>
+  <ellipse cx="203.28035057236883" cy="169.48182579291156" rx="0.6851851851851852" ry="1.0277777777777777" transform="rotate(1e-10 203.28035057236883 169.48182579291156)" fill="none" stroke="#FFA500" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="205.28035057236883" y="171.48182579291156" fill="#FFA500" font-size="3.5" font-weight="bold" opacity="0.9">NGC2360</text>
+  <ellipse cx="195.8801946014572" cy="352.80154426508494" rx="0.22962962962962966" ry="0.34444444444444444" transform="rotate(1e-10 195.8801946014572 352.80154426508494)" fill="none" stroke="#FFA500" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="197.8801946014572" y="354.80154426508494" fill="#FFA500" font-size="3.5" font-weight="bold" opacity="0.9">NGC2362</text>
+  <path d="M 195.8669359886761,121.66648228422359 L 196.28196140271123,121.3533845320663 L 196.820322749595,121.1190535100116 L 197.03061051510193,121.01468759262586 L 197.87176157712895,121.34550785905607 L 198.38668909677156,121.8377999221963 L 197.7478089646163,122.3970437059237 L 196.85454847096082,122.66681975652457 L 196.25421081782068,122.5782071851593 L 195.87803622263255,122.43248873446981 L 195.89992835071303,121.67238978898116 Z" fill="#FF0000" fill-opacity="0.1" stroke="#FF0000" stroke-width="0.3" stroke-opacity="0.7"/>
+  <path d="M 197.0858033450516,120.98121173233221 L 197.97690545988243,120.47710465967663 L 198.82453165838393,120.10887019644765 L 199.539880068905,120.10887019644765 L 200.09828350487692,120.2624653201475 L 199.64039885417694,120.51845719298038 L 198.69256221023574,120.92213668475547 L 197.71019150509738,121.17419022108322 L 197.09967863749708,120.99696507835273 Z" fill="#FF0000" fill-opacity="0.1" stroke="#FF0000" stroke-width="0.3" stroke-opacity="0.7"/>
+  <path d="M 200.8543327732382,122.93856497537799 L 200.0563492877082,123.06853008004701 L 199.4113023589108,123.18668017520069 L 198.718154416302,123.35996698142606 L 198.28956204965326,123.46433289881173 L 196.6957534574184,123.09609843558289 L 196.0984992025991,122.93265747062027 L 196.12840816631518,122.56048467088631 L 196.51814971411622,122.44824208049022 L 196.98559289961236,122.34978366786224 L 197.11540396893542,122.6097138772003 L 197.00810170735696,122.74755565487956 L 198.41474802149435,122.97794834042921 L 199.63916549484804,122.92674996586264 L 200.86789972585146,122.95431832139845 Z" fill="#FF0000" fill-opacity="0.1" stroke="#FF0000" stroke-width="0.3" stroke-opacity="0.7"/>
+  
+  <!-- Title and info -->
+  <text x="400.0" y="25" text-anchor="middle" 
+        fill="white" font-size="12.0" font-weight="bold">
+    Constellation View
+  </text>
+  
+  <text x="10" y="590" fill="white" font-size="5.0">
+    RA: 90.1° to 116.0° | DE: -37.5° to -7.0° | 
+    Stars: 16 | DSO: 4 | Vector SVG
+  </text>
+  
+</svg>

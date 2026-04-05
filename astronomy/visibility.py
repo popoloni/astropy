@@ -4,22 +4,42 @@ Object visibility and imaging calculations for astronomical observations.
 
 import math
 import re
+import os
 from datetime import timedelta
 from .celestial import calculate_altaz, calculate_sun_position
 from .time_utils import utc_to_local
+
+
+def get_twilight_angle():
+    """Get twilight angle from configuration"""
+    from config.settings import TWILIGHT_TYPE
+    
+    twilight_angles = {
+        'civil': -6.0,
+        'nautical': -12.0,
+        'astronomical': -18.0
+    }
+    
+    return twilight_angles.get(TWILIGHT_TYPE, -18.0)
 
 
 def is_visible(alt, az, use_margins=True):
     """Check if object is within visibility limits"""
     # Import here to avoid circular imports during refactoring
     from config.settings import MIN_ALT, MAX_ALT, MIN_AZ, MAX_AZ
-    
-    if use_margins:
-        # Use 5-degree margins as in trajectory plotting
-        return ((MIN_ALT - 5 <= alt <= MAX_ALT + 5) and 
-                (MIN_AZ - 5 <= az <= MAX_AZ + 5))
+
+    margin = 5 if use_margins else 0
+    alt_ok = (MIN_ALT - margin) <= alt <= (MAX_ALT + margin)
+
+    # Handle wrap-around azimuth window (e.g. 315° NW to 45° NE crossing North)
+    min_az = MIN_AZ - margin
+    max_az = MAX_AZ + margin
+    if MIN_AZ > MAX_AZ:
+        az_ok = az >= min_az or az <= max_az
     else:
-        return (MIN_AZ <= az <= MAX_AZ) and (MIN_ALT <= alt <= MAX_ALT)
+        az_ok = min_az <= az <= max_az
+
+    return alt_ok and az_ok
 
 
 def find_visibility_window(obj, start_time, end_time, use_margins=True):
@@ -41,8 +61,8 @@ def find_visibility_window(obj, start_time, end_time, use_margins=True):
         
         # Object is visible if:
         # 1. It's within visibility limits
-        # 2. The sun is below the horizon (altitude < -5)
-        is_currently_visible = is_visible(alt, az, use_margins) and sun_alt < -5
+        # 2. The sun is below the twilight threshold
+        is_currently_visible = is_visible(alt, az, use_margins) and sun_alt < get_twilight_angle()
         
         # Object becomes visible
         if is_currently_visible and not last_visible:
@@ -82,7 +102,9 @@ def find_sunset_sunrise(date):
     if date.tzinfo is not None:
         date = date.replace(tzinfo=None)
     
-    noon = date.replace(hour=12, minute=0, second=0, microsecond=0)
+    # Break replace() into multiple calls to avoid argument limit issues
+    noon = date.replace(hour=12, minute=0)
+    noon = noon.replace(second=0, microsecond=0)
     noon = milan_tz.localize(noon)
     noon_utc = local_to_utc(noon)
     
@@ -100,37 +122,6 @@ def find_sunset_sunrise(date):
     sunrise = current_time
     
     return utc_to_local(sunset), utc_to_local(sunrise)
-
-
-def find_astronomical_twilight(date):
-    """Find astronomical twilight times"""
-    # Import here to avoid circular imports during refactoring
-    from astronomy.time_utils import get_local_timezone, local_to_utc
-    from config.settings import SEARCH_INTERVAL_MINUTES
-    
-    milan_tz = get_local_timezone()
-    
-    if date.tzinfo is not None:
-        date = date.replace(tzinfo=None)
-    
-    noon = date.replace(hour=12, minute=0, second=0, microsecond=0)
-    noon = milan_tz.localize(noon)
-    noon_utc = local_to_utc(noon)
-    
-    current_time = noon_utc
-    alt, _ = calculate_sun_position(current_time)
-    
-    while alt > -18:
-        current_time += timedelta(minutes=SEARCH_INTERVAL_MINUTES)
-        alt, _ = calculate_sun_position(current_time)
-    twilight_evening = current_time
-    
-    while alt <= -18:
-        current_time += timedelta(minutes=SEARCH_INTERVAL_MINUTES)
-        alt, _ = calculate_sun_position(current_time)
-    twilight_morning = current_time
-    
-    return utc_to_local(twilight_evening), utc_to_local(twilight_morning)
 
 
 def find_best_objects(visibility_periods, max_overlapping=None):
@@ -238,10 +229,20 @@ def is_object_imageable(obj, visibility_duration, bortle_index):
 def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=None, use_margins=True):
     """Filter objects based on visibility and exposure requirements"""
     # Import here to avoid circular imports during refactoring
-    from config.settings import EXCLUDE_INSUFFICIENT_TIME, MIN_VISIBILITY_HOURS, BORTLE_INDEX
+    from config.settings import (
+        EXCLUDE_INSUFFICIENT_TIME,
+        MIN_VISIBILITY_HOURS,
+        VISIBILITY_LIST_THRESHOLD_HOURS,
+        BORTLE_INDEX,
+    )
     
     if exclude_insufficient is None:
         exclude_insufficient = EXCLUDE_INSUFFICIENT_TIME
+    
+    # Check for environment variable override from run_mosaic_plots.py
+    # When FORCE_MULTI_NIGHT_MODE is true, include insufficient time objects (exclude_insufficient = False)
+    if os.environ.get('FORCE_MULTI_NIGHT_MODE', '').lower() == 'true':
+        exclude_insufficient = False
     
     filtered_objects = []
     insufficient_objects = []
@@ -250,6 +251,11 @@ def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=N
         periods = find_visibility_window(obj, start_time, end_time, use_margins=use_margins)
         if periods:
             duration = calculate_visibility_duration(periods)
+
+            # Hard gate for visibility lists: skip any object below configured threshold.
+            if duration < VISIBILITY_LIST_THRESHOLD_HOURS:
+                continue
+
             if hasattr(obj, 'magnitude') and obj.magnitude is not None:
                 # Calculate required exposure time and store it in the object
                 obj.required_exposure = calculate_required_exposure(
@@ -258,19 +264,36 @@ def filter_visible_objects(objects, start_time, end_time, exclude_insufficient=N
                 if duration >= MIN_VISIBILITY_HOURS:
                     obj.sufficient_time = duration >= obj.required_exposure[0]
                     if obj.sufficient_time or not exclude_insufficient:
+                        # Mark objects for multi-night visualization when they have insufficient time
+                        # but are included due to exclude_insufficient=False (multi-night mode)
+                        if not exclude_insufficient and not obj.sufficient_time:
+                            obj.is_multi_night_candidate = True
+                        else:
+                            obj.is_multi_night_candidate = False
                         filtered_objects.append(obj)
                     else:
                         insufficient_objects.append(obj)
                 else:
                     obj.sufficient_time = False
-                    insufficient_objects.append(obj)
+                    if not exclude_insufficient:
+                        # Include objects with insufficient visibility time when multi-night mode enabled
+                        obj.is_multi_night_candidate = True
+                        filtered_objects.append(obj)
+                    else:
+                        insufficient_objects.append(obj)
             else:
                 # Object without magnitude - assume visible if duration meets minimum
                 if duration >= MIN_VISIBILITY_HOURS:
                     obj.sufficient_time = True
+                    obj.is_multi_night_candidate = False
                     filtered_objects.append(obj)
                 else:
                     obj.sufficient_time = False
-                    insufficient_objects.append(obj)
+                    if not exclude_insufficient:
+                        # Include short-visibility objects in multi-night mode
+                        obj.is_multi_night_candidate = True
+                        filtered_objects.append(obj)
+                    else:
+                        insufficient_objects.append(obj)
     
     return filtered_objects, insufficient_objects 

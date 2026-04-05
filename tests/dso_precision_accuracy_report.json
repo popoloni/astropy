@@ -1,0 +1,471 @@
+{
+  "dso_positions": [
+    {
+      "object": "M1/NGC 1952 Crab Nebula",
+      "time": "2024-01-15T22:00:00",
+      "our_alt": 65.0464615233864,
+      "our_az": 206.31845261407557,
+      "astropy_alt": 65.11093013755703,
+      "astropy_az": 202.68209972563187,
+      "alt_error_arcmin": 3.8681168502381524,
+      "az_error_arcmin": 218.18117330662176,
+      "total_error_arcmin": 218.21545938228397
+    },
+    {
+      "object": "M42/NGC 1976 Great Orion Nebula",
+      "time": "2024-01-15T22:00:00",
+      "our_alt": 39.27477214970844,
+      "our_az": 194.7867222635169,
+      "astropy_alt": 38.332828874372375,
+      "astropy_az": 192.67421254384558,
+      "alt_error_arcmin": 56.516596520163915,
+      "az_error_arcmin": 126.75058318027936,
+      "total_error_arcmin": 138.779811279465
+    },
+    {
+      "object": "M97/NGC 3587 Owl Nebula",
+      "time": "2024-01-15T22:00:00",
+      "our_alt": 45.43812196922995,
+      "our_az": 50.27358630689519,
+      "astropy_alt": 43.46810437585293,
+      "astropy_az": 49.96201315269631,
+      "alt_error_arcmin": 118.20105560262093,
+      "az_error_arcmin": 18.694389251932932,
+      "total_error_arcmin": 119.670254178207
+    },
+    {
+      "object": "M33/NGC 598 Triangulum Galaxy",
+      "time": "2024-01-15T22:00:00",
+      "our_alt": 34.83323599353134,
+      "our_az": 281.5872586981087,
+      "astropy_alt": 34.63318736255565,
+      "astropy_az": 280.6279402340581,
+      "alt_error_arcmin": 12.002917858541196,
+      "az_error_arcmin": 57.55910784303751,
+      "total_error_arcmin": 58.79728678098429
+    },
+    {
+      "object": "M106/NGC 4258",
+      "time": "2024-01-15T22:00:00",
+      "our_alt": 33.56545252067867,
+      "our_az": 53.111013937619695,
+      "astropy_alt": 31.000222394895182,
+      "astropy_az": 52.476809585846674,
+      "alt_error_arcmin": 153.91380754700918,
+      "az_error_arcmin": 38.05226110638131,
+      "total_error_arcmin": 158.5478941169702
+    },
+    {
+      "object": "M37/NGC 2099 Salt and Pepper Cluster",
+      "time": "2024-01-15T22:00:00",
+      "our_alt": 76.0844242093621,
+      "our_az": 206.2441113353289,
+      "astropy_alt": 76.34009883600413,
+      "astropy_az": 200.31006085483003,
+      "alt_error_arcmin": 15.340477598522,
+      "az_error_arcmin": 356.04302882993295,
+      "total_error_arcmin": 356.3733556697852
+    },
+    {
+      "object": "M1/NGC 1952 Crab Nebula",
+      "time": "2024-04-15T22:00:00",
+      "our_alt": 8.01693924073964,
+      "our_az": 293.500460869051,
+      "astropy_alt": 9.051499335739207,
+      "astropy_az": 292.33083726861986,
+      "alt_error_arcmin": 62.07360569997398,
+      "az_error_arcmin": 70.17741602586739,
+      "total_error_arcmin": 93.69099340205285
+    },
+    {
+      "object": "M42/NGC 1976 Great Orion Nebula",
+      "time": "2024-04-15T22:00:00",
+      "our_alt": -11.78417555821611,
+      "our_az": 274.32708510275035,
+      "astropy_alt": -10.59315884328135,
+      "astropy_az": 273.1177135468995,
+      "alt_error_arcmin": 71.46100289608557,
+      "az_error_arcmin": 72.56229335105104,
+      "total_error_arcmin": 101.84282670506714
+    },
+    {
+      "object": "M97/NGC 3587 Owl Nebula",
+      "time": "2024-04-15T22:00:00",
+      "our_alt": 76.13954300528862,
+      "our_az": 318.24396379513036,
+      "astropy_alt": 76.7783168845628,
+      "astropy_az": 320.3762624738991,
+      "alt_error_arcmin": 38.32643275645097,
+      "az_error_arcmin": 127.93792072612405,
+      "total_error_arcmin": 133.55533313034996
+    },
+    {
+      "object": "M33/NGC 598 Triangulum Galaxy",
+      "time": "2024-04-15T22:00:00",
+      "our_alt": -12.031658656970173,
+      "our_az": 343.97034755024123,
+      "astropy_alt": -11.5603003926719,
+      "astropy_az": 342.52416932762844,
+      "alt_error_arcmin": 28.281495857896353,
+      "az_error_arcmin": 86.7706933567672,
+      "total_error_arcmin": 91.26333455213178
+    },
+    {
+      "object": "M106/NGC 4258",
+      "time": "2024-04-15T22:00:00",
+      "our_alt": 88.2252371171982,
+      "our_az": 351.2016252141241,
+      "astropy_alt": 88.1273181054615,
+      "astropy_az": 28.037982020020017,
+      "alt_error_arcmin": 5.875140704202408,
+      "az_error_arcmin": 2210.1814083537565,
+      "total_error_arcmin": 2210.189217037964
+    },
+    {
+      "object": "M37/NGC 2099 Salt and Pepper Cluster",
+      "time": "2024-04-15T22:00:00",
+      "our_alt": 21.055643471718255,
+      "our_az": 298.33043623429757,
+      "astropy_alt": 19.245521566435045,
+      "astropy_az": 297.2574575475172,
+      "alt_error_arcmin": 108.60731431699264,
+      "az_error_arcmin": 64.37872120682073,
+      "total_error_arcmin": 126.25437999283662
+    },
+    {
+      "object": "M1/NGC 1952 Crab Nebula",
+      "time": "2024-07-15T22:00:00",
+      "our_alt": -21.697148718477692,
+      "our_az": 11.205578599692883,
+      "astropy_alt": -21.89791735166793,
+      "astropy_az": 9.465059494414554,
+      "alt_error_arcmin": 12.046117991414391,
+      "az_error_arcmin": 104.43114631669974,
+      "total_error_arcmin": 105.12360952556294
+    },
+    {
+      "object": "M42/NGC 1976 Great Orion Nebula",
+      "time": "2024-07-15T22:00:00",
+      "our_alt": -48.74063471320825,
+      "our_az": 16.797460552466042,
+      "astropy_alt": -49.037036207605425,
+      "astropy_az": 14.27870015110188,
+      "alt_error_arcmin": 17.7840896638304,
+      "az_error_arcmin": 151.1256240818497,
+      "total_error_arcmin": 152.16842017744585
+    },
+    {
+      "object": "M97/NGC 3587 Owl Nebula",
+      "time": "2024-07-15T22:00:00",
+      "our_alt": 30.019354608159798,
+      "our_az": 321.31374790344097,
+      "astropy_alt": 28.913119349115785,
+      "astropy_az": 320.47189051441154,
+      "alt_error_arcmin": 66.37411554264077,
+      "az_error_arcmin": 50.5114433417657,
+      "total_error_arcmin": 83.40820776480113
+    },
+    {
+      "object": "M33/NGC 598 Triangulum Galaxy",
+      "time": "2024-07-15T22:00:00",
+      "our_alt": 9.968085384538748,
+      "our_az": 55.84522596407881,
+      "astropy_alt": 8.969952796012118,
+      "astropy_az": 54.63650544725738,
+      "alt_error_arcmin": 59.88795531159781,
+      "az_error_arcmin": 72.52323100928578,
+      "total_error_arcmin": 94.05416645439036
+    },
+    {
+      "object": "M106/NGC 4258",
+      "time": "2024-07-15T22:00:00",
+      "our_alt": 33.13769846285306,
+      "our_az": 307.25670516952783,
+      "astropy_alt": 32.445311793986384,
+      "astropy_az": 306.3621927864128,
+      "alt_error_arcmin": 41.54320013200049,
+      "az_error_arcmin": 53.670742986903406,
+      "total_error_arcmin": 67.87036267748749
+    },
+    {
+      "object": "M37/NGC 2099 Salt and Pepper Cluster",
+      "time": "2024-07-15T22:00:00",
+      "our_alt": -11.692904200836228,
+      "our_az": 5.816278985257685,
+      "astropy_alt": -11.793838565314362,
+      "astropy_az": 4.280328891895961,
+      "alt_error_arcmin": 6.056061868688012,
+      "az_error_arcmin": 92.1570056017034,
+      "total_error_arcmin": 92.3557771167011
+    }
+  ],
+  "constellation_positions": [
+    {
+      "star": "Betelgeuse",
+      "ra_hours": 5.919,
+      "dec_deg": 7.407,
+      "our_alt": 1.2522124481321164,
+      "our_az": 279.72577654590435,
+      "astropy_alt": 2.0402767115740974,
+      "astropy_az": 278.50632753056135,
+      "total_error_arcmin": 87.11580949292346
+    },
+    {
+      "star": "Rigel",
+      "ra_hours": 5.242,
+      "dec_deg": -8.202,
+      "our_alt": -17.405407614857413,
+      "our_az": 276.0743782151104,
+      "astropy_alt": -16.21351350440182,
+      "astropy_az": 274.8604672149023,
+      "total_error_arcmin": 102.07394061695594
+    },
+    {
+      "star": "Bellatrix",
+      "ra_hours": 5.418,
+      "dec_deg": 6.35,
+      "our_alt": -5.065424661675232,
+      "our_az": 284.4015218847999,
+      "astropy_alt": -3.881711663220048,
+      "astropy_az": 283.16938384661546,
+      "total_error_arcmin": 102.51646788818731
+    },
+    {
+      "star": "Mintaka",
+      "ra_hours": 5.533,
+      "dec_deg": -0.299,
+      "our_alt": -8.708281802524139,
+      "our_az": 278.53552880835844,
+      "astropy_alt": -7.51581597341135,
+      "astropy_az": 277.3106857559728,
+      "total_error_arcmin": 102.5669289960668
+    },
+    {
+      "star": "Alnilam",
+      "ra_hours": 5.603,
+      "dec_deg": -1.202,
+      "our_alt": -8.62938907862487,
+      "our_az": 277.1369907449398,
+      "astropy_alt": -7.436607793433907,
+      "astropy_az": 275.916180528373,
+      "total_error_arcmin": 102.4069197126468
+    },
+    {
+      "star": "Alnitak",
+      "ra_hours": 5.679,
+      "dec_deg": -1.943,
+      "our_alt": -8.36739211811676,
+      "our_az": 275.7883738006468,
+      "astropy_alt": -7.174964791987539,
+      "astropy_az": 274.57127563734014,
+      "total_error_arcmin": 102.23286713189148
+    },
+    {
+      "star": "Dubhe",
+      "ra_hours": 11.062,
+      "dec_deg": 61.751,
+      "our_alt": 70.6712345621943,
+      "our_az": 332.41529622831223,
+      "astropy_alt": 70.98456730901813,
+      "astropy_az": 334.05291754133873,
+      "total_error_arcmin": 100.03964969150432
+    },
+    {
+      "star": "Merak",
+      "ra_hours": 11.031,
+      "dec_deg": 56.382,
+      "our_alt": 73.89678376628999,
+      "our_az": 318.59318767182526,
+      "astropy_alt": 74.49239596272959,
+      "astropy_az": 320.23011052393497,
+      "total_error_arcmin": 104.51494211022505
+    },
+    {
+      "star": "Phecda",
+      "ra_hours": 11.897,
+      "dec_deg": 53.695,
+      "our_alt": 80.90573569901494,
+      "our_az": 334.52543587346634,
+      "astropy_alt": 81.33723154747479,
+      "astropy_az": 339.95119606871305,
+      "total_error_arcmin": 326.5734595903686
+    },
+    {
+      "star": "Megrez",
+      "ra_hours": 12.257,
+      "dec_deg": 57.033,
+      "our_alt": 78.65301542361853,
+      "our_az": 356.44402906570497,
+      "astropy_alt": 78.61819810825112,
+      "astropy_az": 1.0943431458355268,
+      "total_error_arcmin": 279.0266651084007
+    },
+    {
+      "star": "Alioth",
+      "ra_hours": 12.9,
+      "dec_deg": 55.96,
+      "our_alt": 78.5188546517464,
+      "our_az": 23.63543406566636,
+      "astropy_alt": 77.92380523904748,
+      "astropy_az": 27.811520663258342,
+      "total_error_arcmin": 253.09606687364095
+    },
+    {
+      "star": "Mizar",
+      "ra_hours": 13.399,
+      "dec_deg": 54.925,
+      "our_alt": 76.47493886214068,
+      "our_az": 41.19636299338903,
+      "astropy_alt": 75.53177115676768,
+      "astropy_az": 43.843782518948714,
+      "total_error_arcmin": 168.6245049605295
+    },
+    {
+      "star": "Alkaid",
+      "ra_hours": 13.792,
+      "dec_deg": 49.313,
+      "our_alt": 75.1413272857414,
+      "our_az": 67.64163652366584,
+      "astropy_alt": 73.82353299429802,
+      "astropy_az": 68.46851773115486,
+      "total_error_arcmin": 93.34415660925609
+    },
+    {
+      "star": "Schedar",
+      "ra_hours": 0.675,
+      "dec_deg": 56.537,
+      "our_alt": 12.213761212419781,
+      "our_az": 357.2032791033866,
+      "astropy_alt": 12.34124959394286,
+      "astropy_az": 356.2423477227759,
+      "total_error_arcmin": 58.161092324652515
+    },
+    {
+      "star": "Caph",
+      "ra_hours": 0.153,
+      "dec_deg": 59.15,
+      "our_alt": 14.755819565430278,
+      "our_az": 1.5194841023858998,
+      "astropy_alt": 14.806069833357332,
+      "astropy_az": 0.6164287988411108,
+      "total_error_arcmin": 54.2671382557953
+    },
+    {
+      "star": "Gamma Cas",
+      "ra_hours": 0.945,
+      "dec_deg": 60.717,
+      "our_alt": 19.713878458401556,
+      "our_az": 355.4166220845121,
+      "astropy_alt": 16.72486100202684,
+      "astropy_az": 354.5495583197965,
+      "total_error_arcmin": 186.73427573893287
+    },
+    {
+      "star": "Ruchbah",
+      "ra_hours": 1.43,
+      "dec_deg": 60.235,
+      "our_alt": 19.792405839454972,
+      "our_az": 351.64661524828546,
+      "astropy_alt": 16.89970408970427,
+      "astropy_az": 350.77702428570615,
+      "total_error_arcmin": 181.2348826213028
+    },
+    {
+      "star": "Segin",
+      "ra_hours": 1.906,
+      "dec_deg": 63.67,
+      "our_alt": 23.28337606351637,
+      "our_az": 349.1300842195774,
+      "astropy_alt": 21.11339476509165,
+      "astropy_az": 348.3491281353617,
+      "total_error_arcmin": 138.37398768392697
+    }
+  ],
+  "precision_comparisons": [
+    {
+      "function": "LST",
+      "standard_error_min": 5.590800131697122,
+      "precision_error_min": 5.590800131697122,
+      "improvement_min": 0.0,
+      "improvement_percent": 0.0
+    },
+    {
+      "function": "Sun Position",
+      "precision_error_arcmin": 50.11739842906225,
+      "note": "Standard function returns alt/az, not RA/Dec"
+    },
+    {
+      "function": "Moon Position",
+      "precision_error_arcmin": 386.81971194825945,
+      "note": "Standard function returns alt/az, not RA/Dec"
+    }
+  ],
+  "coordinate_transformations": [
+    {
+      "ra_input": "12h 30m",
+      "ra_expected": 187.5,
+      "ra_parsed": 187.5,
+      "ra_error_arcmin": 0.0,
+      "dec_input": "+45\u00b0 30'",
+      "dec_expected": 45.5,
+      "dec_parsed": 45.5,
+      "dec_error_arcmin": 0.0,
+      "total_error_arcmin": 0.0
+    },
+    {
+      "ra_input": "00h 00m",
+      "ra_expected": 0.0,
+      "ra_parsed": 0.0,
+      "ra_error_arcmin": 0.0,
+      "dec_input": "+00\u00b0 00'",
+      "dec_expected": 0.0,
+      "dec_parsed": 0.0,
+      "dec_error_arcmin": 0.0,
+      "total_error_arcmin": 0.0
+    },
+    {
+      "ra_input": "06h 15m",
+      "ra_expected": 93.75,
+      "ra_parsed": 93.75,
+      "ra_error_arcmin": 0.0,
+      "dec_input": "+23\u00b0 26'",
+      "dec_expected": 23.433,
+      "dec_parsed": 23.433333333333334,
+      "dec_error_arcmin": 0.020000000000024443,
+      "total_error_arcmin": 0.020000000000024443
+    }
+  ],
+  "summary": {
+    "constellation_positions": {
+      "status": "POOR",
+      "max_error_arcmin": 326.5734595903686,
+      "avg_error_arcmin": 141.27243085595597,
+      "passed": false
+    },
+    "coordinate_transformations": {
+      "status": "EXCELLENT",
+      "max_error_arcmin": 0.020000000000024443,
+      "avg_error_arcmin": 0.003888888888745612,
+      "passed": true
+    },
+    "dso_positions": {
+      "status": "POOR",
+      "max_error_arcmin": 2210.189217037964,
+      "avg_error_arcmin": 244.56448277469377,
+      "passed": false
+    }
+  },
+  "overall": {
+    "status": "FAILED",
+    "test_location": "45.52\u00b0N, 9.22\u00b0E",
+    "test_times": [
+      "2024-01-15T22:00:00",
+      "2024-04-15T22:00:00",
+      "2024-07-15T22:00:00",
+      "2024-10-15T22:00:00",
+      "2025-06-15T12:00:00"
+    ],
+    "precision_module_available": true,
+    "total_tests": 42
+  }
+}

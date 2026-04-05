@@ -14,7 +14,7 @@ This document summarizes the comprehensive testing and verification performed on
 
 | Directory | Scripts | Status | Notes |
 |-----------|---------|--------|-------|
-| **Root** | 2 | ✅ 100% | astropy.py, trajectory_analysis.py |
+| **Root** | 2 | ✅ 100% | astronightplanner.py, astroseasonplanner.py |
 | **Wrappers** | 9 | ✅ 100% | All Pythonista-compatible |
 | **Tests** | 33 | ✅ 100% | Integration, unit, precision, demo |
 | **Legacy** | 33 | ✅ 100% | All legacy functionality preserved |
@@ -23,8 +23,8 @@ This document summarizes the comprehensive testing and verification performed on
 ## 🔍 Detailed Verification Results
 
 ### **✅ Root Scripts (2/2)**
-- **astropy.py**: Main application - fully functional
-- **trajectory_analysis.py**: Multi-night planner - working perfectly
+- **astronightplanner.py**: Main application - fully functional
+- **astroseasonplanner.py**: Multi-night planner - working perfectly
 
 ### **✅ Wrapper Scripts (9/9) - Pythonista Compatible**
 - **run_longest_duration.py**: Longest duration strategy ✅

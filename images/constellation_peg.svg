@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" 
+     viewBox="0 0 800 600"
+     xmlns="http://www.w3.org/2000/svg"
+     style="background-color: #000000;">
+     
+  <!-- Scalable constellation visualization -->
+  <defs>
+    <!-- Star symbol -->
+    <g id="star">
+      <polygon points="0,-1 0.3,-0.3 1,0 0.3,0.3 0,1 -0.3,0.3 -1,0 -0.3,-0.3" 
+               fill="currentColor" stroke="none"/>
+    </g>
+    
+    <!-- Bright star symbol -->
+    <g id="bright-star">
+      <polygon points="0,-1.2 0.35,-0.35 1.2,0 0.35,0.35 0,1.2 -0.35,0.35 -1.2,0 -0.35,-0.35" 
+               fill="currentColor" stroke="none"/>
+    </g>
+  </defs>
+  
+  <!-- Grid lines -->
+  <g id="grid" stroke="#333" stroke-width="0.1" opacity="0.3">
+    <line x1="800.0" y1="0" x2="800.0" y2="600"/>
+    <line x1="733.3333333333333" y1="0" x2="733.3333333333333" y2="600"/>
+    <line x1="666.6666666666667" y1="0" x2="666.6666666666667" y2="600"/>
+    <line x1="600.0" y1="0" x2="600.0" y2="600"/>
+    <line x1="533.3333333333334" y1="0" x2="533.3333333333334" y2="600"/>
+    <line x1="466.66666666666663" y1="0" x2="466.66666666666663" y2="600"/>
+    <line x1="400.0" y1="0" x2="400.0" y2="600"/>
+    <line x1="333.3333333333333" y1="0" x2="333.3333333333333" y2="600"/>
+    <line x1="266.6666666666667" y1="0" x2="266.6666666666667" y2="600"/>
+    <line x1="200.0" y1="0" x2="200.0" y2="600"/>
+    <line x1="133.33333333333331" y1="0" x2="133.33333333333331" y2="600"/>
+    <line x1="66.6666666666667" y1="0" x2="66.6666666666667" y2="600"/>
+    <line x1="0.0" y1="0" x2="0.0" y2="600"/>
+    <line x1="0" y1="600.0" x2="800" y2="600.0"/>
+    <line x1="0" y1="500.0" x2="800" y2="500.0"/>
+    <line x1="0" y1="400.00000000000006" x2="800" y2="400.00000000000006"/>
+    <line x1="0" y1="300.0" x2="800" y2="300.0"/>
+    <line x1="0" y1="200.00000000000003" x2="800" y2="200.00000000000003"/>
+    <line x1="0" y1="99.99999999999997" x2="800" y2="99.99999999999997"/>
+    <line x1="0" y1="0.0" x2="800" y2="0.0"/>
+  </g>
+
+  <!-- Constellation elements -->
+  <use href="#star" x="795.3380558285537" y="203.03536841285035" transform="scale(0.983606495866213)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="792.6467294916625" y="249.38813428828067" transform="scale(0.7894736445841717)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="875.4520060727099" y="267.0833698736995" transform="scale(0.8955224135533351)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="875.1961034763307" y="214.51640342941346" transform="scale(0.508474568052218)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="862.7668758660409" y="215.51683507268262" transform="scale(0.631578947368421)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="861.5415930539513" y="189.42667203182188" transform="scale(0.5)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="860.9972022660284" y="279.33891751182364" transform="scale(0.6666666666666666)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="843.631457836074" y="263.8954049456291" transform="scale(0.6818181670401711)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="842.7761645129609" y="199.26300659599033" transform="scale(0.7692307504206254)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="840.8153585490143" y="221.4478077280658" transform="scale(0.6060605710312484)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="840.7221322930379" y="259.43346878420607" transform="scale(0.5769230451809602)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="838.8846972036586" y="217.99531441994208" transform="scale(0.6666666666666666)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="831.2337586711701" y="206.38751665747398" transform="scale(0.8823529164271378)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="830.6877856257636" y="249.3162083574691" transform="scale(0.8695651452798309)" fill="#FFFFFF" opacity="0.9"/>
+  <line x1="792.6467294916625" y1="249.38813428828067" x2="830.6877856257636" y2="249.3162083574691" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="831.2337586711701" y1="206.38751665747398" x2="842.7761645129609" y2="199.26300659599033" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="842.7761645129609" y1="199.26300659599033" x2="861.5415930539513" y2="189.42667203182188" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="831.2337586711701" y1="206.38751665747398" x2="838.8846972036586" y2="217.99531441994208" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="838.8846972036586" y1="217.99531441994208" x2="840.8153585490143" y2="221.4478077280658" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="840.8153585490143" y1="221.4478077280658" x2="862.7668758660409" y2="215.51683507268262" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="862.7668758660409" y1="215.51683507268262" x2="875.1961034763307" y2="214.51640342941346" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="830.6877856257636" y1="249.3162083574691" x2="840.7221322930379" y2="259.43346878420607" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="840.7221322930379" y1="259.43346878420607" x2="843.631457836074" y2="263.8954049456291" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="843.631457836074" y1="263.8954049456291" x2="860.9972022660284" y2="279.33891751182364" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="860.9972022660284" y1="279.33891751182364" x2="875.4520060727099" y2="267.0833698736995" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="795.3380558285537" y1="203.03536841285035" x2="831.2337586711701" y2="206.38751665747398" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="795.3380558285537" y1="203.03536841285035" x2="792.6467294916625" y2="249.38813428828067" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <line x1="831.2337586711701" y1="206.38751665747398" x2="830.6877856257636" y2="249.3162083574691" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <use href="#bright-star" x="834.7411111111112" y="230.7706666666667" transform="scale(0.8)" fill="#FFD700" opacity="0.95"/>
+  <text x="837.7411111111112" y="227.7706666666667" fill="#FFD700" font-size="4.5" font-weight="bold">51Peg</text>
+  <ellipse cx="883.3333333333334" cy="259.4433333333334" rx="0.8222222222222222" ry="1.2333333333333334" transform="rotate(1e-10 883.3333333333334 259.4433333333334)" fill="none" stroke="#FFA500" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="885.3333333333334" y="261.4433333333334" fill="#FFA500" font-size="3.5" font-weight="bold" opacity="0.9">M15</text>
+  <ellipse cx="846.6859999999999" cy="186.78133333333335" rx="0.044444444444444446" ry="0.05555555555555555" transform="rotate(1e-10 846.6859999999999 186.78133333333335)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="848.6859999999999" y="188.78133333333335" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC7318</text>
+  <ellipse cx="846.0731111111111" cy="185.28033333333337" rx="0.38777777777777783" ry="0.23166666666666663" transform="rotate(171.0000000001 846.0731111111111 185.28033333333337)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="848.0731111111111" y="187.28033333333337" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC7331</text>
+  <ellipse cx="830.624888888889" cy="258.762" rx="0.0914814814814815" ry="0.05488888888888889" transform="rotate(15.0000000001 830.624888888889 258.762)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="832.624888888889" y="260.762" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC7479</text>
+  <ellipse cx="798.1997777777779" cy="246.19" rx="0.18555555555555556" ry="0.12444444444444445" transform="rotate(134.0000000001 798.1997777777779 246.19)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="800.1997777777779" y="248.19" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC7814</text>
+  
+  <!-- Title and info -->
+  <text x="400.0" y="25" text-anchor="middle" 
+        fill="white" font-size="12.0" font-weight="bold">
+    Constellation View
+  </text>
+  
+  <text x="10" y="590" fill="white" font-size="5.0">
+    RA: 0.0° to 360.0° | DE: -90.0° to 90.0° | 
+    Stars: 14 | DSO: 5 | Vector SVG
+  </text>
+  
+</svg>

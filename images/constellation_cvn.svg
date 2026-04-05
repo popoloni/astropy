@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" 
+     viewBox="0 0 800 600"
+     xmlns="http://www.w3.org/2000/svg"
+     style="background-color: #000000;">
+     
+  <!-- Scalable constellation visualization -->
+  <defs>
+    <!-- Star symbol -->
+    <g id="star">
+      <polygon points="0,-1 0.3,-0.3 1,0 0.3,0.3 0,1 -0.3,0.3 -1,0 -0.3,-0.3" 
+               fill="currentColor" stroke="none"/>
+    </g>
+    
+    <!-- Bright star symbol -->
+    <g id="bright-star">
+      <polygon points="0,-1.2 0.35,-0.35 1.2,0 0.35,0.35 0,1.2 -0.35,0.35 -1.2,0 -0.35,-0.35" 
+               fill="currentColor" stroke="none"/>
+    </g>
+  </defs>
+  
+  <!-- Grid lines -->
+  <g id="grid" stroke="#333" stroke-width="0.1" opacity="0.3">
+    <line x1="800.0" y1="0" x2="800.0" y2="600"/>
+    <line x1="733.3333333333333" y1="0" x2="733.3333333333333" y2="600"/>
+    <line x1="666.6666666666667" y1="0" x2="666.6666666666667" y2="600"/>
+    <line x1="600.0" y1="0" x2="600.0" y2="600"/>
+    <line x1="533.3333333333334" y1="0" x2="533.3333333333334" y2="600"/>
+    <line x1="466.66666666666663" y1="0" x2="466.66666666666663" y2="600"/>
+    <line x1="400.0" y1="0" x2="400.0" y2="600"/>
+    <line x1="333.3333333333333" y1="0" x2="333.3333333333333" y2="600"/>
+    <line x1="266.6666666666667" y1="0" x2="266.6666666666667" y2="600"/>
+    <line x1="200.0" y1="0" x2="200.0" y2="600"/>
+    <line x1="133.33333333333331" y1="0" x2="133.33333333333331" y2="600"/>
+    <line x1="66.6666666666667" y1="0" x2="66.6666666666667" y2="600"/>
+    <line x1="0.0" y1="0" x2="0.0" y2="600"/>
+    <line x1="0" y1="600.0" x2="800" y2="600.0"/>
+    <line x1="0" y1="500.0" x2="800" y2="500.0"/>
+    <line x1="0" y1="400.00000000000006" x2="800" y2="400.00000000000006"/>
+    <line x1="0" y1="300.0" x2="800" y2="300.0"/>
+    <line x1="0" y1="200.00000000000003" x2="800" y2="200.00000000000003"/>
+    <line x1="0" y1="99.99999999999997" x2="800" y2="99.99999999999997"/>
+    <line x1="0" y1="0.0" x2="800" y2="0.0"/>
+  </g>
+
+  <!-- Constellation elements -->
+  <use href="#star" x="381.2667727342281" y="162.1344005130419" transform="scale(0.5769230451809602)" fill="#FFFFFF" opacity="0.9"/>
+  <use href="#star" x="368.87597085627027" y="172.27085171525914" transform="scale(0.7792207985226718)" fill="#FFFFFF" opacity="0.9"/>
+  <line x1="381.2667727342281" y1="162.1344005130419" x2="368.87597085627027" y2="172.27085171525914" stroke="#87CEEB" stroke-width="0.5" opacity="0.8"/>
+  <ellipse cx="389.44444444444446" cy="142.33333333333326" rx="0.6585185185185185" ry="0.3844444444444445" transform="rotate(1e-10 389.44444444444446 142.33333333333326)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="391.44444444444446" y="144.33333333333326" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">M106</text>
+  <ellipse cx="343.22222222222223" cy="205.39000000000001" rx="1.1999999999999997" ry="1.7999999999999996" transform="rotate(1e-10 343.22222222222223 205.39000000000001)" fill="none" stroke="#FFA500" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="345.22222222222223" y="207.39000000000001" fill="#FFA500" font-size="3.5" font-weight="bold" opacity="0.9">M3</text>
+  <ellipse cx="350.05555555555554" cy="142.6666666666667" rx="0.3703703703703703" ry="0.4216666666666667" transform="rotate(163.0000000001 350.05555555555554 142.6666666666667)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="352.05555555555554" y="144.6666666666667" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">M51</text>
+  <ellipse cx="357.88888888888886" cy="159.89" rx="0.4881481481481481" ry="0.44111111111111106" transform="rotate(102.0000000001 357.88888888888886 159.89)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="359.88888888888886" y="161.89" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">M63</text>
+  <ellipse cx="371.72222222222223" cy="162.94333333333338" rx="0.42518518518518517" ry="0.5555555555555556" transform="rotate(105.0000000001 371.72222222222223 162.94333333333338)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="373.72222222222223" y="164.94333333333338" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">M94</text>
+  <ellipse cx="390.2808888888889" cy="173.97633333333334" rx="0.587037037037037" ry="0.3505555555555555" transform="rotate(41.0000000001 390.2808888888889 173.97633333333334)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="392.2808888888889" y="175.97633333333334" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC4244</text>
+  <ellipse cx="385.6582222222222" cy="188.17766666666665" rx="0.42518518518518517" ry="0.2372222222222222" transform="rotate(134.0000000001 385.6582222222222 188.17766666666665)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="387.6582222222222" y="190.17766666666665" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC4395</text>
+  <ellipse cx="384.32666666666665" cy="153.032" rx="0.19444444444444445" ry="0.1838888888888889" transform="rotate(46.0000000001 384.32666666666665 153.032)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="386.32666666666665" y="155.032" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC4449</text>
+  <ellipse cx="382.99666666666667" cy="161.18800000000002" rx="0.25037037037037035" ry="0.11888888888888888" transform="rotate(151.0000000001 382.99666666666667 161.18800000000002)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="384.99666666666667" y="163.18800000000002" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC4490</text>
+  <ellipse cx="376.5924444444445" cy="191.52866666666662" rx="0.49962962962962965" ry="0.13611111111111113" transform="rotate(86.0000000001 376.5924444444445 191.52866666666662)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="378.5924444444445" y="193.52866666666662" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC4631</text>
+  <ellipse cx="375.5773333333334" cy="192.76566666666665" rx="0.05455555555555556" ry="0.029444444444444443" transform="rotate(40.0000000001 375.5773333333334 192.76566666666665)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="377.5773333333334" y="194.76566666666665" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC4656</text>
+  <ellipse cx="360.5755555555556" cy="176.47166666666664" rx="0.2037037037037037" ry="0.11611111111111112" transform="rotate(74.0000000001 360.5755555555556 176.47166666666664)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="362.5755555555556" y="178.47166666666664" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC5005</text>
+  <ellipse cx="359.18955555555556" cy="178.02133333333333" rx="0.35370370370370374" ry="0.22611111111111112" transform="rotate(171.0000000001 359.18955555555556 178.02133333333333)" fill="none" stroke="#4682B4" stroke-width="0.2" stroke-dasharray="2,1" opacity="0.7"/>
+  <text x="361.18955555555556" y="180.02133333333333" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC5033</text>
+  <g transform="translate(228.47688888888885,287.01933333333335) scale(0.5)">
+    <line x1="-2" y1="0" x2="2" y2="0" stroke="#4682B4" stroke-width="0.5"/>
+    <line x1="0" y1="-2" x2="0" y2="2" stroke="#4682B4" stroke-width="0.5"/>
+  </g>
+  <text x="230.47688888888885" y="289.01933333333335" fill="#4682B4" font-size="3.5" font-weight="bold" opacity="0.9">NGC6296</text>
+  
+  <!-- Title and info -->
+  <text x="400.0" y="25" text-anchor="middle" 
+        fill="white" font-size="12.0" font-weight="bold">
+    Constellation View
+  </text>
+  
+  <text x="10" y="590" fill="white" font-size="5.0">
+    RA: 0.0° to 360.0° | DE: -90.0° to 90.0° | 
+    Stars: 2 | DSO: 14 | Vector SVG
+  </text>
+  
+</svg>

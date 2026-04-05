@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive test script for astropy.py with high precision enabled
+Comprehensive test script for astroastronightplanner.py with high precision enabled
 Tests all major parameter combinations to ensure compatibility
 """
 
@@ -10,15 +10,15 @@ import os
 from datetime import datetime
 
 def run_astropy_test(params, description):
-    """Run astropy.py with given parameters and check for errors"""
+    """Run astroastronightplanner.py with given parameters and check for errors"""
     print(f"\n🧪 Testing: {description}")
-    print(f"   Command: python astropy.py {' '.join(params)}")
+    print(f"   Command: python astroastronightplanner.py {' '.join(params)}")
     print("-" * 60)
     
     try:
         # Run the command
         result = subprocess.run(
-            [sys.executable, "astropy.py"] + params,
+            [sys.executable, "astroastronightplanner.py"] + params,
             capture_output=True,
             text=True,
             timeout=60  # 60 second timeout

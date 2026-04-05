@@ -1,0 +1,22 @@
+{
+  "test_results": {
+    "julian_date": {
+      "max_error_days": 0.0,
+      "avg_error_days": 0.0,
+      "passed": true
+    },
+    "sun_position": {
+      "max_error_degrees": 0.5073974634586569,
+      "avg_error_degrees": 0.45871947222538917,
+      "passed": true
+    },
+    "moon_position": {
+      "max_error_degrees": 5.461264604049405,
+      "avg_error_degrees": 4.94125512236218,
+      "passed": false
+    }
+  },
+  "overall_passed": false,
+  "test_date": "2025-06-18 00:05:54.661130",
+  "astropy_version": "6.0.1"
+}

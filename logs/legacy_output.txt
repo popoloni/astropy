@@ -1,0 +1,334 @@
+High precision astronomical calculations available
+================================================================================
+MULTI-NIGHT ASTROPHOTOGRAPHY PLANNER
+Optimal Celestial Object Photography Timing Analysis
+================================================================================
+Analysis period: month January 2025
+Using visibility window: Alt 15°-75°, Az 65°-165°
+Minimum visibility requirement: 2 hours
+Precision mode: AUTO
+================================================================================
+Starting weekly astrophotography analysis for month January 2025...
+Analyzing 4 weeks (weeks 1-4) for year 2025
+
+Analyzing week 1 (2025-01-02)...
+  Analyzing visibility for 2025-01-02 night...
+  Twilight: 18:12 - 05:51
+  Bortle index: 9
+  Objects in visibility window with sufficient time: 35
+  Objects with insufficient time: 70
+  Objects limited by exposure requirements: 2
+  Moon illumination: 69.1%
+  Moon-free objects: 0
+  Moon-affected objects: 35
+  Performing mosaic analysis on 35 observable objects...
+FOV Configuration:
+  Single frame: 2.4° × 1.8°
+  Mosaic frame: 4.7° × 3.5°
+    M1/NGC 1952 Crab Nebula: 6.00° × 4.00° → 9 panels (individual mosaic)
+    M51/NGC 5194 Whirlpool Galaxy: 0.18° × 7.00° → 4 panels (individual mosaic)
+    M63/NGC 5055 Sunflower Galaxy: 0.21° × 7.20° → 4 panels (individual mosaic)
+    M64/NGC 4826 Black Eye Galaxy: 10.00° × 5.00° → 15 panels (individual mosaic)
+    M104/NGC 4594 Sombrero Galaxy: 8.70° × 3.50° → 8 panels (individual mosaic)
+    M106/NGC 4258: 0.31° × 7.20° → 4 panels (individual mosaic)
+    NGC 2264/C41 Cone Nebula - Christmas Tree Cluster: 0.33° × 10.00° → 6 panels (individual mosaic)
+    IC 434/B33 Horsehead Nebula: 1.00° × 10.00° → 6 panels (individual mosaic)
+    NGC 4565/C38 Needle Galaxy: 0.26° × 1.90° → 2 panels (individual mosaic)
+    NGC 4631/C32 Whale Galaxy: 0.26° × 2.70° → 2 panels (individual mosaic)
+    NGC 4449/C21 Box Galaxy: 6.20° × 4.40° → 9 panels (individual mosaic)
+    Simeis 147 Spaghetti Nebula: 3.00° × 3.00° → 4 panels (individual mosaic)
+  Individual mosaic objects: 12
+  Result: 12 single targets, 4 mosaic groups
+  Total catalog objects: 107
+  Observable tonight: 35
+  Config-compliant: 35
+  Exposure-limited: 2
+  Moon illumination: 69.1%
+  Moon-free objects: 0
+  Single-frame targets: 12
+  Mosaic groups: 4 (Small: 0, Medium: 4, Large: 0)
+  Mosaic sizes: [6, 6, 6, 5]
+  Week score: 328.7
+
+Analyzing week 2 (2025-01-09)...
+  Analyzing visibility for 2025-01-09 night...
+  Twilight: 18:19 - 05:50
+  Bortle index: 9
+  Objects in visibility window with sufficient time: 36
+  Objects with insufficient time: 69
+  Objects limited by exposure requirements: 2
+  Moon illumination: 66.4%
+  Moon-free objects: 0
+  Moon-affected objects: 36
+  Performing mosaic analysis on 36 observable objects...
+FOV Configuration:
+  Single frame: 2.4° × 1.8°
+  Mosaic frame: 4.7° × 3.5°
+    M1/NGC 1952 Crab Nebula: 6.00° × 4.00° → 9 panels (individual mosaic)
+    M51/NGC 5194 Whirlpool Galaxy: 0.18° × 7.00° → 4 panels (individual mosaic)
+    M63/NGC 5055 Sunflower Galaxy: 0.21° × 7.20° → 4 panels (individual mosaic)
+    M64/NGC 4826 Black Eye Galaxy: 10.00° × 5.00° → 15 panels (individual mosaic)
+    M104/NGC 4594 Sombrero Galaxy: 8.70° × 3.50° → 8 panels (individual mosaic)
+    M106/NGC 4258: 0.31° × 7.20° → 4 panels (individual mosaic)
+    NGC 2264/C41 Cone Nebula - Christmas Tree Cluster: 0.33° × 10.00° → 6 panels (individual mosaic)
+    IC 434/B33 Horsehead Nebula: 1.00° × 10.00° → 6 panels (individual mosaic)
+    NGC 4565/C38 Needle Galaxy: 0.26° × 1.90° → 2 panels (individual mosaic)
+    NGC 4631/C32 Whale Galaxy: 0.26° × 2.70° → 2 panels (individual mosaic)
+    NGC 4449/C21 Box Galaxy: 6.20° × 4.40° → 9 panels (individual mosaic)
+    Simeis 147 Spaghetti Nebula: 3.00° × 3.00° → 4 panels (individual mosaic)
+  Individual mosaic objects: 12
+  Result: 12 single targets, 4 mosaic groups
+  Total catalog objects: 107
+  Observable tonight: 36
+  Config-compliant: 36
+  Exposure-limited: 2
+  Moon illumination: 66.4%
+  Moon-free objects: 0
+  Single-frame targets: 12
+  Mosaic groups: 4 (Small: 0, Medium: 4, Large: 0)
+  Mosaic sizes: [6, 6, 6, 6]
+  Week score: 336.4
+
+Analyzing week 3 (2025-01-16)...
+  Analyzing visibility for 2025-01-16 night...
+  Twilight: 18:26 - 05:48
+  Bortle index: 9
+  Objects in visibility window with sufficient time: 37
+  Objects with insufficient time: 69
+  Objects limited by exposure requirements: 1
+  Moon illumination: 62.6%
+  Moon-free objects: 0
+  Moon-affected objects: 37
+  Performing mosaic analysis on 37 observable objects...
+FOV Configuration:
+  Single frame: 2.4° × 1.8°
+  Mosaic frame: 4.7° × 3.5°
+    M1/NGC 1952 Crab Nebula: 6.00° × 4.00° → 9 panels (individual mosaic)
+    M51/NGC 5194 Whirlpool Galaxy: 0.18° × 7.00° → 4 panels (individual mosaic)
+    M63/NGC 5055 Sunflower Galaxy: 0.21° × 7.20° → 4 panels (individual mosaic)
+    M64/NGC 4826 Black Eye Galaxy: 10.00° × 5.00° → 15 panels (individual mosaic)
+    M104/NGC 4594 Sombrero Galaxy: 8.70° × 3.50° → 8 panels (individual mosaic)
+    M106/NGC 4258: 0.31° × 7.20° → 4 panels (individual mosaic)
+    NGC 2264/C41 Cone Nebula - Christmas Tree Cluster: 0.33° × 10.00° → 6 panels (individual mosaic)
+    IC 434/B33 Horsehead Nebula: 1.00° × 10.00° → 6 panels (individual mosaic)
+    NGC 4565/C38 Needle Galaxy: 0.26° × 1.90° → 2 panels (individual mosaic)
+    NGC 4631/C32 Whale Galaxy: 0.26° × 2.70° → 2 panels (individual mosaic)
+    NGC 4449/C21 Box Galaxy: 6.20° × 4.40° → 9 panels (individual mosaic)
+    Simeis 147 Spaghetti Nebula: 3.00° × 3.00° → 4 panels (individual mosaic)
+  Individual mosaic objects: 12
+  Result: 13 single targets, 4 mosaic groups
+  Total catalog objects: 107
+  Observable tonight: 37
+  Config-compliant: 37
+  Exposure-limited: 1
+  Moon illumination: 62.6%
+  Moon-free objects: 0
+  Single-frame targets: 13
+  Mosaic groups: 4 (Small: 0, Medium: 4, Large: 0)
+  Mosaic sizes: [6, 6, 6, 6]
+  Week score: 344.6
+
+Analyzing week 4 (2025-01-23)...
+  Analyzing visibility for 2025-01-23 night...
+  Twilight: 18:34 - 05:44
+  Bortle index: 9
+  Objects in visibility window with sufficient time: 31
+  Objects with insufficient time: 75
+  Objects limited by exposure requirements: 1
+  Moon illumination: 40.8%
+  Moon-free objects: 0
+  Moon-affected objects: 31
+  Performing mosaic analysis on 31 observable objects...
+FOV Configuration:
+  Single frame: 2.4° × 1.8°
+  Mosaic frame: 4.7° × 3.5°
+    M51/NGC 5194 Whirlpool Galaxy: 0.18° × 7.00° → 4 panels (individual mosaic)
+    M63/NGC 5055 Sunflower Galaxy: 0.21° × 7.20° → 4 panels (individual mosaic)
+    M64/NGC 4826 Black Eye Galaxy: 10.00° × 5.00° → 15 panels (individual mosaic)
+    M104/NGC 4594 Sombrero Galaxy: 8.70° × 3.50° → 8 panels (individual mosaic)
+    M106/NGC 4258: 0.31° × 7.20° → 4 panels (individual mosaic)
+    NGC 2264/C41 Cone Nebula - Christmas Tree Cluster: 0.33° × 10.00° → 6 panels (individual mosaic)
+    NGC 4565/C38 Needle Galaxy: 0.26° × 1.90° → 2 panels (individual mosaic)
+    NGC 4631/C32 Whale Galaxy: 0.26° × 2.70° → 2 panels (individual mosaic)
+    NGC 4449/C21 Box Galaxy: 6.20° × 4.40° → 9 panels (individual mosaic)
+  Individual mosaic objects: 9
+  Result: 9 single targets, 4 mosaic groups
+  Total catalog objects: 107
+  Observable tonight: 31
+  Config-compliant: 31
+  Exposure-limited: 1
+  Moon illumination: 40.8%
+  Moon-free objects: 0
+  Single-frame targets: 9
+  Mosaic groups: 4 (Small: 0, Medium: 4, Large: 0)
+  Mosaic sizes: [6, 6, 6, 4]
+  Week score: 312.4
+Analyzing optimal conditions for each object for weeks 1-4 in year 2025...
+  Analyzing visibility for 2025-01-02 night...
+  Twilight: 18:12 - 05:51
+  Bortle index: 9
+  Objects in visibility window with sufficient time: 35
+  Objects with insufficient time: 70
+  Objects limited by exposure requirements: 2
+  Moon illumination: 69.1%
+  Moon-free objects: 0
+  Moon-affected objects: 35
+  Performing mosaic analysis on 35 observable objects...
+FOV Configuration:
+  Single frame: 2.4° × 1.8°
+  Mosaic frame: 4.7° × 3.5°
+    M1/NGC 1952 Crab Nebula: 6.00° × 4.00° → 9 panels (individual mosaic)
+    M51/NGC 5194 Whirlpool Galaxy: 0.18° × 7.00° → 4 panels (individual mosaic)
+    M63/NGC 5055 Sunflower Galaxy: 0.21° × 7.20° → 4 panels (individual mosaic)
+    M64/NGC 4826 Black Eye Galaxy: 10.00° × 5.00° → 15 panels (individual mosaic)
+    M104/NGC 4594 Sombrero Galaxy: 8.70° × 3.50° → 8 panels (individual mosaic)
+    M106/NGC 4258: 0.31° × 7.20° → 4 panels (individual mosaic)
+    NGC 2264/C41 Cone Nebula - Christmas Tree Cluster: 0.33° × 10.00° → 6 panels (individual mosaic)
+    IC 434/B33 Horsehead Nebula: 1.00° × 10.00° → 6 panels (individual mosaic)
+    NGC 4565/C38 Needle Galaxy: 0.26° × 1.90° → 2 panels (individual mosaic)
+    NGC 4631/C32 Whale Galaxy: 0.26° × 2.70° → 2 panels (individual mosaic)
+    NGC 4449/C21 Box Galaxy: 6.20° × 4.40° → 9 panels (individual mosaic)
+    Simeis 147 Spaghetti Nebula: 3.00° × 3.00° → 4 panels (individual mosaic)
+  Individual mosaic objects: 12
+  Result: 12 single targets, 4 mosaic groups
+  Analyzing visibility for 2025-01-09 night...
+  Twilight: 18:19 - 05:50
+  Bortle index: 9
+  Objects in visibility window with sufficient time: 36
+  Objects with insufficient time: 69
+  Objects limited by exposure requirements: 2
+  Moon illumination: 66.4%
+  Moon-free objects: 0
+  Moon-affected objects: 36
+  Performing mosaic analysis on 36 observable objects...
+FOV Configuration:
+  Single frame: 2.4° × 1.8°
+  Mosaic frame: 4.7° × 3.5°
+    M1/NGC 1952 Crab Nebula: 6.00° × 4.00° → 9 panels (individual mosaic)
+    M51/NGC 5194 Whirlpool Galaxy: 0.18° × 7.00° → 4 panels (individual mosaic)
+    M63/NGC 5055 Sunflower Galaxy: 0.21° × 7.20° → 4 panels (individual mosaic)
+    M64/NGC 4826 Black Eye Galaxy: 10.00° × 5.00° → 15 panels (individual mosaic)
+    M104/NGC 4594 Sombrero Galaxy: 8.70° × 3.50° → 8 panels (individual mosaic)
+    M106/NGC 4258: 0.31° × 7.20° → 4 panels (individual mosaic)
+    NGC 2264/C41 Cone Nebula - Christmas Tree Cluster: 0.33° × 10.00° → 6 panels (individual mosaic)
+    IC 434/B33 Horsehead Nebula: 1.00° × 10.00° → 6 panels (individual mosaic)
+    NGC 4565/C38 Needle Galaxy: 0.26° × 1.90° → 2 panels (individual mosaic)
+    NGC 4631/C32 Whale Galaxy: 0.26° × 2.70° → 2 panels (individual mosaic)
+    NGC 4449/C21 Box Galaxy: 6.20° × 4.40° → 9 panels (individual mosaic)
+    Simeis 147 Spaghetti Nebula: 3.00° × 3.00° → 4 panels (individual mosaic)
+  Individual mosaic objects: 12
+  Result: 12 single targets, 4 mosaic groups
+  Analyzing visibility for 2025-01-16 night...
+  Twilight: 18:26 - 05:48
+  Bortle index: 9
+  Objects in visibility window with sufficient time: 37
+  Objects with insufficient time: 69
+  Objects limited by exposure requirements: 1
+  Moon illumination: 62.6%
+  Moon-free objects: 0
+  Moon-affected objects: 37
+  Performing mosaic analysis on 37 observable objects...
+FOV Configuration:
+  Single frame: 2.4° × 1.8°
+  Mosaic frame: 4.7° × 3.5°
+    M1/NGC 1952 Crab Nebula: 6.00° × 4.00° → 9 panels (individual mosaic)
+    M51/NGC 5194 Whirlpool Galaxy: 0.18° × 7.00° → 4 panels (individual mosaic)
+    M63/NGC 5055 Sunflower Galaxy: 0.21° × 7.20° → 4 panels (individual mosaic)
+    M64/NGC 4826 Black Eye Galaxy: 10.00° × 5.00° → 15 panels (individual mosaic)
+    M104/NGC 4594 Sombrero Galaxy: 8.70° × 3.50° → 8 panels (individual mosaic)
+    M106/NGC 4258: 0.31° × 7.20° → 4 panels (individual mosaic)
+    NGC 2264/C41 Cone Nebula - Christmas Tree Cluster: 0.33° × 10.00° → 6 panels (individual mosaic)
+    IC 434/B33 Horsehead Nebula: 1.00° × 10.00° → 6 panels (individual mosaic)
+    NGC 4565/C38 Needle Galaxy: 0.26° × 1.90° → 2 panels (individual mosaic)
+    NGC 4631/C32 Whale Galaxy: 0.26° × 2.70° → 2 panels (individual mosaic)
+    NGC 4449/C21 Box Galaxy: 6.20° × 4.40° → 9 panels (individual mosaic)
+    Simeis 147 Spaghetti Nebula: 3.00° × 3.00° → 4 panels (individual mosaic)
+  Individual mosaic objects: 12
+  Result: 13 single targets, 4 mosaic groups
+  Analyzing visibility for 2025-01-23 night...
+  Twilight: 18:34 - 05:44
+  Bortle index: 9
+  Objects in visibility window with sufficient time: 31
+  Objects with insufficient time: 75
+  Objects limited by exposure requirements: 1
+  Moon illumination: 40.8%
+  Moon-free objects: 0
+  Moon-affected objects: 31
+  Performing mosaic analysis on 31 observable objects...
+FOV Configuration:
+  Single frame: 2.4° × 1.8°
+  Mosaic frame: 4.7° × 3.5°
+    M51/NGC 5194 Whirlpool Galaxy: 0.18° × 7.00° → 4 panels (individual mosaic)
+    M63/NGC 5055 Sunflower Galaxy: 0.21° × 7.20° → 4 panels (individual mosaic)
+    M64/NGC 4826 Black Eye Galaxy: 10.00° × 5.00° → 15 panels (individual mosaic)
+    M104/NGC 4594 Sombrero Galaxy: 8.70° × 3.50° → 8 panels (individual mosaic)
+    M106/NGC 4258: 0.31° × 7.20° → 4 panels (individual mosaic)
+    NGC 2264/C41 Cone Nebula - Christmas Tree Cluster: 0.33° × 10.00° → 6 panels (individual mosaic)
+    NGC 4565/C38 Needle Galaxy: 0.26° × 1.90° → 2 panels (individual mosaic)
+    NGC 4631/C32 Whale Galaxy: 0.26° × 2.70° → 2 panels (individual mosaic)
+    NGC 4449/C21 Box Galaxy: 6.20° × 4.40° → 9 panels (individual mosaic)
+  Individual mosaic objects: 9
+  Result: 9 single targets, 4 mosaic groups
+
+================================================================================
+WEEKLY ASTROPHOTOGRAPHY ANALYSIS SUMMARY - MONTH JANUARY
+================================================================================
+
+Analyzed 4 weeks (weeks 1-4)
+Best week for astrophotography: Week 3 (2025-01-16)
+Best week score: 344.6
+
+Visibility Window Configuration:
+  Altitude range: 15° - 75°
+  Azimuth range: 65° - 165°
+  Minimum visibility: 2 hours
+
+Best Week Details (Week 3):
+  Date: 2025-01-16 (Thursday)
+  Total catalog objects: 107
+  Observable objects: 37
+  Config-compliant objects: 37
+  Exposure-limited objects: 1
+  Insufficient time objects: 69
+  Bortle index: 9
+  Moon illumination: 62.6%
+  Moon-free objects: 0
+  Moon-affected objects: 37
+  Single objects: 13
+  Mosaic groups: 4
+  Moon-free mosaics: 0
+  Night duration: 11.4 hours
+
+Top 5 Recommendations for Week 3:
+  1. Mosaic group (moon-affected): NGC 2024 Flame Nebula, M43/NGC 1982 De Mairan's Nebula, M42/NGC 1976 Great Orion Nebula... - Score: 108.7 (🌕 Moon-affected)
+  2. Mosaic group (moon-affected): M38/NGC 1912 Starfish Cluster, M36/NGC 1960 Pinwheel Cluster, M37/NGC 2099 Salt and Pepper Cluster... - Score: 108.7 (🌕 Moon-affected)
+  3. Mosaic group (moon-affected): M41/NGC 2287, M47/NGC 2422, M93/NGC 2447... - Score: 108.7 (🌕 Moon-affected)
+  4. Mosaic group (moon-affected): M44/NGC 2632 Beehive Cluster/Praesepe, NGC 3242/C59 Ghost of Jupiter, M3/NGC 5272... - Score: 108.7 (🌕 Moon-affected)
+  5. M42/NGC 1976 Great Orion Nebula (moon-affected) - Score: 8.5 (🌕 Moon-affected)
+
+Week Comparison:
+Week   Date         Score    Observable Config  Exp-Lim  Moon%  M-Free  Mosaics 
+----------------------------------------------------------------------------------------
+  1    01-02        328.7    35         35      2        69.1   0       4       
+  2    01-09        336.4    36         36      2        66.4   0       4       
+★ 3    01-16        344.6    37         37      1        62.6   0       4       
+  4    01-23        312.4    31         31      1        40.8   0       4       
+
+Statistics Summary:
+  Average week score: 330.5
+  Average observable objects: 34.8
+  Average config-compliant objects: 34.8
+  Average exposure-limited objects: 1.5
+
+====================================================================================================
+OBJECT OPTIMIZATION ANALYSIS - MONTH JANUARY
+====================================================================================================
+
+All Objects Summary (ordered by first best week):
+Object                         1st Week  Best Score  Moon-Free  Best Month  Best Weeks
+---------------------------------------------------------------------------------------------------------
+
+Mosaic Groups Analysis:
+(Objects that require individual mosaics or appear frequently in group mosaics)
+
+Monthly Best Opportunities Summary:

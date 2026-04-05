@@ -11,11 +11,11 @@ from .celestial import (
     calculate_lst, calculate_sun_position, calculate_altaz,
     calculate_moon_phase, calculate_moon_position,
     calculate_moon_interference_radius, is_near_moon,
-    get_moon_phase_icon
+    get_moon_phase_icon, find_configured_twilight, find_astronomical_twilight
 )
 from .visibility import (
     is_visible, find_visibility_window, calculate_visibility_duration,
-    find_sunset_sunrise, find_astronomical_twilight, find_best_objects,
+    find_sunset_sunrise, find_best_objects,
     calculate_required_panels, calculate_required_exposure, is_object_imageable,
     filter_visible_objects
 )
@@ -31,10 +31,10 @@ __all__ = [
     'calculate_lst', 'calculate_sun_position', 'calculate_altaz',
     'calculate_moon_phase', 'calculate_moon_position',
     'calculate_moon_interference_radius', 'is_near_moon',
-    'get_moon_phase_icon',
+    'get_moon_phase_icon', 'find_configured_twilight', 'find_astronomical_twilight',
     # Visibility calculations
     'is_visible', 'find_visibility_window', 'calculate_visibility_duration',
-    'find_sunset_sunrise', 'find_astronomical_twilight', 'find_best_objects',
+    'find_sunset_sunrise', 'find_best_objects',
     'calculate_required_panels', 'calculate_required_exposure', 'is_object_imageable',
     'filter_visible_objects'
 ] 

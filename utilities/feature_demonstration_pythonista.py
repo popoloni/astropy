@@ -13,12 +13,12 @@ import os
 import io
 from datetime import datetime
 
-# Add parent directory to path to import astropy
+# Add parent directory to path to import astronightplanner
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    import astropy
-    from astropy import main as astropy_main
+    import astronightplanner
+    from astronightplanner import main as astropy_main
 except ImportError as e:
     print(f"Error importing astropy: {e}")
     sys.exit(1)
@@ -33,7 +33,7 @@ def capture_astropy_output(test_args):
         sys.stdout = captured_output = io.StringIO()
         
         # Set up arguments
-        sys.argv = ['astropy.py'] + test_args
+        sys.argv = ['astroastroastronightplanner.py'] + test_args
         
         # Call the main function
         try:
@@ -193,12 +193,12 @@ def main():
     print("=" * 60)
     
     examples = [
-        ("View all strategies:", "import astropy; astropy.main() # with sys.argv = ['astropy.py', '--report-only']"),
-        ("Analyze mosaic opportunities:", "import astropy; astropy.main() # with sys.argv = ['astropy.py', '--mosaic', '--report-only']"),
-        ("Focus on mosaic groups only:", "import astropy; astropy.main() # with sys.argv = ['astropy.py', '--mosaic-only', '--report-only']"),
-        ("Use mosaic prioritization:", "import astropy; astropy.main() # with sys.argv = ['astropy.py', '--schedule', 'mosaic_groups', '--report-only']"),
-        ("Generate mosaic plots:", "import astropy; astropy.main() # with sys.argv = ['astropy.py', '--mosaic']"),
-        ("Use traditional strategies:", "import astropy; astropy.main() # with sys.argv = ['astropy.py', '--schedule', 'max_objects', '--report-only']")
+        ("View all strategies:", "import astronightplanner; astroastronightplanner.main() # with sys.argv = ['astroastroastronightplanner.py', '--report-only']"),
+        ("Analyze mosaic opportunities:", "import astronightplanner; astroastronightplanner.main() # with sys.argv = ['astroastroastronightplanner.py', '--mosaic', '--report-only']"),
+        ("Focus on mosaic groups only:", "import astronightplanner; astroastronightplanner.main() # with sys.argv = ['astroastroastronightplanner.py', '--mosaic-only', '--report-only']"),
+        ("Use mosaic prioritization:", "import astronightplanner; astroastronightplanner.main() # with sys.argv = ['astroastroastronightplanner.py', '--schedule', 'mosaic_groups', '--report-only']"),
+        ("Generate mosaic plots:", "import astronightplanner; astroastronightplanner.main() # with sys.argv = ['astroastroastronightplanner.py', '--mosaic']"),
+        ("Use traditional strategies:", "import astronightplanner; astroastronightplanner.main() # with sys.argv = ['astroastroastronightplanner.py', '--schedule', 'max_objects', '--report-only']")
     ]
     
     for description, command in examples:
@@ -209,9 +209,9 @@ def main():
     print("=" * 60)
     print("  To run astropy in Pythonista, you can use:")
     print("  import sys")
-    print("  sys.argv = ['astropy.py', '--report-only']  # or any other arguments")
-    print("  import astropy")
-    print("  astropy.main()")
+    print("  sys.argv = ['astroastroastronightplanner.py', '--report-only']  # or any other arguments")
+    print("  import astronightplanner")
+    print("  astroastronightplanner.main()")
     
     print(f"\n🎉 INTEGRATION COMPLETE!")
     if test_names:

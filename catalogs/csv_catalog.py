@@ -6,7 +6,7 @@ import csv
 from models import CelestialObject
 from config import CATALOGNAME, MIN_TOTAL_AREA, MERGING_CATALOGS
 from .object_utils import enrich_object_name
-from .catalog_manager import get_combined_catalog, merge_catalogs
+from .combined_catalog import get_combined_catalog, merge_catalogs
 
 
 def get_object_type(type_str):
@@ -52,7 +52,27 @@ def get_objects_from_csv():
     import sys
     import os
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    from astropy import parse_ra, parse_dec
+    from astronightplanner import parse_ra, parse_dec
+    
+        
+    # Resolve catalog path intelligently
+    # If CATALOGNAME is relative, make it relative to the main astropy directory
+    catalog_path = CATALOGNAME
+    if not os.path.isabs(catalog_path):
+        # Find the main astropy directory (should contain config.json)
+        current_dir = os.getcwd()
+        astropy_dir = current_dir
+        
+        # Look for config.json to identify the main astropy directory
+        while astropy_dir and astropy_dir != os.path.dirname(astropy_dir):
+            if os.path.exists(os.path.join(astropy_dir, 'config.json')):
+                break
+            astropy_dir = os.path.dirname(astropy_dir)
+        
+        if os.path.exists(os.path.join(astropy_dir, 'config.json')):
+            # Resolve catalog path relative to astropy_dir
+            catalog_path = os.path.join(astropy_dir, catalog_path)
+        # If we can't find config.json, try the original path as fallback
     
     # Resolve catalog path intelligently
     # If CATALOGNAME is relative, make it relative to the main astropy directory

@@ -20,7 +20,7 @@ root_dir = os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, root_dir)
 
 # Import astropy functions
-from astropy import (
+from astronightplanner import (
     get_combined_catalog, get_objects_from_csv, USE_CSV_CATALOG,
     calculate_altaz, get_local_timezone, get_current_datetime,
     find_astronomical_twilight, find_visibility_window,
